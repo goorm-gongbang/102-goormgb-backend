@@ -1,0 +1,23 @@
+services:
+  local-postgres:
+    image: postgres:16
+    container_name: goormgb-postgres
+    environment:
+      POSTGRES_DB: goormgb
+      POSTGRES_USER: goormgb
+      POSTGRES_PASSWORD: 1234
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    platform: linux/arm64
+
+  local-redis:
+    image: redis:7
+    container_name: goormgb-redis
+    ports:
+      - "6379:6379"
+    platform: linux/arm64
+
+volumes:
+  postgres-data:
