@@ -1,6 +1,9 @@
 spring:
   application:
     name: goormgb
+  jackson:
+    time-zone: UTC
+    data-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
 
   datasource:
     url: jdbc:postgresql://localhost:5432/goormgb
@@ -9,9 +12,12 @@ spring:
     driver-class-name: org.postgresql.Driver
 
   jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
+    properties:
+      hibernate:
+        ddl-auto: update
+        jdbc:
+          time-zone: UTC
+      show-sql: true
 
   data:
     redis:
