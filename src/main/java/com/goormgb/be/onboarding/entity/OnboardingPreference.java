@@ -89,17 +89,18 @@ public class OnboardingPreference extends BaseEntity {
 	) {
 		this.user = user;
 		this.rank = rank;
-		this.viewpoint = viewpoint;
-		this.seatHeight = seatHeight;
-		this.section = section;
-		this.seatPositionPref = seatPositionPref != null ? seatPositionPref : SeatPositionPref.ANY;
-		this.environmentPref = environmentPref != null ? environmentPref : EnvironmentPref.ANY;
-		this.moodPref = moodPref != null ? moodPref : MoodPref.ANY;
-		this.obstructionSensitivity =
-				obstructionSensitivity != null ? obstructionSensitivity : ObstructionSensitivity.NORMAL;
-		this.priceMode = priceMode != null ? priceMode : PriceMode.ANY;
-		this.priceMin = priceMin;
-		this.priceMax = priceMax;
+		update(
+				viewpoint,
+				seatHeight,
+				section,
+				seatPositionPref,
+				environmentPref,
+				moodPref,
+				obstructionSensitivity,
+				priceMode,
+				priceMin,
+				priceMax
+		);
 	}
 
 	public void update(

@@ -25,7 +25,7 @@ public class UserSns extends BaseEntity {
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "provider", nullable = false, length = 20)
-	private SocialProvider provider = SocialProvider.KAKAO;
+	private SocialProvider provider;
 
 	@Column(name = "provider_user_id", nullable = false, length = 128)
 	private String providerUserId;

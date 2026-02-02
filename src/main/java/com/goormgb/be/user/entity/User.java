@@ -46,7 +46,6 @@ public class User extends BaseEntity {
 	public User(String email, String nickname) {
 		this.email = email;
 		this.nickname = nickname;
-		this.status = UserStatus.ACTIVATE;
 		this.onboardingCompleted = false;
 		this.marketingConsent = false;
 	}
