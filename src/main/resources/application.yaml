@@ -12,12 +12,13 @@ spring:
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
     properties:
       hibernate:
-        ddl-auto: update
         jdbc:
           time-zone: UTC
-      show-sql: true
 
   data:
     redis:
