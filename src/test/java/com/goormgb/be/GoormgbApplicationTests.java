@@ -1,4 +1,4 @@
-package com.goormgb.be.demo;
+package com.goormgb.be;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
