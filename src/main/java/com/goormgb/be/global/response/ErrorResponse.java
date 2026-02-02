@@ -3,6 +3,8 @@ package com.goormgb.be.global.response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import com.goormgb.be.global.exception.ErrorCode;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -14,6 +16,10 @@ public class ErrorResponse {
 
     public static ResponseEntity<ErrorData> error(HttpStatus status, String message) {
         return ResponseEntity.status(status).body(ErrorData.of(status.series().name(), message));
+    }
+
+    public static ResponseEntity<ErrorData> error(ErrorCode errorCode) {
+        return error(errorCode.getStatus(), errorCode.getMessage());
     }
 
     @Getter
