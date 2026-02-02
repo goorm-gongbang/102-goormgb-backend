@@ -7,7 +7,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "withdrawal_requests", indexes = {
@@ -28,30 +29,30 @@ public class WithdrawalRequest {
     private User user;
 
     @Column(name = "requested_at", nullable = false)
-    private OffsetDateTime requestedAt;
+    private LocalDateTime requestedAt;
 
     @Column(name = "effective_at", nullable = false)
-    private OffsetDateTime effectiveAt;
+    private LocalDateTime effectiveAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private WithdrawStatus status = WithdrawStatus.REQUESTED;
 
     @Column(name = "cancelled_at")
-    private OffsetDateTime cancelledAt;
+    private LocalDateTime cancelledAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = OffsetDateTime.now();
+        this.createdAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     @Builder
     public WithdrawalRequest(User user) {
         this.user = user;
-        this.requestedAt = OffsetDateTime.now();
+        this.requestedAt = LocalDateTime.now(ZoneOffset.UTC);
         this.effectiveAt = this.requestedAt.plusDays(GRACE_PERIOD_DAYS);
         this.status = WithdrawStatus.REQUESTED;
     }
@@ -59,10 +60,10 @@ public class WithdrawalRequest {
     // public void cancel() {
 	// 	// 우리 서비스에서 탈퇴 취소는 없음.
     //     this.status = WithdrawStatus.CANCELLED;
-    //     this.cancelledAt = OffsetDateTime.now();
+    //     this.cancelledAt = LocalDateTime.now(ZoneOffset.UTC);
     // }
 
     public boolean isExpired() {
-        return OffsetDateTime.now().isAfter(this.effectiveAt);
+        return LocalDateTime.now(ZoneOffset.UTC).isAfter(this.effectiveAt);
     }
 }
