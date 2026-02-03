@@ -7,14 +7,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.onboarding.dto.OnboardingPreferenceDto;
 import com.goormgb.be.onboarding.entity.OnboardingPreference;
 import com.goormgb.be.onboarding.enums.Viewpoint;
 
 public interface OnboardingPreferenceRepository extends JpaRepository<OnboardingPreference, Long> {
 	List<OnboardingPreference> findAllByUserId(Long userId);
 
-	List<OnboardingPreferenceDto> findAllByUserIdOrderByPriorityAsc(Long userId);
+	List<OnboardingPreference> findAllByUserIdOrderByPriorityAsc(Long userId);
 
 	Optional<OnboardingPreference> findByUserIdAndPriority(Long userId, Integer priority);
 
