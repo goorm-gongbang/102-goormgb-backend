@@ -82,7 +82,7 @@ public class OnboardingPreferenceService {
 					.getPriority()
 					.equals(pref.priority()))
 				.findFirst()
-				.orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
+				.orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND_FOR_UPDATE));
 
 			preferenceToUpdate.update(
 				pref.viewpoint(),
@@ -100,9 +100,9 @@ public class OnboardingPreferenceService {
 	}
 
 	private void validatePreferences(List<OnboardingPreferenceDto> preferences) {
-		Preconditions.validate(preferences != null, ErrorCode.BAD_REQUEST);
+		Preconditions.validate(preferences != null, ErrorCode.ONBOARDING_NOT_COMPLETED);
 		Preconditions.validate(preferences
-			.size() == 3, ErrorCode.BAD_REQUEST);
+			.size() == 3, ErrorCode.MISSING_REQUIRED_PREFERENCE_FIELD);
 
 		// TODO: 우선순위, 필수 값 중복 검증
 		// TODO: 가격 검증
@@ -128,7 +128,7 @@ public class OnboardingPreferenceService {
 
 	private void applyMarketingConsent(User user, OnboardingPreferenceCreateRequest.MarketingConsent marketingConsent) {
 		Preconditions.validate(marketingConsent != null && marketingConsent.marketingAgreed() != null,
-			ErrorCode.BAD_REQUEST);
+			ErrorCode.INVALID_MARKETING_CONSENT);
 
 		user.updateMarketingConsent(marketingConsent.marketingAgreed());
 	}
