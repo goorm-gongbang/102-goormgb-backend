@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "onboarding_preferences", uniqueConstraints = {
-		@UniqueConstraint(columnNames = {"user_id", "rank"}),
+		@UniqueConstraint(columnNames = {"user_id", "priority"}),
 		@UniqueConstraint(columnNames = {"user_id", "viewpoint"})
 }, indexes = {
 		@Index(name = "idx_onboarding_preferences_user_id", columnList = "user_id"),
@@ -28,8 +28,8 @@ public class OnboardingPreference extends BaseEntity {
 	@JoinColumn(name = "user_id", nullable = false)
 	private User user;
 
-	@Column(name = "rank", nullable = false)
-	private Integer rank;
+	@Column(name = "priority", nullable = false)
+	private Integer priority;
 
 	// 필수 항목
 	@Enumerated(EnumType.STRING)
@@ -75,7 +75,7 @@ public class OnboardingPreference extends BaseEntity {
 	@Builder
 	public OnboardingPreference(
 			User user,
-			Integer rank,
+			Integer priority,
 			Viewpoint viewpoint,
 			SeatHeight seatHeight,
 			Section section,
@@ -88,7 +88,7 @@ public class OnboardingPreference extends BaseEntity {
 			Integer priceMax
 	) {
 		this.user = user;
-		this.rank = rank;
+		this.priority = priority;
 		update(
 				viewpoint,
 				seatHeight,
