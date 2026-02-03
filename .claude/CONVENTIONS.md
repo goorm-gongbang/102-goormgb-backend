@@ -1,6 +1,6 @@
 # Claude 작업 규칙
 
-> 상세 컨벤션은 [README.md](./README.md) 참조
+> 상세 컨벤션은 [README.md](../README.md) 참조
 
 ## Claude 행동 규칙
 
@@ -34,8 +34,8 @@
 - 설계 / 구조 / 알고리즘 / 모델 선택 이유
 - 트레이드오프 또는 고민했던 지점
 
-## 📌 관련 Jira Issue
-- KAN-XX
+### 📌 관련 Jira Issue
+- GRGB-XX
 
 ## 🧪 테스트 방법 (선택)
 - 테스트 대상
