@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.onboarding.dto.OnboardingPreferenceDto;
@@ -38,7 +39,7 @@ public class OnboardingPreferenceService {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
 		// 검증
-		validatePreferenceRequest(request.preferences());
+		validatePreferences(request.preferences());
 
 		// 저장
 		var entities = request
@@ -62,29 +63,45 @@ public class OnboardingPreferenceService {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
 		// 검증
-		validatePreferenceRequest(request.preferences());
+		validatePreferences(request.preferences());
 
 		// 저장
-		replacePreferences(user, request.preferences());
+		replacePreferences(userId, request.preferences());
 
 		// 온보딩 수정 완료
 		user.completeOnboarding();
 	}
 
-	private void replacePreferences(User user, List<OnboardingPreferenceDto> request) {
-		onboardingPreferenceRepository.deleteAllByUserId(user.getId());
+	private void replacePreferences(Long userId, List<OnboardingPreferenceDto> preferences) {
+		var existingPreferences = onboardingPreferenceRepository.findAllByUserIdOrderByPriorityAsc(userId);
 
-		var entities = request
-			.stream()
-			.map(preference -> toEntity(user, preference))
-			.toList();
+		for (OnboardingPreferenceDto pref : preferences) {
+			OnboardingPreference preferenceToUpdate = existingPreferences
+				.stream()
+				.filter(p -> p
+					.getPriority()
+					.equals(pref.priority()))
+				.findFirst()
+				.orElseThrow(() -> new CustomException(ErrorCode.BAD_REQUEST));
 
-		onboardingPreferenceRepository.saveAll(entities);
+			preferenceToUpdate.update(
+				pref.viewpoint(),
+				pref.seatHeight(),
+				pref.section(),
+				pref.seatPositionPref(),
+				pref.environmentPref(),
+				pref.moodPref(),
+				pref.obstructionSensitivity(),
+				pref.priceMode(),
+				pref.priceMin(),
+				pref.priceMax()
+			);
+		}
 	}
 
-	private void validatePreferenceRequest(List<OnboardingPreferenceDto> request) {
-		Preconditions.validate(request != null, ErrorCode.BAD_REQUEST);
-		Preconditions.validate(request
+	private void validatePreferences(List<OnboardingPreferenceDto> preferences) {
+		Preconditions.validate(preferences != null, ErrorCode.BAD_REQUEST);
+		Preconditions.validate(preferences
 			.size() == 3, ErrorCode.BAD_REQUEST);
 
 		// TODO: 우선순위, 필수 값 중복 검증
