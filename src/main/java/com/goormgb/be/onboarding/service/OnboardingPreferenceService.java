@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.onboarding.dto.request.OnboardingPreferenceCreateRequest;
+import com.goormgb.be.onboarding.dto.request.OnboardingPreferenceUpdateRequest;
+import com.goormgb.be.onboarding.dto.request.PreferenceRequest;
 import com.goormgb.be.onboarding.dto.response.OnboardingPreferenceCreateResponse;
 import com.goormgb.be.onboarding.entity.OnboardingPreference;
 import com.goormgb.be.onboarding.repository.OnboardingPreferenceRepository;
@@ -27,7 +29,7 @@ public class OnboardingPreferenceService {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
 		// 검증
-		validateRequest(request);
+		validatePreferenceRequest(request.preferences());
 
 		// 저장
 		List<OnboardingPreference> entities = request
@@ -47,17 +49,40 @@ public class OnboardingPreferenceService {
 		return OnboardingPreferenceCreateResponse.from(user);
 	}
 
-	private void validateRequest(OnboardingPreferenceCreateRequest request) {
-		Preconditions.validate(request != null && request.preferences() != null, ErrorCode.BAD_REQUEST);
+	public void updatePreferences(Long userId, OnboardingPreferenceUpdateRequest request) {
+		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+
+		// 검증
+		validatePreferenceRequest(request.preferences());
+
+		// 저장
+		replacePreferences(user, request.preferences());
+
+		// 온보딩 수정 완료
+		user.completeOnboarding();
+	}
+
+	private void replacePreferences(User user, List<PreferenceRequest> request) {
+		onboardingPreferenceRepository.deleteAllByUserId(user.getId());
+
+		var entities = request
+			.stream()
+			.map(preference -> toEntity(user, preference))
+			.toList();
+
+		onboardingPreferenceRepository.saveAll(entities);
+	}
+
+	private void validatePreferenceRequest(List<PreferenceRequest> request) {
+		Preconditions.validate(request != null, ErrorCode.BAD_REQUEST);
 		Preconditions.validate(request
-			.preferences()
 			.size() == 3, ErrorCode.BAD_REQUEST);
 
 		// TODO: 우선순위, 필수 값 중복 검증
 		// TODO: 가격 검증
 	}
 
-	private OnboardingPreference toEntity(User user, OnboardingPreferenceCreateRequest.Preference preference) {
+	private OnboardingPreference toEntity(User user, PreferenceRequest preference) {
 		return OnboardingPreference
 			.builder()
 			.user(user)
