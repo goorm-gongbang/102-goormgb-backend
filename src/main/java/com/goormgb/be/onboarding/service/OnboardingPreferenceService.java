@@ -6,10 +6,11 @@ import org.springframework.stereotype.Service;
 
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
+import com.goormgb.be.onboarding.dto.OnboardingPreferenceDto;
 import com.goormgb.be.onboarding.dto.request.OnboardingPreferenceCreateRequest;
 import com.goormgb.be.onboarding.dto.request.OnboardingPreferenceUpdateRequest;
-import com.goormgb.be.onboarding.dto.request.PreferenceRequest;
 import com.goormgb.be.onboarding.dto.response.OnboardingPreferenceCreateResponse;
+import com.goormgb.be.onboarding.dto.response.OnboardingPreferenceGetResponse;
 import com.goormgb.be.onboarding.entity.OnboardingPreference;
 import com.goormgb.be.onboarding.repository.OnboardingPreferenceRepository;
 import com.goormgb.be.user.entity.User;
@@ -25,6 +26,14 @@ public class OnboardingPreferenceService {
 	private final OnboardingPreferenceRepository onboardingPreferenceRepository;
 	private final UserRepository userRepository;
 
+	public OnboardingPreferenceGetResponse getPreferences(Long userId) {
+		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+
+		var preferences = onboardingPreferenceRepository.findAllByUserIdOrderByPriorityAsc(userId);
+
+		return OnboardingPreferenceGetResponse.from(preferences);
+	}
+
 	public OnboardingPreferenceCreateResponse createPreferences(Long userId, OnboardingPreferenceCreateRequest request) {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
@@ -32,7 +41,7 @@ public class OnboardingPreferenceService {
 		validatePreferenceRequest(request.preferences());
 
 		// 저장
-		List<OnboardingPreference> entities = request
+		var entities = request
 			.preferences()
 			.stream()
 			.map(preference -> toEntity(user, preference))
@@ -62,7 +71,7 @@ public class OnboardingPreferenceService {
 		user.completeOnboarding();
 	}
 
-	private void replacePreferences(User user, List<PreferenceRequest> request) {
+	private void replacePreferences(User user, List<OnboardingPreferenceDto> request) {
 		onboardingPreferenceRepository.deleteAllByUserId(user.getId());
 
 		var entities = request
@@ -73,7 +82,7 @@ public class OnboardingPreferenceService {
 		onboardingPreferenceRepository.saveAll(entities);
 	}
 
-	private void validatePreferenceRequest(List<PreferenceRequest> request) {
+	private void validatePreferenceRequest(List<OnboardingPreferenceDto> request) {
 		Preconditions.validate(request != null, ErrorCode.BAD_REQUEST);
 		Preconditions.validate(request
 			.size() == 3, ErrorCode.BAD_REQUEST);
@@ -82,7 +91,7 @@ public class OnboardingPreferenceService {
 		// TODO: 가격 검증
 	}
 
-	private OnboardingPreference toEntity(User user, PreferenceRequest preference) {
+	private OnboardingPreference toEntity(User user, OnboardingPreferenceDto preference) {
 		return OnboardingPreference
 			.builder()
 			.user(user)
