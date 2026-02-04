@@ -23,6 +23,8 @@ public interface OnboardingPreferenceRepository extends JpaRepository<Onboarding
 
 	boolean existsByUserIdAndViewpoint(Long userId, Viewpoint viewpoint);
 
+	void deleteAllByUserId(Long userId);
+
 	default OnboardingPreference findByIdOrThrow(Long id, ErrorCode errorCode) {
 		return findById(id).orElseThrow(() -> new CustomException(errorCode));
 	}
