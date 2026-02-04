@@ -1,6 +1,9 @@
 package com.goormgb.be.onboarding.service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -13,6 +16,9 @@ import com.goormgb.be.onboarding.dto.request.OnboardingPreferenceUpdateRequest;
 import com.goormgb.be.onboarding.dto.response.OnboardingPreferenceCreateResponse;
 import com.goormgb.be.onboarding.dto.response.OnboardingPreferenceGetResponse;
 import com.goormgb.be.onboarding.entity.OnboardingPreference;
+import com.goormgb.be.onboarding.enums.SeatHeight;
+import com.goormgb.be.onboarding.enums.Section;
+import com.goormgb.be.onboarding.enums.Viewpoint;
 import com.goormgb.be.onboarding.repository.OnboardingPreferenceRepository;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.repository.UserRepository;
@@ -104,8 +110,42 @@ public class OnboardingPreferenceService {
 		Preconditions.validate(preferences
 			.size() == 3, ErrorCode.MISSING_REQUIRED_PREFERENCE_FIELD);
 
-		// TODO: 우선순위, 필수 값 중복 검증
-		// TODO: 가격 검증
+		// 우선순위 검증
+		validatePriority(preferences);
+
+		// 필수 값 검증
+		validateRequiredFields(preferences);
+
+		// 가격 검증
+		validatePrice(preferences);
+	}
+
+	private void validatePriority(List<OnboardingPreferenceDto> preferences) {
+		Set<Integer> priorities = preferences.stream()
+			.map(OnboardingPreferenceDto::priority)
+			.collect(Collectors.toSet());
+
+		Preconditions.validate(priorities.size() == 3, ErrorCode.INVALID_PREFERENCE_RANK);
+		Preconditions.validate(priorities.containsAll(List.of(1, 2, 3)), ErrorCode.INVALID_PREFERENCE_PRIORITY_VALUE);
+	}
+
+	private void validateRequiredFields(List<OnboardingPreferenceDto> preferences) {
+		Set<Viewpoint> viewpoints = new HashSet<>();
+		Set<SeatHeight> seatHeights = new HashSet<>();
+		Set<Section> sections = new HashSet<>();
+
+		for (OnboardingPreferenceDto dto : preferences) {
+			Preconditions.validate(dto.viewpoint() != null && dto.seatHeight() != null && dto.section() != null,
+				ErrorCode.MISSING_REQUIRED_PREFERENCE_FIELD);
+
+			Preconditions.validate(viewpoints.add(dto.viewpoint()), ErrorCode.DUPLICATE_PREFERENCE_VIEWPOINT);
+			Preconditions.validate(seatHeights.add(dto.seatHeight()), ErrorCode.DUPLICATE_PREFERENCE_SEAT_HEIGHT);
+			Preconditions.validate(sections.add(dto.section()), ErrorCode.DUPLICATE_PREFERENCE_SECTION);
+		}
+	}
+
+	private void validatePrice(List<OnboardingPreferenceDto> preferences) {
+		// TODO: 가격 정책 정해지면 구현
 	}
 
 	private OnboardingPreference toEntity(User user, OnboardingPreferenceDto preference) {
