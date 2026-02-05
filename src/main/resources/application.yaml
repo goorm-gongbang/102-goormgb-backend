@@ -24,3 +24,13 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY:your-super-secret-key-for-jwt-signing-min-32-chars-long}
+  issuer: ${JWT_ISSUER:goormgb-auth-service}
+  access-token:
+    audience: ${JWT_ACCESS_TOKEN_AUDIENCE:goormgb-api}
+    expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION:15}
+  refresh-token:
+    audience: ${JWT_REFRESH_TOKEN_AUDIENCE:goormgb-auth-service}
+    expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION:7}
