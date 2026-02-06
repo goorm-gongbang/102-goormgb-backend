@@ -1,9 +1,8 @@
 ---
 name: "[Bug / Code Fix Issue Template]"
-about: 'about: 재현 가능한 버그 혹은 코드 구조 개선이 필요한 경우'
+about: '재현 가능한 버그 혹은 코드 구조 개선이 필요한 경우'
 title: "[bug] 내용 요약"
 labels: bug
-assignees: SeulGi0117
 
 ---
 
