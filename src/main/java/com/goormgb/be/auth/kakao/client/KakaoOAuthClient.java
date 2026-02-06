@@ -14,11 +14,10 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.Map;
 
 
 /**
-  * 카카오 OAuth 서버와 통신만 담당
+ * 카카오 OAuth 서버와 통신만 담당
  * 인가 코드 → Access Token
  * Access Token → 사용자 정보
  */
@@ -44,7 +43,7 @@ public class KakaoOAuthClient {
     }
 
     /**
-     * 2.인가 코드 → 카카오 Access Token 요청
+     * 2. 인가 코드 → 카카오 Access Token 요청
      *
      * @param authorizationCode 카카오 로그인 성공 후 받은 code
      * @return 카카오 Access Token
@@ -63,16 +62,14 @@ public class KakaoOAuthClient {
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
 
-        KakaoTokenResponse response = restTemplate.postForObject(
+        return restTemplate.postForObject(
                 properties.getTokenUrl(),
                 request,
                 KakaoTokenResponse.class);
-
-        return response;
     }
 
     /**
-     * 3.카카오 Access Token으로 사용자 정보 조회
+     * 3. 카카오 Access Token으로 사용자 정보 조회
      *
      * id (카카오 고유 ID)
      * profile_nickname
@@ -83,11 +80,11 @@ public class KakaoOAuthClient {
         headers.setBearerAuth(accessToken);
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        HttpEntity<Void> requset = new HttpEntity<>(headers);
+        HttpEntity<Void> request = new HttpEntity<>(headers);
 
         return restTemplate.postForObject(
                 properties.getUserInfoUrl(),
-                requset,
+                request,
                 KakaoUserResponse.class
         );
 
