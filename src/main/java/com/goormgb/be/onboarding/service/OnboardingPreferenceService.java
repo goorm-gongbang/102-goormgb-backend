@@ -23,16 +23,16 @@ import com.goormgb.be.onboarding.repository.OnboardingPreferenceRepository;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.repository.UserRepository;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class OnboardingPreferenceService {
 	private final OnboardingPreferenceRepository onboardingPreferenceRepository;
 	private final UserRepository userRepository;
 
+	@Transactional(readOnly = true)
 	public OnboardingPreferenceGetResponse getPreferences(Long userId) {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
@@ -41,8 +41,12 @@ public class OnboardingPreferenceService {
 		return OnboardingPreferenceGetResponse.from(preferences);
 	}
 
+	@Transactional
 	public OnboardingPreferenceCreateResponse createPreferences(Long userId, OnboardingPreferenceCreateRequest request) {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+
+		// 온보딩 완료 여부 검증
+		Preconditions.validate(!user.isCompletedOnboarding(), ErrorCode.ONBOARDING_ALREADY_COMPLETED);
 
 		// 검증
 		validatePreferences(request.preferences());
@@ -65,6 +69,7 @@ public class OnboardingPreferenceService {
 		return OnboardingPreferenceCreateResponse.from(user);
 	}
 
+	@Transactional
 	public void updatePreferences(Long userId, OnboardingPreferenceUpdateRequest request) {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
