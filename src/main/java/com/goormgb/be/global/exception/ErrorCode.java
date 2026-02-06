@@ -39,6 +39,7 @@ public enum ErrorCode {
     REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "Refresh Token이 존재하지 않거나 만료, 유효하지 않습니다."),
     REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "Refresh Token이 일치하지 않습니다."),
     INVALID_TOKEN_TYPE(HttpStatus.UNAUTHORIZED, "잘못된 토큰 타입입니다."),
+    OAUTH_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "토큰 발급에 실패했습니다."),
     ;
 
     private final HttpStatus status;

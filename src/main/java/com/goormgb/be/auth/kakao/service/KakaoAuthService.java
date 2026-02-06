@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -30,6 +32,10 @@ public class KakaoAuthService {
 
         // 1. authorizationCode → 카카오 Access Token 요청
         KakaoTokenResponse kakaoAccessToken = kakaoOAuthClient.requestAccessToken(authorizationCode);
+
+        Optional.ofNullable(kakaoAccessToken)
+                .filter(token -> token.getAccessToken() != null)
+                .orElseThrow(() -> new CustomException(ErrorCode.OAUTH_TOKEN_REQUEST_FAILED));
 
         // 2. 카카오 사용자 정보 조회
         KakaoUserResponse userResponse = kakaoOAuthClient.requestUserInfo(kakaoAccessToken.getAccessToken());
