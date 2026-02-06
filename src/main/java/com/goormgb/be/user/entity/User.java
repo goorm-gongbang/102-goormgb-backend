@@ -74,4 +74,11 @@ public class User extends BaseEntity {
 	public void activate() {
 		this.status = UserStatus.ACTIVATE;
 	}
+
+    public static User createOAuthUser(String email, String nickname) {
+        return User.builder()
+                .email(email)
+                .nickname(nickname)
+                .build();
+    }
 }
