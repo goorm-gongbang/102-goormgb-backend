@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/onboaring")
+@RequestMapping("/onboarding")
 public class OnboardingPreferenceController {
     final private OnboardingPreferenceService onboardingPreferenceService;
 
