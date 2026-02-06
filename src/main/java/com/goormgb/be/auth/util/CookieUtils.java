@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.WebUtils;
 
 import com.goormgb.be.auth.config.JwtProperties;
 
@@ -51,16 +52,7 @@ public class CookieUtils {
 	 * Request에서 Refresh Token 추출 (API 요청 시)
 	 */
 	public String extractRefreshToken(HttpServletRequest request) {
-		Cookie[] cookies = request.getCookies();
-		if (cookies == null) {
-			return null;
-		}
-
-		for (Cookie cookie : cookies) {
-			if (REFRESH_TOKEN_COOKIE_NAME.equals(cookie.getName())) {
-				return cookie.getValue();
-			}
-		}
-		return null;
+		Cookie cookie = WebUtils.getCookie(request, REFRESH_TOKEN_COOKIE_NAME);
+		return cookie != null ? cookie.getValue() : null;
 	}
 }
