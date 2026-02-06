@@ -36,4 +36,13 @@ public class UserSns extends BaseEntity {
 		this.provider = provider != null ? provider : SocialProvider.KAKAO;
 		this.providerUserId = providerUserId;
 	}
+
+    public static UserSns create(User user, SocialProvider provider, String providerUserId) {
+        return UserSns.builder()
+                .user(user)
+                .provider(provider)
+                .providerUserId(providerUserId)
+                .build();
+    }
+
 }

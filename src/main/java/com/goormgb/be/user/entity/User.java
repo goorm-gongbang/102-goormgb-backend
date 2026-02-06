@@ -51,6 +51,10 @@ public class User extends BaseEntity {
 		this.marketingConsent = false;
 	}
 
+	public boolean isCompletedOnboarding() {
+		return Boolean.TRUE.equals(this.onboardingCompleted);
+	}
+
 	public void completeOnboarding() {
 		this.onboardingCompleted = true;
 		this.onboardingCompletedAt = LocalDateTime.now(ZoneOffset.UTC);
@@ -74,4 +78,11 @@ public class User extends BaseEntity {
 	public void activate() {
 		this.status = UserStatus.ACTIVATE;
 	}
+
+    public static User createOAuthUser(String email, String nickname) {
+        return User.builder()
+                .email(email)
+                .nickname(nickname)
+                .build();
+    }
 }
