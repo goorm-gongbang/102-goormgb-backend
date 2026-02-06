@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
 
@@ -28,17 +29,18 @@ public class KakaoOAuthClient {
     private final KakaoOAuthProperties properties;
 
     // 외부 API 호출 전용
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     /**
      * 1. 카카오 로그인 페이지 URL 생성
      * 프론트에서 이 URL로 location.href 이동
      */
     public String createLoginUrl() {
-        return properties.getAuthUrl()
-                + "?response_type=code"
-                + "&client_id=" + properties.getClientId()
-                + "&redirect_uri=" + properties.getRedirectUri();
+        return UriComponentsBuilder.fromUriString(properties.getAuthUrl())
+                .queryParam("response_type", "code")
+                .queryParam("client_id", properties.getClientId())
+                .queryParam("redirect_uri", properties.getRedirectUri())
+                .toUriString();
     }
 
     /**
@@ -47,7 +49,7 @@ public class KakaoOAuthClient {
      * @param authorizationCode 카카오 로그인 성공 후 받은 code
      * @return 카카오 Access Token
      */
-    public String requestAccessToken(String authorizationCode){
+    public KakaoTokenResponse requestAccessToken(String authorizationCode){
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
 
         params.add("grant_type", "authorization_code");
@@ -66,7 +68,7 @@ public class KakaoOAuthClient {
                 request,
                 KakaoTokenResponse.class);
 
-        return response.getAccessToken();
+        return response;
     }
 
     /**
@@ -86,8 +88,7 @@ public class KakaoOAuthClient {
         return restTemplate.postForObject(
                 properties.getUserInfoUrl(),
                 requset,
-                KakaoUserResponse.class,
-                Map.of()
+                KakaoUserResponse.class
         );
 
     }

@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Optional;
+
 /**
  * 카카오 사용자 정보 응답 DTO
  *
@@ -39,12 +41,13 @@ public class KakaoUserResponse {
     }
 
     public String getEmail() {
-        return kakaoAccount != null ? kakaoAccount.email : null;
+        return Optional.ofNullable(kakaoAccount).map(KakaoAccount::getEmail).orElse(null);
     }
 
     public String getNickname() {
-        return (kakaoAccount != null && kakaoAccount.profile != null)
-                ? kakaoAccount.profile.nickname
-                : null;
+        return java.util.Optional.ofNullable(kakaoAccount) // 1단계: 계정 확인
+                .map(KakaoAccount::getProfile)           // 2단계: 프로필 확인
+                .map(Profile::getNickname)               // 3단계: 닉네임 확인
+                .orElse(null);
     }
 }
