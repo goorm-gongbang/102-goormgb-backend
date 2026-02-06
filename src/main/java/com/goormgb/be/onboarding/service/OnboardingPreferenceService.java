@@ -45,6 +45,9 @@ public class OnboardingPreferenceService {
 	public OnboardingPreferenceCreateResponse createPreferences(Long userId, OnboardingPreferenceCreateRequest request) {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
+		// 온보딩 완료 여부 검증
+		Preconditions.validate(user.isCompletedOnboarding(), ErrorCode.ONBOARDING_ALREADY_COMPLETED);
+
 		// 검증
 		validatePreferences(request.preferences());
 
