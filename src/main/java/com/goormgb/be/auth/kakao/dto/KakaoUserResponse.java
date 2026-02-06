@@ -28,7 +28,7 @@ public class KakaoUserResponse {
     @Getter
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class KakaoAccount {
+    static class KakaoAccount {
         private String email;
         private Profile profile;
     }
@@ -36,7 +36,7 @@ public class KakaoUserResponse {
     @Getter
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class Profile {
+    static class Profile {
         private String nickname;
     }
 
@@ -45,7 +45,7 @@ public class KakaoUserResponse {
     }
 
     public String getNickname() {
-        return java.util.Optional.ofNullable(kakaoAccount) // 1단계: 계정 확인
+        return Optional.ofNullable(kakaoAccount)         // 1단계: 계정 확인
                 .map(KakaoAccount::getProfile)           // 2단계: 프로필 확인
                 .map(Profile::getNickname)               // 3단계: 닉네임 확인
                 .orElse(null);
