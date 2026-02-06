@@ -6,9 +6,10 @@ import com.goormgb.be.onboarding.dto.request.OnboardingPreferenceUpdateRequest;
 import com.goormgb.be.onboarding.dto.response.OnboardingPreferenceCreateResponse;
 import com.goormgb.be.onboarding.dto.response.OnboardingPreferenceGetResponse;
 import com.goormgb.be.onboarding.service.OnboardingPreferenceService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
 
 @RestController
 @RequiredArgsConstructor
@@ -16,7 +17,9 @@ import org.springframework.web.bind.annotation.*;
 public class OnboardingPreferenceController {
     final private OnboardingPreferenceService onboardingPreferenceService;
 
+    @Operation(summary = "온보딩 선호도 조회", description = "온보딩 선호도를 조회합니다.")
     @GetMapping("/preferences")
+    @ResponseStatus(HttpStatus.OK)
     public ApiResult<OnboardingPreferenceGetResponse> getPreferences(
             // TODO: token 기반으로 유저 가져오기
             // @AuthenticationPrincipal CurrentUser currentUser
@@ -28,7 +31,9 @@ public class OnboardingPreferenceController {
         return ApiResult.ok(preferences);
     }
 
+    @Operation(summary = "온보딩 선호도 생성", description = "온보딩 선호도를 생성합니다.")
     @PostMapping("/preferences")
+    @ResponseStatus(HttpStatus.CREATED)
     public ApiResult<OnboardingPreferenceCreateResponse> createPreferences(
             // TODO: token 기반으로 유저 가져오기
             // @AuthenticationPrincipal CurrentUser currentUser
@@ -41,7 +46,9 @@ public class OnboardingPreferenceController {
         return ApiResult.ok(response);
     }
 
+    @Operation(summary = "온보딩 선호도 수정", description = "온보딩 선호도를 수정합니다.")
     @PutMapping("/preferences")
+    @ResponseStatus(HttpStatus.OK)
     public ApiResult<Void> updatePreferences(
             // TODO: token 기반으로 유저 가져오기
             // @AuthenticationPrincipal CurrentUser currentUser
