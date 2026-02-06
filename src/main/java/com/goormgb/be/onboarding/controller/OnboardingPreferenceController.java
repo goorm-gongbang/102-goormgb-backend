@@ -1,0 +1,29 @@
+package com.goormgb.be.onboarding.controller;
+
+import com.goormgb.be.global.response.ApiResult;
+import com.goormgb.be.onboarding.dto.response.OnboardingPreferenceGetResponse;
+import com.goormgb.be.onboarding.service.OnboardingPreferenceService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/onboaring")
+public class OnboardingPreferenceController {
+    final private OnboardingPreferenceService onboardingPreferenceService;
+
+    @GetMapping("/preferences")
+    public ApiResult<OnboardingPreferenceGetResponse> getPreferences(
+            // TODO: token 기반으로 유저 가져오기
+            // @AuthenticationPrincipal CurrentUser currentUser
+    ) {
+        // TODO: currentUser.userId()로 변경
+        Long userId = 1L;
+        var preferences = onboardingPreferenceService.getPreferences(userId);
+
+        return ApiResult.ok(preferences);
+    }
+}
