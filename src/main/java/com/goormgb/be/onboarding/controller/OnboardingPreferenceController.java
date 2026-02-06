@@ -37,7 +37,7 @@ public class OnboardingPreferenceController {
     public ApiResult<OnboardingPreferenceCreateResponse> createPreferences(
             // TODO: token 기반으로 유저 가져오기
             // @AuthenticationPrincipal CurrentUser currentUser
-            OnboardingPreferenceCreateRequest request
+            @RequestBody OnboardingPreferenceCreateRequest request
     ) {
         // TODO: currentUser.userId()로 변경
         Long userId = 1L;
@@ -52,7 +52,7 @@ public class OnboardingPreferenceController {
     public ApiResult<Void> updatePreferences(
             // TODO: token 기반으로 유저 가져오기
             // @AuthenticationPrincipal CurrentUser currentUser
-            OnboardingPreferenceUpdateRequest request
+            @RequestBody OnboardingPreferenceUpdateRequest request
     ) {
         // TODO: currentUser.userId()로 변경
         Long userId = 1L;
