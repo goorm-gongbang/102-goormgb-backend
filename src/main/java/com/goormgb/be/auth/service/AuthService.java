@@ -95,6 +95,26 @@ public class AuthService {
 		return new TokenRefreshResult(newAccessToken, newRefreshToken);
 	}
 
+	/**
+	 * 로그아웃 처리 - Redis에서 Refresh Token 삭제
+	 *
+	 * @param refreshToken 삭제할 Refresh Token
+	 */
+	public void logout(String refreshToken) {
+		// 1. Refresh Token 검증
+		jwtTokenProvider.validateToken(refreshToken);
+
+		// 2. 토큰 타입 확인
+		TokenType tokenType = jwtTokenProvider.getTokenTypeFromToken(refreshToken);
+		Preconditions.validate(tokenType == TokenType.REFRESH, ErrorCode.INVALID_TOKEN_TYPE);
+
+		// 3. jti 추출 후 Redis에서 삭제
+		String jti = jwtTokenProvider.getJtiFromToken(refreshToken);
+		refreshTokenRepository.deleteByJti(jti);
+
+		log.debug("Logout - jti: {}", jti);
+	}
+
 	private String getClientIp(HttpServletRequest request) {
 		String xForwardedFor = request.getHeader("X-Forwarded-For");
 		if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
