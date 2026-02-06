@@ -10,6 +10,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.goormgb.be.auth.config.JwtProperties;
 import com.goormgb.be.auth.dto.RefreshTokenInfo;
+import com.goormgb.be.global.exception.CustomException;
+import com.goormgb.be.global.exception.ErrorCode;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -76,6 +78,17 @@ public class RefreshTokenRepository {
 			log.error("Failed to deserialize RefreshTokenInfo - jti: {}", jti, e);
 			return Optional.empty();
 		}
+	}
+
+	/**
+	 * jti로 Refresh Token 정보를 조회하고, 없으면 예외를 던진다.
+	 *
+	 * @param jti       토큰 고유 식별자
+	 * @param errorCode 토큰이 없을 때 던질 에러 코드
+	 * @return 토큰 정보
+	 */
+	public RefreshTokenInfo findByJtiOrThrow(String jti, ErrorCode errorCode) {
+		return findByJti(jti).orElseThrow(() -> new CustomException(errorCode));
 	}
 
 	/**

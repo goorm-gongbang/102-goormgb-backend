@@ -27,7 +27,7 @@ public class CookieUtils {
 
 		return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
 				.httpOnly(true)     // XSS 방지
-				.secure(false)      // HTTPS만 허용 꺼놓음. 로컬 개발용 (운영 시 true로 변경)
+				.secure(jwtProperties.getCookie().isSecure())
 				.sameSite("Lax")    // CSRF 공격 완화
 				.path("/")          // 모든 경로에서 쿠키전송
 				.maxAge(maxAgeSeconds)// 7일 만료
@@ -40,7 +40,7 @@ public class CookieUtils {
 	public ResponseCookie deleteRefreshTokenCookie() {
 		return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, "")
 				.httpOnly(true)
-				.secure(false)
+				.secure(jwtProperties.getCookie().isSecure())
 				.sameSite("Lax")
 				.path("/")
 				.maxAge(0)    // 즉시 만료 -> 브라우저에서 삭제
