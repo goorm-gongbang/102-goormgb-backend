@@ -7,6 +7,7 @@ import com.goormgb.be.auth.kakao.dto.KakaoUserResponse;
 import com.goormgb.be.auth.provider.JwtTokenProvider;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.entity.UserSns;
 import com.goormgb.be.user.enums.SocialProvider;
@@ -51,16 +52,17 @@ public class KakaoAuthService {
                 .orElseGet(() -> signUp(email, nickname, providerUserId));
 
         // 4. 상태 체크
-        if (user.getStatus() == UserStatus.DEACTIVATE) {
-            throw new CustomException(ErrorCode.USER_DEACTIVATED);
-        }
+        Preconditions.validate(
+                user.getStatus() != UserStatus.DEACTIVATE,
+                ErrorCode.USER_DEACTIVATED
+        );
 
         // 5. 로그인 처리
         user.updateLastLoginAt();
 
         // 6. JWT 발급
         String accessToken =
-                jwtTokenProvider.createAccessToken(user.getId(), authorizationCode);
+                jwtTokenProvider.createAccessToken(user.getId(), "ROLE_USER");
 
         String refreshToken =
                 jwtTokenProvider.createRefreshToken(user.getId());
