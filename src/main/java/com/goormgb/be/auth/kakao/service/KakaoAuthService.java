@@ -1,10 +1,13 @@
 package com.goormgb.be.auth.kakao.service;
 
+import com.goormgb.be.auth.config.JwtProperties;
+import com.goormgb.be.auth.dto.RefreshTokenInfo;
 import com.goormgb.be.auth.kakao.client.KakaoOAuthClient;
 import com.goormgb.be.auth.kakao.dto.KakaoLoginResponse;
 import com.goormgb.be.auth.kakao.dto.KakaoTokenResponse;
 import com.goormgb.be.auth.kakao.dto.KakaoUserResponse;
 import com.goormgb.be.auth.provider.JwtTokenProvider;
+import com.goormgb.be.auth.repository.RefreshTokenRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
@@ -14,11 +17,15 @@ import com.goormgb.be.user.enums.SocialProvider;
 import com.goormgb.be.user.enums.UserStatus;
 import com.goormgb.be.user.repository.UserRepository;
 import com.goormgb.be.user.repository.UserSnsRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -28,8 +35,10 @@ public class KakaoAuthService {
     private final UserRepository userRepository;
     private final UserSnsRepository userSnsRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final JwtProperties jwtProperties;
+    private final RefreshTokenRepository refreshTokenRepository;
 
-    public KakaoLoginResponse kakaoLogin(String authorizationCode){
+    public KakaoLoginResponse kakaoLogin(String authorizationCode, HttpServletRequest request){
 
         // 1. authorizationCode → 카카오 Access Token 요청
         KakaoTokenResponse kakaoAccessToken = kakaoOAuthClient.requestAccessToken(authorizationCode);
@@ -67,9 +76,28 @@ public class KakaoAuthService {
         String refreshToken =
                 jwtTokenProvider.createRefreshToken(user.getId());
 
-        // refreshToken 을 redis 에 저장을 여기서 해야하는지?
+        String jti = jwtTokenProvider.getJtiFromToken(refreshToken);
 
-        return KakaoLoginResponse.of(accessToken, user);
+        // 7. refreshToken redis 에 저장
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
+
+        RefreshTokenInfo tokenInfo = RefreshTokenInfo.builder()
+                .userId(user.getId())
+                .token(refreshToken)
+                .jti(jti)
+                .tokenFamily(UUID.randomUUID().toString()) // 신규 로그인이므로 새로운 토큰 패밀리 생성
+                .issuedAt(now)
+                .expiresAt(now.plusDays(expirationDays))
+                .userAgent(request.getHeader("User-Agent"))
+                .ipAddress(getClientIp(request))
+                .build();
+
+        refreshTokenRepository.save(tokenInfo);
+
+        // 컨트롤러에서 쿠키 설정을 위해 응답 DTO에 refreshToken을 잠시 포함하거나
+        // 서비스 결과 객체를 따로 만들어 리턴하는 것이 좋습니다.
+        return KakaoLoginResponse.of(accessToken, refreshToken, user);
 
     }
 
@@ -92,5 +120,13 @@ public class KakaoAuthService {
         userSnsRepository.save(userSns);
 
         return user;
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

@@ -10,6 +10,7 @@ import lombok.Getter;
 public class KakaoLoginResponse {
 
     private String accessToken;
+    private String refreshToken;
     private UserInfo user;
     private boolean onboardingRequired;
 
@@ -24,6 +25,7 @@ public class KakaoLoginResponse {
 
     public static KakaoLoginResponse of(
             String accessToken,
+            String refreshToken,
             User user
     ) {
         return KakaoLoginResponse.builder()
