@@ -40,6 +40,7 @@ public enum ErrorCode {
     REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "Refresh Token이 일치하지 않습니다."),
     INVALID_TOKEN_TYPE(HttpStatus.UNAUTHORIZED, "잘못된 토큰 타입입니다."),
     OAUTH_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "토큰 발급에 실패했습니다."),
+    OAUTH_CODE_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "인가 코드는 필수입니다."),
     ;
 
     private final HttpStatus status;
