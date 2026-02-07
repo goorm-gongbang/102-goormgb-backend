@@ -35,3 +35,5 @@ jwt:
   refresh-token:
     audience: ${JWT_REFRESH_TOKEN_AUDIENCE}
     expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION}
+  cookie:
+    secure: false

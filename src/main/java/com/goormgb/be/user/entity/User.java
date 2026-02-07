@@ -9,7 +9,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "users")
@@ -31,16 +32,16 @@ public class User extends BaseEntity {
 	private Boolean onboardingCompleted = false;
 
 	@Column(name = "onboarding_completed_at")
-	private OffsetDateTime onboardingCompletedAt;
+	private LocalDateTime onboardingCompletedAt;
 
 	@Column(name = "last_login_at")
-	private OffsetDateTime lastLoginAt;
+	private LocalDateTime lastLoginAt;
 
 	@Column(name = "marketing_consent", nullable = false)
 	private Boolean marketingConsent = false;
 
 	@Column(name = "marketing_consented_at")
-	private OffsetDateTime marketingConsentedAt;
+	private LocalDateTime marketingConsentedAt;
 
 	@Builder
 	public User(String email, String nickname) {
@@ -50,19 +51,23 @@ public class User extends BaseEntity {
 		this.marketingConsent = false;
 	}
 
+	public boolean isCompletedOnboarding() {
+		return Boolean.TRUE.equals(this.onboardingCompleted);
+	}
+
 	public void completeOnboarding() {
 		this.onboardingCompleted = true;
-		this.onboardingCompletedAt = OffsetDateTime.now();
+		this.onboardingCompletedAt = LocalDateTime.now(ZoneOffset.UTC);
 	}
 
 	public void updateLastLoginAt() {
-		this.lastLoginAt = OffsetDateTime.now();
+		this.lastLoginAt = LocalDateTime.now(ZoneOffset.UTC);
 	}
 
 	public void updateMarketingConsent(boolean consent) {
 		this.marketingConsent = consent;
 		if (consent) {
-			this.marketingConsentedAt = OffsetDateTime.now();
+			this.marketingConsentedAt = LocalDateTime.now(ZoneOffset.UTC);
 		}
 	}
 
@@ -73,4 +78,11 @@ public class User extends BaseEntity {
 	public void activate() {
 		this.status = UserStatus.ACTIVATE;
 	}
+
+    public static User createOAuthUser(String email, String nickname) {
+        return User.builder()
+                .email(email)
+                .nickname(nickname)
+                .build();
+    }
 }

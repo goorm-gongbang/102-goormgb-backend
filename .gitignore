@@ -13,8 +13,10 @@ build/
 ### Spring ###
 application-local.properties
 application-local.yml
+application-local.yaml
 application-secret.properties
 application-secret.yml
+application-secret.yaml
 
 ### Environment ###
 .env
@@ -74,4 +76,3 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
-
