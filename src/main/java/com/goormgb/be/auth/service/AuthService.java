@@ -1,5 +1,7 @@
 package com.goormgb.be.auth.service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
@@ -74,7 +76,8 @@ public class AuthService {
 		// 7. Redis 갱신 (기존 토큰 삭제 + 새 토큰 저장)
 		refreshTokenRepository.deleteByJti(jti);
 
-		LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+		// LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        Instant now = Instant.now();
 		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
 
 		RefreshTokenInfo newTokenInfo = RefreshTokenInfo.builder()
@@ -83,7 +86,8 @@ public class AuthService {
 				.jti(newJti)
 				.tokenFamily(storedTokenInfo.getTokenFamily()) // 기존 토큰 패밀리 유지
 				.issuedAt(now)
-				.expiresAt(now.plusDays(expirationDays))
+				// .expiresAt(now.plusDays(expirationDays))
+                .expiresAt(now.plus(Duration.ofDays(expirationDays)))
 				.userAgent(request.getHeader("User-Agent"))
 				.ipAddress(getClientIp(request))
 				.build();
