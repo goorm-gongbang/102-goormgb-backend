@@ -35,7 +35,7 @@ public class KakaoAuthController {
         * 쿼리로 넘어오면 → 그 값 사용
         * 없으면 → application.yml에 설정된 기본 redirectUri 사용
         */
-        String loginUrl = kakaoOAuthClient.createLoginUrl();
+        String loginUrl = kakaoOAuthClient.createLoginUrl(redirectUri);
 
         return ResponseEntity.ok(
                 ApiResult.ok(
@@ -64,8 +64,7 @@ public class KakaoAuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResult<KakaoLoginResponse>> kakaoLogin(
         @RequestBody KakaoLoginRequest request,
-        HttpServletRequest httpRequest,
-        HttpServletResponse httpResponse
+        HttpServletRequest httpRequest
 
     ){
         Preconditions.validate(
