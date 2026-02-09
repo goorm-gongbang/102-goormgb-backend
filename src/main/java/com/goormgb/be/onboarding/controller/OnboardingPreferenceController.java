@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "Onboarding", description = "온보딩 선호도 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/onboarding")
