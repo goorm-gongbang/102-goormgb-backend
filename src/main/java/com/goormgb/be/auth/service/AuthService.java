@@ -1,5 +1,7 @@
 package com.goormgb.be.auth.service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
@@ -8,6 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.auth.config.JwtProperties;
+
+import io.jsonwebtoken.Claims;
+
 import com.goormgb.be.auth.dto.RefreshTokenInfo;
 import com.goormgb.be.auth.dto.TokenRefreshResponse;
 import com.goormgb.be.auth.enums.TokenType;
@@ -74,7 +79,8 @@ public class AuthService {
 		// 7. Redis 갱신 (기존 토큰 삭제 + 새 토큰 저장)
 		refreshTokenRepository.deleteByJti(jti);
 
-		LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+		// LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        Instant now = Instant.now();
 		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
 
 		RefreshTokenInfo newTokenInfo = RefreshTokenInfo.builder()
@@ -83,7 +89,8 @@ public class AuthService {
 				.jti(newJti)
 				.tokenFamily(storedTokenInfo.getTokenFamily()) // 기존 토큰 패밀리 유지
 				.issuedAt(now)
-				.expiresAt(now.plusDays(expirationDays))
+				// .expiresAt(now.plusDays(expirationDays))
+                .expiresAt(now.plus(Duration.ofDays(expirationDays)))
 				.userAgent(request.getHeader("User-Agent"))
 				.ipAddress(getClientIp(request))
 				.build();
@@ -93,6 +100,26 @@ public class AuthService {
 		log.debug("Token refreshed - userId: {}, oldJti: {}, newJti: {}", userId, jti, newJti);
 
 		return new TokenRefreshResult(newAccessToken, newRefreshToken);
+	}
+
+	/**
+	 * 로그아웃 처리 - Redis에서 Refresh Token 삭제
+	 *
+	 * @param refreshToken 삭제할 Refresh Token
+	 */
+	public void logout(String refreshToken) {
+		// 1. Refresh Token 파싱 (만료된 토큰도 허용)
+		Claims claims = jwtTokenProvider.parseClaimsAllowExpired(refreshToken);
+
+		// 2. 토큰 타입 확인
+		String tokenTypeValue = claims.get("tokenType", String.class);
+		Preconditions.validate(TokenType.valueOf(tokenTypeValue) == TokenType.REFRESH, ErrorCode.INVALID_TOKEN_TYPE);
+
+		// 3. jti 추출 후 Redis에서 삭제
+		String jti = claims.getId();
+		refreshTokenRepository.deleteByJti(jti);
+
+		log.debug("Logout - jti: {}", jti);
 	}
 
 	private String getClientIp(HttpServletRequest request) {
