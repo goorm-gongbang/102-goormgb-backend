@@ -4,6 +4,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 
+import com.goormgb.be.auth.dto.WithdrawlResponse;
+import com.goormgb.be.user.entity.WithdrawalRequest;
+import com.goormgb.be.user.repository.WithdrawalRequestRepository;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +43,7 @@ public class AuthService {
 	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final UserRepository userRepository;
+    private final WithdrawalRequestRepository withdrawalRequestRepository;
 
 	/**
 	 * Refresh Token으로 새로운 Access Token과 Refresh Token을 발급한다. (RTR)
@@ -153,4 +157,28 @@ public class AuthService {
 	 */
 	public record TokenRefreshResult(String accessToken, String refreshToken) {
 	}
+
+    /**
+     * 회원 탈퇴
+     */
+    public WithdrawlResponse withdraw(Long userId) {
+        User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+
+        // 1. 이미 탈퇴 처리된 유저인지 확인
+        Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
+
+        // 2. 진행 중인 거래/정산 여부 확인 (추후에 추가)
+
+        // 3. User 상태 변경 (Soft Delete)
+        user.deactivate();
+
+        // 4. 탈퇴 요청 데이터 생성 및 저장
+        WithdrawalRequest withdrawalRequest = WithdrawalRequest.builder()
+                .user(user)
+                .build();
+        withdrawalRequestRepository.save(withdrawalRequest);
+
+        return WithdrawlResponse.from(withdrawalRequest);
+
+    }
 }

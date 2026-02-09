@@ -1,7 +1,9 @@
 package com.goormgb.be.auth.controller;
 
+import com.goormgb.be.auth.dto.WithdrawlResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -65,5 +67,15 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie)
                 .body(ApiResult.ok("로그아웃 성공", null));
+    }
+
+    @Operation(summary = "회원 탈퇴", description = "회원 탈퇴를 신청합니다. 서비스 이용이 중단되며, 30일의 유예 기간 뒤에 최종 삭제됩니다.")
+    @PostMapping("/withdraw")
+    public ResponseEntity<ApiResult<WithdrawlResponse>> withdrawal(@AuthenticationPrincipal Long userId) {
+            WithdrawlResponse response = authService.withdraw(userId);
+            return ResponseEntity.ok()
+                    .body(ApiResult.ok("탈퇴 처리 완료", response));
+
+
     }
 }
