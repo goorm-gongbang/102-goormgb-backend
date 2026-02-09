@@ -22,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
@@ -79,7 +81,9 @@ public class KakaoAuthService {
         String jti = jwtTokenProvider.getJtiFromToken(refreshToken);
 
         // 7. refreshToken redis 에 저장
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        //LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        Instant now = Instant.now();
+
         int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
 
         RefreshTokenInfo tokenInfo = RefreshTokenInfo.builder()
@@ -88,7 +92,8 @@ public class KakaoAuthService {
                 .jti(jti)
                 .tokenFamily(UUID.randomUUID().toString()) // 신규 로그인이므로 새로운 토큰 패밀리 생성
                 .issuedAt(now)
-                .expiresAt(now.plusDays(expirationDays))
+                //.expiresAt(now.plusDays(expirationDays))
+                .expiresAt(now.plus(Duration.ofDays(expirationDays)))
                 .userAgent(request.getHeader("User-Agent"))
                 .ipAddress(getClientIp(request))
                 .build();
