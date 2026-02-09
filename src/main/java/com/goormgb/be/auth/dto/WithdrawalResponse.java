@@ -1,17 +1,18 @@
 package com.goormgb.be.auth.dto;
 
 import com.goormgb.be.user.entity.WithdrawalRequest;
+import com.goormgb.be.user.enums.UserStatus;
 
 import java.time.LocalDateTime;
 
-public record WithdrawlResponse(
+public record WithdrawalResponse(
         String status,
         LocalDateTime withdrawnAt,
         LocalDateTime reactivateUntil
     ) {
-        public static WithdrawlResponse from(WithdrawalRequest request) {
-            return new WithdrawlResponse(
-                    "DEACTIVE",
+        public static WithdrawalResponse from(WithdrawalRequest request) {
+            return new WithdrawalResponse(
+                    UserStatus.DEACTIVATE.name(),
                     request.getRequestedAt(),
                     request.getEffectiveAt()
             );

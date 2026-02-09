@@ -4,7 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 
-import com.goormgb.be.auth.dto.WithdrawlResponse;
+import com.goormgb.be.auth.dto.WithdrawalResponse;
 import com.goormgb.be.user.entity.WithdrawalRequest;
 import com.goormgb.be.user.repository.WithdrawalRequestRepository;
 import org.springframework.http.HttpHeaders;
@@ -161,7 +161,8 @@ public class AuthService {
     /**
      * 회원 탈퇴
      */
-    public WithdrawlResponse withdraw(Long userId) {
+    @Transactional
+    public WithdrawalResponse withdraw(Long userId) {
         User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
         // 1. 이미 탈퇴 처리된 유저인지 확인
@@ -178,7 +179,7 @@ public class AuthService {
                 .build();
         withdrawalRequestRepository.save(withdrawalRequest);
 
-        return WithdrawlResponse.from(withdrawalRequest);
+        return WithdrawalResponse.from(withdrawalRequest);
 
     }
 }
