@@ -12,7 +12,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.goormgb.be.auth.enums.TokenType;
 import com.goormgb.be.auth.provider.JwtTokenProvider;
+import com.goormgb.be.auth.repository.AccessTokenBlacklistRepository;
 import com.goormgb.be.global.exception.CustomException;
+import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.support.Preconditions;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,7 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-// TODO: JwtAuthenticationFilter 구현
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
 
     @Override
     protected void doFilterInternal(
@@ -45,6 +49,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     TokenType tokenType = jwtTokenProvider.getTokenTypeFromToken(token);
 
                     if (tokenType == TokenType.ACCESS) {
+                        String jti = jwtTokenProvider.getJtiFromToken(token);
+
+                        Preconditions.validate(
+                                !accessTokenBlacklistRepository.existsByJti(jti),
+                                ErrorCode.BLACKLISTED_TOKEN
+                        );
+
                         Long userId = jwtTokenProvider.getUserIdFromToken(token);
                         String authority = jwtTokenProvider.getAuthorityFromToken(token);
 
