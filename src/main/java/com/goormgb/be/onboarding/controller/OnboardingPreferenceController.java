@@ -7,10 +7,13 @@ import com.goormgb.be.onboarding.dto.response.OnboardingPreferenceCreateResponse
 import com.goormgb.be.onboarding.dto.response.OnboardingPreferenceGetResponse;
 import com.goormgb.be.onboarding.service.OnboardingPreferenceService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "Onboarding", description = "온보딩 선호도 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/onboarding")
@@ -21,11 +24,8 @@ public class OnboardingPreferenceController {
     @GetMapping("/preferences")
     @ResponseStatus(HttpStatus.OK)
     public ApiResult<OnboardingPreferenceGetResponse> getPreferences(
-            // TODO: token 기반으로 유저 가져오기
-            // @AuthenticationPrincipal CurrentUser currentUser
+            @AuthenticationPrincipal Long userId
     ) {
-        // TODO: currentUser.userId()로 변경
-        Long userId = 1L;
         var preferences = onboardingPreferenceService.getPreferences(userId);
 
         return ApiResult.ok(preferences);
@@ -35,12 +35,9 @@ public class OnboardingPreferenceController {
     @PostMapping("/preferences")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResult<OnboardingPreferenceCreateResponse> createPreferences(
-            // TODO: token 기반으로 유저 가져오기
-            // @AuthenticationPrincipal CurrentUser currentUser
+            @AuthenticationPrincipal Long userId,
             @RequestBody OnboardingPreferenceCreateRequest request
     ) {
-        // TODO: currentUser.userId()로 변경
-        Long userId = 1L;
         var response = onboardingPreferenceService.createPreferences(userId, request);
 
         return ApiResult.ok(response);
@@ -50,12 +47,9 @@ public class OnboardingPreferenceController {
     @PutMapping("/preferences")
     @ResponseStatus(HttpStatus.OK)
     public ApiResult<Void> updatePreferences(
-            // TODO: token 기반으로 유저 가져오기
-            // @AuthenticationPrincipal CurrentUser currentUser
+            @AuthenticationPrincipal Long userId,
             @RequestBody OnboardingPreferenceUpdateRequest request
     ) {
-        // TODO: currentUser.userId()로 변경
-        Long userId = 1L;
         onboardingPreferenceService.updatePreferences(userId, request);
 
         return ApiResult.ok();
