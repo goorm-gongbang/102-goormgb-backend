@@ -1,7 +1,6 @@
 package com.goormgb.be.auth.controller;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +12,7 @@ import com.goormgb.be.auth.util.CookieUtils;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.response.ApiResult;
+import com.goormgb.be.global.support.Preconditions;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,24 +49,21 @@ public class AuthController {
                 .body(ApiResult.ok("토큰 재발급 성공", TokenRefreshResponse.of(result.accessToken())));
     }
 
-    @Operation(summary = "로그아웃", description = "Refresh Token을 삭제하고 로그아웃합니다.")
+    @Operation(summary = "로그아웃", description = "Access Token을 블랙리스트에 등록하고 Refresh Token을 삭제합니다.")
     @PostMapping("/logout")
     public ResponseEntity<ApiResult<Void>> logout(HttpServletRequest request) {
-        // 1. Cookie에서 Refresh Token 추출
+        // 1. Refresh Token 추출
         String refreshToken = cookieUtils.extractRefreshToken(request);
-        if (refreshToken == null) {
-            throw new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
-        }
+        Preconditions.validate(refreshToken != null, ErrorCode.REFRESH_TOKEN_NOT_FOUND);
 
-        // 2. 로그아웃 처리 (Redis에서 Refresh Token 삭제)
-        authService.logout(refreshToken);
+        // 2. 로그아웃 처리 (Access Token 블랙리스트 등록 + Refresh Token 삭제)
+        authService.logout(request, refreshToken);
 
         // 3. Refresh Token Cookie 삭제
         String cookie = cookieUtils.deleteRefreshTokenCookie().toString();
 
-        // 4. 응답
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie)
-                .body(ApiResult.ok("로그아웃 성공"));
+                .body(ApiResult.ok("로그아웃 성공", null));
     }
 }
