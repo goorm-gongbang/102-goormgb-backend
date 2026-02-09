@@ -14,6 +14,8 @@ import com.goormgb.be.auth.enums.TokenType;
 import com.goormgb.be.auth.provider.JwtTokenProvider;
 import com.goormgb.be.auth.repository.AccessTokenBlacklistRepository;
 import com.goormgb.be.global.exception.CustomException;
+import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.support.Preconditions;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -49,22 +51,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     if (tokenType == TokenType.ACCESS) {
                         String jti = jwtTokenProvider.getJtiFromToken(token);
 
-                        if (accessTokenBlacklistRepository.existsByJti(jti)) {
-                            log.debug("Blacklisted token used - jti: {}", jti);
-                        } else {
-                            Long userId = jwtTokenProvider.getUserIdFromToken(token);
-                            String authority = jwtTokenProvider.getAuthorityFromToken(token);
+                        Preconditions.validate(
+                                !accessTokenBlacklistRepository.existsByJti(jti),
+                                ErrorCode.BLACKLISTED_TOKEN
+                        );
 
-                            UsernamePasswordAuthenticationToken authentication =
-                                    new UsernamePasswordAuthenticationToken(
-                                            userId,
-                                            null,
-                                            List.of(new SimpleGrantedAuthority(authority))
-                                    );
+                        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+                        String authority = jwtTokenProvider.getAuthorityFromToken(token);
 
-                            SecurityContextHolder.getContext().setAuthentication(authentication);
-                            log.debug("Set authentication for user: {}", userId);
-                        }
+                        UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(
+                                        userId,
+                                        null,
+                                        List.of(new SimpleGrantedAuthority(authority))
+                                );
+
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        log.debug("Set authentication for user: {}", userId);
                     }
                 }
             } catch (CustomException e) {

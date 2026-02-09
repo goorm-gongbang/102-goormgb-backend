@@ -122,7 +122,7 @@ public class AuthService {
 
 		// 3. 토큰 타입 확인
 		String tokenTypeValue = refreshClaims.get("tokenType", String.class);
-		Preconditions.validate(TokenType.valueOf(tokenTypeValue) == TokenType.REFRESH, ErrorCode.INVALID_TOKEN_TYPE);
+		Preconditions.validate(TokenType.REFRESH.getValue().equals(tokenTypeValue), ErrorCode.INVALID_TOKEN_TYPE);
 
 		// 4. jti 추출 후 Redis에서 삭제
 		String refreshJti = refreshClaims.getId();
