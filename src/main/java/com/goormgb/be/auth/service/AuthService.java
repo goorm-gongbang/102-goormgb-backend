@@ -2,9 +2,7 @@ package com.goormgb.be.auth.service;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.UUID;
+import java.util.Date;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,11 +12,10 @@ import com.goormgb.be.auth.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 
 import com.goormgb.be.auth.dto.RefreshTokenInfo;
-import com.goormgb.be.auth.dto.TokenRefreshResponse;
 import com.goormgb.be.auth.enums.TokenType;
 import com.goormgb.be.auth.provider.JwtTokenProvider;
+import com.goormgb.be.auth.repository.AccessTokenBlacklistRepository;
 import com.goormgb.be.auth.repository.RefreshTokenRepository;
-import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.user.entity.User;
@@ -38,6 +35,7 @@ public class AuthService {
 
 	private final JwtProperties jwtProperties;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final UserRepository userRepository;
 
@@ -80,7 +78,7 @@ public class AuthService {
 		refreshTokenRepository.deleteByJti(jti);
 
 		// LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        Instant now = Instant.now();
+		Instant now = Instant.now();
 		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
 
 		RefreshTokenInfo newTokenInfo = RefreshTokenInfo.builder()
@@ -90,7 +88,7 @@ public class AuthService {
 				.tokenFamily(storedTokenInfo.getTokenFamily()) // 기존 토큰 패밀리 유지
 				.issuedAt(now)
 				// .expiresAt(now.plusDays(expirationDays))
-                .expiresAt(now.plus(Duration.ofDays(expirationDays)))
+				.expiresAt(now.plus(Duration.ofDays(expirationDays)))
 				.userAgent(request.getHeader("User-Agent"))
 				.ipAddress(getClientIp(request))
 				.build();
@@ -103,23 +101,34 @@ public class AuthService {
 	}
 
 	/**
-	 * 로그아웃 처리 - Redis에서 Refresh Token 삭제
+	 * 로그아웃 처리 - Access Token 블랙리스트 등록 및 Redis에서 Refresh Token 삭제
 	 *
+	 * @param accessToken  블랙리스트에 등록할 Access Token
 	 * @param refreshToken 삭제할 Refresh Token
 	 */
-	public void logout(String refreshToken) {
-		// 1. Refresh Token 파싱 (만료된 토큰도 허용)
-		Claims claims = jwtTokenProvider.parseClaimsAllowExpired(refreshToken);
+	public void logout(String accessToken, String refreshToken) {
+		// 1. Access Token 블랙리스트 등록
+		Claims accessClaims = jwtTokenProvider.parseClaimsAllowExpired(accessToken);
+		String accessJti = accessClaims.getId();
+		Date expiration = accessClaims.getExpiration();
 
-		// 2. 토큰 타입 확인
-		String tokenTypeValue = claims.get("tokenType", String.class);
+		long remainingMillis = expiration.getTime() - System.currentTimeMillis();
+		if (remainingMillis > 0) {
+			accessTokenBlacklistRepository.save(accessJti, Duration.ofMillis(remainingMillis));
+		}
+
+		// 2. Refresh Token 파싱 (만료된 토큰도 허용)
+		Claims refreshClaims = jwtTokenProvider.parseClaimsAllowExpired(refreshToken);
+
+		// 3. 토큰 타입 확인
+		String tokenTypeValue = refreshClaims.get("tokenType", String.class);
 		Preconditions.validate(TokenType.valueOf(tokenTypeValue) == TokenType.REFRESH, ErrorCode.INVALID_TOKEN_TYPE);
 
-		// 3. jti 추출 후 Redis에서 삭제
-		String jti = claims.getId();
-		refreshTokenRepository.deleteByJti(jti);
+		// 4. jti 추출 후 Redis에서 삭제
+		String refreshJti = refreshClaims.getId();
+		refreshTokenRepository.deleteByJti(refreshJti);
 
-		log.debug("Logout - jti: {}", jti);
+		log.debug("Logout - accessJti: {}, refreshJti: {}", accessJti, refreshJti);
 	}
 
 	private String getClientIp(HttpServletRequest request) {

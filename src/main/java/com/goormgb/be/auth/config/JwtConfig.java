@@ -7,4 +7,3 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(JwtProperties.class)
 public class JwtConfig {
 }
-// 크아악ㅇㄹㅇㄹㄴㄹㄴㄹㄴ 요깅에여
