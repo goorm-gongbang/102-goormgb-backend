@@ -18,6 +18,10 @@ public class ApiResult<T> {
 		return of("OK", "성공", null);
 	}
 
+	public static ApiResult<Void> ok(String message) {
+		return of("OK", message, null);
+	}
+
 	public static <T> ApiResult<T> ok(T data) {
 		return of("OK", "성공", data);
 	}

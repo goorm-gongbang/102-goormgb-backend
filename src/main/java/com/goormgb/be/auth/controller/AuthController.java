@@ -48,4 +48,25 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, cookie)
                 .body(ApiResult.ok("토큰 재발급 성공", TokenRefreshResponse.of(result.accessToken())));
     }
+
+    @Operation(summary = "로그아웃", description = "Refresh Token을 삭제하고 로그아웃합니다.")
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResult<Void>> logout(HttpServletRequest request) {
+        // 1. Cookie에서 Refresh Token 추출
+        String refreshToken = cookieUtils.extractRefreshToken(request);
+        if (refreshToken == null) {
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+        }
+
+        // 2. 로그아웃 처리 (Redis에서 Refresh Token 삭제)
+        authService.logout(refreshToken);
+
+        // 3. Refresh Token Cookie 삭제
+        String cookie = cookieUtils.deleteRefreshTokenCookie().toString();
+
+        // 4. 응답
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie)
+                .body(ApiResult.ok("로그아웃 성공"));
+    }
 }
