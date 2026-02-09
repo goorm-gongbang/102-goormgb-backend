@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.auth.config.JwtProperties;
+
+import io.jsonwebtoken.Claims;
+
 import com.goormgb.be.auth.dto.RefreshTokenInfo;
 import com.goormgb.be.auth.dto.TokenRefreshResponse;
 import com.goormgb.be.auth.enums.TokenType;
@@ -97,6 +100,26 @@ public class AuthService {
 		log.debug("Token refreshed - userId: {}, oldJti: {}, newJti: {}", userId, jti, newJti);
 
 		return new TokenRefreshResult(newAccessToken, newRefreshToken);
+	}
+
+	/**
+	 * 로그아웃 처리 - Redis에서 Refresh Token 삭제
+	 *
+	 * @param refreshToken 삭제할 Refresh Token
+	 */
+	public void logout(String refreshToken) {
+		// 1. Refresh Token 파싱 (만료된 토큰도 허용)
+		Claims claims = jwtTokenProvider.parseClaimsAllowExpired(refreshToken);
+
+		// 2. 토큰 타입 확인
+		String tokenTypeValue = claims.get("tokenType", String.class);
+		Preconditions.validate(TokenType.valueOf(tokenTypeValue) == TokenType.REFRESH, ErrorCode.INVALID_TOKEN_TYPE);
+
+		// 3. jti 추출 후 Redis에서 삭제
+		String jti = claims.getId();
+		refreshTokenRepository.deleteByJti(jti);
+
+		log.debug("Logout - jti: {}", jti);
 	}
 
 	private String getClientIp(HttpServletRequest request) {
