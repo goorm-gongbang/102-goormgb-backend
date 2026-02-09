@@ -71,7 +71,7 @@ public class AuthController {
 
     @Operation(summary = "회원 탈퇴", description = "회원 탈퇴를 신청합니다. 서비스 이용이 중단되며, 30일의 유예 기간 뒤에 최종 삭제됩니다.")
     @PostMapping("/withdraw")
-    public ResponseEntity<ApiResult<WithdrawlResponse>> withdrawl(@AuthenticationPrincipal Long userId) {
+    public ResponseEntity<ApiResult<WithdrawlResponse>> withdrawal(@AuthenticationPrincipal Long userId) {
             WithdrawlResponse response = authService.withdraw(userId);
             return ResponseEntity.ok()
                     .body(ApiResult.ok("탈퇴 처리 완료", response));
