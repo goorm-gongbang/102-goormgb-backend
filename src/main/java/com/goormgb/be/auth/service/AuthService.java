@@ -4,8 +4,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.goormgb.be.auth.config.JwtProperties;
 
@@ -103,11 +105,18 @@ public class AuthService {
 	/**
 	 * 로그아웃 처리 - Access Token 블랙리스트 등록 및 Redis에서 Refresh Token 삭제
 	 *
-	 * @param accessToken  블랙리스트에 등록할 Access Token
+	 * @param request      HttpServletRequest (Authorization 헤더에서 Access Token 추출)
 	 * @param refreshToken 삭제할 Refresh Token
 	 */
-	public void logout(String accessToken, String refreshToken) {
-		// 1. Access Token 블랙리스트 등록
+	public void logout(HttpServletRequest request, String refreshToken) {
+		// 1. Access Token 추출 및 블랙리스트 등록
+		String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
+		Preconditions.validate(
+				StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer "),
+				ErrorCode.INVALID_TOKEN
+		);
+		String accessToken = bearerToken.substring(7);
+
 		Claims accessClaims = jwtTokenProvider.parseClaimsAllowExpired(accessToken);
 		String accessJti = accessClaims.getId();
 		Date expiration = accessClaims.getExpiration();
