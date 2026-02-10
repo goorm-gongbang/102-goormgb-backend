@@ -6,9 +6,9 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @SpringBootApplication(scanBasePackages = "com.goormgb.be")
 @ConfigurationPropertiesScan(basePackages = "com.goormgb.be")
-public class QueueCoreApplication {
+public class QueueApplication {
 	public static void main(String[] args) {
-		SpringApplication.run(QueueCoreApplication.class, args);
+		SpringApplication.run(QueueApplication.class, args);
 	}
 
 }
