@@ -27,7 +27,8 @@ public class SecurityConfig {
     private static final String[] PUBLIC_URIS = {
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/auth/**",
+            "/auth/token/refresh",
+            "/auth/kakao/**",
             "/dev/**"
     };
 
