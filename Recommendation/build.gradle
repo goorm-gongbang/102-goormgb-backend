@@ -1,0 +1,8 @@
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+
+dependencies {
+	implementation project(':common-core')
+
+	runtimeOnly 'org.postgresql:postgresql'
+}
