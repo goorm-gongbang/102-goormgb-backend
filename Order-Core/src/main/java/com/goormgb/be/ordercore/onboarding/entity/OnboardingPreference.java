@@ -28,7 +28,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "onboarding_preferences", uniqueConstraints = {
-		@UniqueConstraint(columnNames = {"user_id", "priority"}),
+		@UniqueConstraint(columnNames = {"user_id", "rank"}),
 		@UniqueConstraint(columnNames = {"user_id", "viewpoint"}),
 		@UniqueConstraint(columnNames = {"user_id", "seat_height"}),
 		@UniqueConstraint(columnNames = {"user_id", "section"})
@@ -46,7 +46,7 @@ public class OnboardingPreference extends BaseEntity {
 	@JoinColumn(name = "user_id", nullable = false)
 	private User user;
 
-	@Column(name = "priority", nullable = false)
+	@Column(name = "rank", nullable = false)
 	private Integer priority;
 
 	// 필수 항목
