@@ -1,0 +1,51 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: auth-guard
+  jackson:
+    time-zone: UTC
+    data-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/goormgb
+    username: goormgb
+    password: 1234
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        jdbc:
+          time-zone: UTC
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY:kt-techup-groomgb-pyogo-20260205151046}
+
+  issuer: ${JWT_ISSUER:goormgb-auth-service}
+  access-token:
+    audience: ${JWT_ACCESS_TOKEN_AUDIENCE:goormgb-api}
+    expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION:15} # 15분
+  refresh-token:
+    audience: ${JWT_REFRESH_TOKEN_AUDIENCE:goormgb-auth-service}
+    expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION:7} # 7일
+  cookie:
+    secure: false
+
+kakao:
+  client-id: ${KAKAO_CLIENT_ID}
+  client-secret: ${KAKAO_CLIENT_SECRET}
+  redirect-uri: ${KAKAO_REDIRECT_URI}
+
+  auth-url: https://kauth.kakao.com/oauth/authorize
+  token-url: https://kauth.kakao.com/oauth/token
+  user-info-url: https://kapi.kakao.com/v2/user/me

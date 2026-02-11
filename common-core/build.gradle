@@ -1,0 +1,20 @@
+apply plugin: 'java-library'
+
+// common-core는 라이브러리 → bootJar 없음, 실행 불가
+
+dependencies {
+	// api = 이 모듈을 의존하는 서비스에 전이됨
+	api 'org.springframework.boot:spring-boot-starter-data-jpa'
+	api 'org.springframework.boot:spring-boot-starter-security'
+	api 'org.springframework.boot:spring-boot-starter-data-redis'
+	api 'org.springframework.boot:spring-boot-starter-validation'
+	api 'org.springframework.boot:spring-boot-starter-webmvc'
+	api 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1'
+
+	// JWT
+	api 'io.jsonwebtoken:jjwt-api:0.13.0'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
+
+	runtimeOnly 'org.postgresql:postgresql'
+}

@@ -1,1 +1,3 @@
 rootProject.name = 'goormgb'
+
+include 'Auth-Guard', 'common-core', 'Order-Core', 'Queue', 'Recommendation', 'Seat'

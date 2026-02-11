@@ -1,0 +1,13 @@
+package com.goormgb.be.ordercore.onboarding.dto.request;
+
+import java.util.List;
+
+import com.goormgb.be.ordercore.onboarding.dto.OnboardingPreferenceDto;
+
+public record OnboardingPreferenceCreateRequest(
+		MarketingConsent marketingConsent,
+		List<OnboardingPreferenceDto> preferences
+) {
+	public record MarketingConsent(Boolean marketingAgreed) {
+	}
+}
