@@ -1,0 +1,15 @@
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+build
+out
+bin
+.gradle
+HELP.md
+README.md
+LICENSE
+**/*.md
+.claude
+.github
