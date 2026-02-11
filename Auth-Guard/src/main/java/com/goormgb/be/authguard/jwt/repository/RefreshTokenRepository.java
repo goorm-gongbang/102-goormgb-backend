@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.goormgb.be.authguard.jwt.config.JwtProperties;
+import com.goormgb.be.global.jwt.config.JwtProperties;
 import com.goormgb.be.authguard.auth.dto.RefreshTokenInfo;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;

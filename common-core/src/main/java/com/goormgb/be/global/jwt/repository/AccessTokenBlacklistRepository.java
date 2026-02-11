@@ -1,4 +1,4 @@
-package com.goormgb.be.authguard.jwt.repository;
+package com.goormgb.be.global.jwt.repository;
 
 import java.time.Duration;
 

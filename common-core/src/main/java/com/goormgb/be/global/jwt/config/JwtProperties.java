@@ -1,4 +1,4 @@
-package com.goormgb.be.authguard.jwt.config;
+package com.goormgb.be.global.jwt.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

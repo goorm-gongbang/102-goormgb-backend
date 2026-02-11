@@ -1,4 +1,4 @@
-package com.goormgb.be.authguard.jwt.provider;
+package com.goormgb.be.global.jwt.provider;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -9,8 +9,8 @@ import javax.crypto.SecretKey;
 
 import org.springframework.stereotype.Component;
 
-import com.goormgb.be.authguard.jwt.config.JwtProperties;
-import com.goormgb.be.authguard.jwt.enums.TokenType;
+import com.goormgb.be.global.jwt.config.JwtProperties;
+import com.goormgb.be.global.jwt.enums.TokenType;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 
@@ -23,7 +23,6 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-// TODO: JwtTokenProvider 구현
 @Slf4j
 @Component
 @RequiredArgsConstructor
