@@ -1,0 +1,37 @@
+server:
+  port: 8085
+
+api-docs:
+  services:
+    auth-guard:
+      name: Auth-Guard
+      url: http://localhost:8080
+    queue:
+      name: Queue
+      url: http://localhost:8081
+    seat:
+      name: Seat
+      url: http://localhost:8082
+    order-core:
+      name: Order-Core
+      url: http://localhost:8083
+    recommendation:
+      name: Recommendation
+      url: http://localhost:8084
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: Auth-Guard
+        url: /proxy/v3/api-docs/auth-guard
+      - name: Queue
+        url: /proxy/v3/api-docs/queue
+      - name: Seat
+        url: /proxy/v3/api-docs/seat
+      - name: Order-Core
+        url: /proxy/v3/api-docs/order-core
+      - name: Recommendation
+        url: /proxy/v3/api-docs/recommendation
+    urls-primary-name: Auth-Guard
+  api-docs:
+    enabled: false
