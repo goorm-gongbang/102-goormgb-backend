@@ -18,6 +18,8 @@ import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingPreferenceGetR
 import com.goormgb.be.ordercore.onboarding.service.OnboardingPreferenceService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
@@ -44,6 +46,50 @@ public class OnboardingPreferenceController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public ApiResult<OnboardingPreferenceCreateResponse> createPreferences(
 			@AuthenticationPrincipal Long userId,
+			@io.swagger.v3.oas.annotations.parameters.RequestBody(
+					content = @Content(mediaType = "application/json",
+							examples = @ExampleObject(value = """
+									{
+									  "marketingConsent": {
+									    "marketingAgreed": true
+									  },
+									  "preferences": [
+									    {
+									      "priority": 1,
+									      "viewpoint": "CENTER",
+									      "seatHeight": "LOW",
+									      "section": "MIDDLE",
+									      "seatPositionPref": "AISLE",
+									      "environmentPref": "SHADE",
+									      "moodPref": "CHEERFUL",
+									      "obstructionSensitivity": "NET_SENSITIVE",
+									      "priceMode": "ANY"
+									    },
+									    {
+									      "priority": 2,
+									      "viewpoint": "INFIELD_1B",
+									      "seatHeight": "MID",
+									      "section": "CENTER_SIDE",
+									      "seatPositionPref": "ANY",
+									      "environmentPref": "ANY",
+									      "moodPref": "ANY",
+									      "obstructionSensitivity": "NORMAL",
+									      "priceMode": "ANY"
+									    },
+									    {
+									      "priority": 3,
+									      "viewpoint": "OUTFIELD_L",
+									      "seatHeight": "HIGH",
+									      "section": "CORNER",
+									      "seatPositionPref": "ANY",
+									      "environmentPref": "ANY",
+									      "moodPref": "ANY",
+									      "obstructionSensitivity": "ANY",
+									      "priceMode": "ANY"
+									    }
+									  ]
+									}
+									""")))
 			@RequestBody OnboardingPreferenceCreateRequest request
 	) {
 		var response = onboardingPreferenceService.createPreferences(userId, request);
@@ -56,6 +102,49 @@ public class OnboardingPreferenceController {
 	@ResponseStatus(HttpStatus.OK)
 	public ApiResult<Void> updatePreferences(
 			@AuthenticationPrincipal Long userId,
+			@io.swagger.v3.oas.annotations.parameters.RequestBody(
+					content = @Content(mediaType = "application/json",
+							examples = @ExampleObject(value = """
+									{
+									  "preferences": [
+									    {
+									      "priority": 1,
+									      "viewpoint": "INFIELD_3B",
+									      "seatHeight": "LOW",
+									      "section": "CENTER_SIDE",
+									      "seatPositionPref": "ANY",
+									      "environmentPref": "ANY",
+									      "moodPref": "QUIET",
+									      "obstructionSensitivity": "NORMAL",
+									      "priceMode": "RANGE",
+									      "priceMin": 15000,
+									      "priceMax": 40000
+									    },
+									    {
+									      "priority": 2,
+									      "viewpoint": "CENTER",
+									      "seatHeight": "MID",
+									      "section": "MIDDLE",
+									      "seatPositionPref": "AISLE",
+									      "environmentPref": "SHADE",
+									      "moodPref": "CHEERFUL",
+									      "obstructionSensitivity": "NET_SENSITIVE",
+									      "priceMode": "ANY"
+									    },
+									    {
+									      "priority": 3,
+									      "viewpoint": "OUTFIELD_R",
+									      "seatHeight": "ANY",
+									      "section": "CORNER",
+									      "seatPositionPref": "ANY",
+									      "environmentPref": "ANY",
+									      "moodPref": "ANY",
+									      "obstructionSensitivity": "ANY",
+									      "priceMode": "ANY"
+									    }
+									  ]
+									}
+									""")))
 			@RequestBody OnboardingPreferenceUpdateRequest request
 	) {
 		onboardingPreferenceService.updatePreferences(userId, request);
