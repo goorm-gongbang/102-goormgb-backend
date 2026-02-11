@@ -8,9 +8,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.goormgb.be.authguard.jwt.config.JwtProperties;
+import com.goormgb.be.global.jwt.config.JwtProperties;
 import com.goormgb.be.authguard.auth.dto.RefreshTokenInfo;
-import com.goormgb.be.authguard.jwt.provider.JwtTokenProvider;
+import com.goormgb.be.global.jwt.provider.JwtTokenProvider;
 import com.goormgb.be.authguard.jwt.repository.RefreshTokenRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;

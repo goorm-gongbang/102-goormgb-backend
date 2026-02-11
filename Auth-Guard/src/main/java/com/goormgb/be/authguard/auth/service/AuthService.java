@@ -13,14 +13,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import com.goormgb.be.authguard.jwt.config.JwtProperties;
+import com.goormgb.be.global.jwt.config.JwtProperties;
 
 import io.jsonwebtoken.Claims;
 
 import com.goormgb.be.authguard.auth.dto.RefreshTokenInfo;
-import com.goormgb.be.authguard.jwt.enums.TokenType;
-import com.goormgb.be.authguard.jwt.provider.JwtTokenProvider;
-import com.goormgb.be.authguard.jwt.repository.AccessTokenBlacklistRepository;
+import com.goormgb.be.global.jwt.enums.TokenType;
+import com.goormgb.be.global.jwt.provider.JwtTokenProvider;
+import com.goormgb.be.global.jwt.repository.AccessTokenBlacklistRepository;
 import com.goormgb.be.authguard.jwt.repository.RefreshTokenRepository;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;

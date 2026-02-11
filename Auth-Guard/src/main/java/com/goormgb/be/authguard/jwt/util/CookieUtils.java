@@ -6,7 +6,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.WebUtils;
 
-import com.goormgb.be.authguard.jwt.config.JwtProperties;
+import com.goormgb.be.global.jwt.config.JwtProperties;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;

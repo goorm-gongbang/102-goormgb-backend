@@ -11,7 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.goormgb.be.authguard.jwt.filter.JwtAuthenticationFilter;
+import com.goormgb.be.global.jwt.filter.JwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
 

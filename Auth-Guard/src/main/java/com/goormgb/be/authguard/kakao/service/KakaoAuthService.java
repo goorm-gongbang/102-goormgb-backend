@@ -1,12 +1,12 @@
 package com.goormgb.be.authguard.kakao.service;
 
-import com.goormgb.be.authguard.jwt.config.JwtProperties;
+import com.goormgb.be.global.jwt.config.JwtProperties;
 import com.goormgb.be.authguard.auth.dto.RefreshTokenInfo;
 import com.goormgb.be.authguard.kakao.client.KakaoOAuthClient;
 import com.goormgb.be.authguard.kakao.dto.KakaoLoginResponse;
 import com.goormgb.be.authguard.kakao.dto.KakaoTokenResponse;
 import com.goormgb.be.authguard.kakao.dto.KakaoUserResponse;
-import com.goormgb.be.authguard.jwt.provider.JwtTokenProvider;
+import com.goormgb.be.global.jwt.provider.JwtTokenProvider;
 import com.goormgb.be.authguard.jwt.repository.RefreshTokenRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;

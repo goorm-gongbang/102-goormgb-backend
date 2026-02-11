@@ -1,8 +1,8 @@
-package com.goormgb.be.authguard.jwt.enums;
+package com.goormgb.be.global.jwt.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-// TODO: JWT 토큰 타입 이넘 설정
+
 @Getter
 @RequiredArgsConstructor
 public enum TokenType {
