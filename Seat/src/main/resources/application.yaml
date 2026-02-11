@@ -1,14 +1,17 @@
+server:
+  port: 8082
+
 spring:
   application:
-    name: goormgb
+    name: seat
   jackson:
     time-zone: UTC
     data-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/goormgb
-    username: goormgb
-    password: 1234
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -22,8 +25,21 @@ spring:
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+
+  issuer: ${JWT_ISSUER}
+  access-token:
+    audience: ${JWT_ACCESS_TOKEN_AUDIENCE}
+    expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION}
+  refresh-token:
+    audience: ${JWT_REFRESH_TOKEN_AUDIENCE}
+    expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION}
+  cookie:
+    secure: false
 
 springdoc:
   swagger-ui:
@@ -39,13 +55,11 @@ springdoc:
       - name: Recommendation
         url: http://localhost:8084/v3/api-docs
 
-jwt:
-  secret-key: ${JWT_SECRET_KEY}
+kakao:
+  client-id: ${KAKAO_CLIENT_ID}
+  client-secret: ${KAKAO_CLIENT_SECRET}
+  redirect-uri: ${KAKAO_REDIRECT_URI}
 
-  issuer: ${JWT_ISSUER}
-  access-token:
-    audience: ${JWT_ACCESS_TOKEN_AUDIENCE}
-    expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION}
-  refresh-token:
-    audience: ${JWT_REFRESH_TOKEN_AUDIENCE}
-    expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION}
+  auth-url: https://kauth.kakao.com/oauth/authorize
+  token-url: https://kauth.kakao.com/oauth/token
+  user-info-url: https://kapi.kakao.com/v2/user/me

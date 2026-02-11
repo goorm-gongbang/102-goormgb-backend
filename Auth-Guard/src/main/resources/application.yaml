@@ -9,9 +9,9 @@ spring:
     data-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/goormgb
-    username: goormgb
-    password: 1234
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -25,19 +25,19 @@ spring:
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
 
 jwt:
-  secret-key: ${JWT_SECRET_KEY:kt-techup-groomgb-pyogo-20260205151046}
+  secret-key: ${JWT_SECRET_KEY}
 
-  issuer: ${JWT_ISSUER:goormgb-auth-service}
+  issuer: ${JWT_ISSUER}
   access-token:
-    audience: ${JWT_ACCESS_TOKEN_AUDIENCE:goormgb-api}
-    expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION:15} # 15분
+    audience: ${JWT_ACCESS_TOKEN_AUDIENCE}
+    expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION}
   refresh-token:
-    audience: ${JWT_REFRESH_TOKEN_AUDIENCE:goormgb-auth-service}
-    expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION:7} # 7일
+    audience: ${JWT_REFRESH_TOKEN_AUDIENCE}
+    expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION}
   cookie:
     secure: false
 
