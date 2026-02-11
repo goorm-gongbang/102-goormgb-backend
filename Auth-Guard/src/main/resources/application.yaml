@@ -41,6 +41,20 @@ jwt:
   cookie:
     secure: false
 
+springdoc:
+  swagger-ui:
+    urls:
+      - name: Auth-Guard
+        url: http://localhost:8080/v3/api-docs
+      - name: Queue
+        url: http://localhost:8081/v3/api-docs
+      - name: Seat
+        url: http://localhost:8082/v3/api-docs
+      - name: Order-Core
+        url: http://localhost:8083/v3/api-docs
+      - name: Recommendation
+        url: http://localhost:8084/v3/api-docs
+
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret: ${KAKAO_CLIENT_SECRET}
