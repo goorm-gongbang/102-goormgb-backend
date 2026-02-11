@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.goormgb.be.authguard.auth.dto.TokenRefreshResponse;
 import com.goormgb.be.authguard.auth.service.AuthService;
 import com.goormgb.be.authguard.jwt.util.CookieUtils;
-import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.response.ApiResult;
 import com.goormgb.be.global.support.Preconditions;
@@ -36,9 +35,7 @@ public class AuthController {
 	public ResponseEntity<ApiResult<TokenRefreshResponse>> refresh(HttpServletRequest request) {
 		// 1. Cookie에서 Refresh Token 추출
 		String refreshToken = cookieUtils.extractRefreshToken(request);
-		if (refreshToken == null) {
-			throw new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
-		}
+		Preconditions.validate(refreshToken != null, ErrorCode.REFRESH_TOKEN_NOT_FOUND);
 
 		// 2. 토큰 재발급
 		AuthService.TokenRefreshResult result = authService.refresh(refreshToken, request);

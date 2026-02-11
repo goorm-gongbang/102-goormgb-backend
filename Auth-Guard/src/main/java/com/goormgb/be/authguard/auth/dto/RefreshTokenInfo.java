@@ -1,9 +1,6 @@
 package com.goormgb.be.authguard.auth.dto;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -37,14 +34,6 @@ public class RefreshTokenInfo {
 
 	/** 토큰 패밀리 ID - RTR(Refresh Token Rotation) 추적용 */
 	private String tokenFamily;
-
-	//    /** 토큰 발급 시각 */
-	//    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
-	//    private LocalDateTime issuedAt;
-	//
-	//    /** 토큰 만료 시각 */
-	//    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
-	//    private LocalDateTime expiresAt;
 
 	/** 토큰 발급 시각 (UTC 기준 절대시간) */
 	private Instant issuedAt;
