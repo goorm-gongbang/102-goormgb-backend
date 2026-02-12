@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   local-postgres:
     image: postgres:16
@@ -11,6 +13,13 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     platform: linux/arm64
+    networks:
+      - goormgb-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U goormgb" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   local-redis:
     image: redis:7
@@ -18,6 +27,162 @@ services:
     ports:
       - "6379:6379"
     platform: linux/arm64
+    networks:
+      - goormgb-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-guard:
+    build:
+      context: .
+      dockerfile: ./Auth-Guard/Dockerfile
+    container_name: auth-guard
+    environment:
+      DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: local-redis
+      REDIS_PORT: 6379
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_ACCESS_TOKEN_AUDIENCE: ${JWT_ACCESS_TOKEN_AUDIENCE}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
+      JWT_REFRESH_TOKEN_AUDIENCE: ${JWT_REFRESH_TOKEN_AUDIENCE}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}
+    ports:
+      - "8080:8080"
+    depends_on:
+      local-postgres:
+        condition: service_healthy
+      local-redis:
+        condition: service_healthy
+    networks:
+      - goormgb-network
+
+  queue:
+    build:
+      context: .
+      dockerfile: ./Queue/Dockerfile
+    container_name: queue
+    environment:
+      DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: local-redis
+      REDIS_PORT: 6379
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_ACCESS_TOKEN_AUDIENCE: ${JWT_ACCESS_TOKEN_AUDIENCE}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
+      JWT_REFRESH_TOKEN_AUDIENCE: ${JWT_REFRESH_TOKEN_AUDIENCE}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
+    ports:
+      - "8081:8081"
+    depends_on:
+      local-postgres:
+        condition: service_healthy
+      local-redis:
+        condition: service_healthy
+    networks:
+      - goormgb-network
+
+  seat:
+    build:
+      context: .
+      dockerfile: ./Seat/Dockerfile
+    container_name: seat
+    environment:
+      DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: local-redis
+      REDIS_PORT: 6379
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_ACCESS_TOKEN_AUDIENCE: ${JWT_ACCESS_TOKEN_AUDIENCE}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
+      JWT_REFRESH_TOKEN_AUDIENCE: ${JWT_REFRESH_TOKEN_AUDIENCE}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
+    ports:
+      - "8082:8082"
+    depends_on:
+      local-postgres:
+        condition: service_healthy
+      local-redis:
+        condition: service_healthy
+    networks:
+      - goormgb-network
+
+  order-core:
+    build:
+      context: .
+      dockerfile: ./Order-Core/Dockerfile
+    container_name: order-core
+    environment:
+      DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: local-redis
+      REDIS_PORT: 6379
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_ACCESS_TOKEN_AUDIENCE: ${JWT_ACCESS_TOKEN_AUDIENCE}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
+      JWT_REFRESH_TOKEN_AUDIENCE: ${JWT_REFRESH_TOKEN_AUDIENCE}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}
+    ports:
+      - "8083:8083"
+    depends_on:
+      local-postgres:
+        condition: service_healthy
+      local-redis:
+        condition: service_healthy
+    networks:
+      - goormgb-network
+
+  recommendation:
+    build:
+      context: .
+      dockerfile: ./Recommendation/Dockerfile
+    container_name: recommendation
+    environment:
+      DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: local-redis
+      REDIS_PORT: 6379
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_ACCESS_TOKEN_AUDIENCE: ${JWT_ACCESS_TOKEN_AUDIENCE}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
+      JWT_REFRESH_TOKEN_AUDIENCE: ${JWT_REFRESH_TOKEN_AUDIENCE}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}
+    ports:
+      - "8084:8084"
+    depends_on:
+      local-postgres:
+        condition: service_healthy
+      local-redis:
+        condition: service_healthy
+    networks:
+      - goormgb-network
 
 volumes:
   postgres-data:
+
+
+networks:
+  goormgb-network:
+    driver: bridge
