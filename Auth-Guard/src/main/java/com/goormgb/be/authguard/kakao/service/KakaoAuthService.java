@@ -52,16 +52,14 @@ public class KakaoAuthService {
         String providerUserId = String.valueOf(userResponse.getId());
         String email = userResponse.getEmail();
         String nickname = userResponse.getNickname();
-        // TODO: 카카오 응답에서 프로필 이미지 URL 추출. 작업자: 시연
-        // String profileImageUrl = userResponse.getProfileImageUrl();
+        String profileImageUrl = userResponse.getProfileImageUrl();
 
         // 3. user_sns 기준으로 기존 사용자 조회
         User user = userSnsRepository.findByProviderAndProviderUserId(
                 SocialProvider.KAKAO,
                 providerUserId
         ).map(UserSns::getUser)
-                // TODO: signUp()에 profileImageUrl 파라미터 추가 전달. 작업자: 시연
-                .orElseGet(() -> signUp(email, nickname, providerUserId));
+                .orElseGet(() -> signUp(email, nickname, profileImageUrl, providerUserId));
 
         // 4. 상태 체크
         Preconditions.validate(
@@ -110,14 +108,13 @@ public class KakaoAuthService {
     /**
      * 신규 사용자 회원가입 처리
      */
-    // TODO: signUp 파라미터에 String profileImageUrl 추가. 작업자: 시연
     private User signUp(
             String email,
             String nickname,
+            String profileImageUrl,
             String providerUserId
     ) {
-        // TODO: createOAuthUser()에 profileImageUrl 전달. 작업자: 시연
-        User user = User.createOAuthUser(email, nickname);
+        User user = User.createOAuthUser(email, nickname, profileImageUrl);
         userRepository.save(user);
 
         UserSns userSns = UserSns.create(
