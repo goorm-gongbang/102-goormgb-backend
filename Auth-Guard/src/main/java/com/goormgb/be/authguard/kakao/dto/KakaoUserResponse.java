@@ -39,9 +39,8 @@ public class KakaoUserResponse {
         static class Profile {
             private String nickname;
 
-            // TODO: 카카오 프로필 이미지 URL 필드 추가. 작업자: 시연
-            // @JsonProperty("profile_image_url")
-            // private String profileImageUrl;
+            @JsonProperty("profile_image_url")
+            private String profileImageUrl;
         }
 
         public String getEmail() {
@@ -55,11 +54,10 @@ public class KakaoUserResponse {
                 .orElse(null);
     }
 
-    // TODO: getProfileImageUrl() 추가 - getNickname()과 동일한 Optional 체인 패턴, 작업자: 시연
-    // public String getProfileImageUrl() {
-    //     return Optional.ofNullable(kakaoAccount)
-    //             .map(KakaoAccount::getProfile)
-    //             .map(Profile::getProfileImageUrl)
-    //             .orElse(null);
-    // }
+     public String getProfileImageUrl() {
+         return Optional.ofNullable(kakaoAccount)
+                 .map(KakaoAccount::getProfile)
+                 .map(Profile::getProfileImageUrl)
+                 .orElse(null);
+     }
 }
