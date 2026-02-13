@@ -87,7 +87,7 @@ public class User extends BaseEntity {
 		return User.builder()
 				.email(email)
 				.nickname(nickname)
-                .profileImageUrl(profileImageUrl)
+				.profileImageUrl(profileImageUrl)
 				.build();
 	}
 }
