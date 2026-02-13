@@ -26,6 +26,7 @@ repositories {
 
 dependencies {
 	implementation project(':common-core')
+	testImplementation(testFixtures(project(':common-core')))
 
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -60,50 +61,3 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
-
-//plugins {
-//	id 'org.springframework.boot' version '4.0.2'
-//	id 'io.spring.dependency-management' version '1.1.7'
-//}
-//
-//allprojects {
-//	group = 'com.goormgb.be'
-//	version = '0.0.1-SNAPSHOT'
-//
-//	repositories {
-//		mavenCentral()
-//	}
-//}
-//
-//subprojects {
-//	apply plugin: 'io.spring.dependency-management'
-//
-//	dependencyManagement {
-//		imports {
-//			mavenBom "org.springframework.boot:spring-boot-dependencies:4.0.2"
-//		}
-//	}
-//
-//	java {
-//		toolchain {
-//			languageVersion = JavaLanguageVersion.of(21)
-//		}
-//	}
-//
-//	configurations {
-//		compileOnly {
-//			extendsFrom annotationProcessor
-//		}
-//	}
-//
-//	dependencies {
-//		compileOnly 'org.projectlombok:lombok'
-//		annotationProcessor 'org.projectlombok:lombok'
-//		testImplementation 'org.springframework.boot:spring-boot-starter-test'
-//		testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-//	}
-//
-//	tasks.named('test') {
-//		useJUnitPlatform()
-//	}
-//}
