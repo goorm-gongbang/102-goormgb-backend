@@ -26,11 +26,26 @@
 ## 설정 및 실행
 
 ### 1단계: 서비스 시작
-터미널(프로젝트 루트 경로)에서 아래 명령어를 실행하여 모든 서비스를 빌드하고 백그라운드에서 실행합니다.
 
+터미널(프로젝트 루트 경로)에서 실행하려는 환경에 맞춰 아래 명령어를 실행하세요.
+
+**기본 실행 (Default)**
 ```bash
 docker-compose up --build -d
 ```
+
+**로컬 환경 실행 (Local Profile)**
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.local.yml up --build -d
+```
+> **설명**: `local` 프로필이 적용되어 로컬 개발 설정으로 실행됩니다.
+
+**개발 환경 실행 (Dev Profile)**
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+```
+> **설명**: `dev` 프로필이 적용되어 개발 서버 설정으로 실행됩니다.
+
 > **Tip**: 처음 실행 시 이미지를 다운로드하고 빌드하느라 시간이 소요될 수 있습니다.
 
 ---

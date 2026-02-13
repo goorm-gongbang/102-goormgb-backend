@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  auth-guard:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+
+  queue:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+
+  seat:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+
+  order-core:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+
+  recommendation:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
