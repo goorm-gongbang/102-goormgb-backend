@@ -28,7 +28,7 @@ public class User extends BaseEntity {
 	@Column(name = "nickname", length = 100)
 	private String nickname;
 
-	 @Column(name = "profile_image_url")
+	@Column(name = "profile_image_url")
 	 private String profileImageUrl;
 
 	@Column(name = "onboarding_completed", nullable = false)
