@@ -50,7 +50,7 @@ public class User extends BaseEntity {
 	public User(String email, String nickname, String profileImageUrl) {
 		this.email = email;
 		this.nickname = nickname;
-        this.profileImageUrl = profileImageUrl;
+		this.profileImageUrl = profileImageUrl;
 		this.onboardingCompleted = false;
 		this.marketingConsent = false;
 	}
