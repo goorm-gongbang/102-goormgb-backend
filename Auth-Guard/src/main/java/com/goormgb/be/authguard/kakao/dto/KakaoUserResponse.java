@@ -40,7 +40,7 @@ public class KakaoUserResponse {
             private String nickname;
 
             @JsonProperty("profile_image_url")
-            private String profileImageUrl;;
+            private String profileImageUrl;
         }
 
         public String getEmail() {
