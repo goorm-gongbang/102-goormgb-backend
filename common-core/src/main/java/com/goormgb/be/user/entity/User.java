@@ -28,6 +28,10 @@ public class User extends BaseEntity {
 	@Column(name = "nickname", length = 100)
 	private String nickname;
 
+	// TODO: 프로필 이미지 URL 필드 추가. 작업자: 시연
+	// @Column(name = "profile_image_url")
+	// private String profileImageUrl;
+
 	@Column(name = "onboarding_completed", nullable = false)
 	private Boolean onboardingCompleted = false;
 
@@ -43,6 +47,7 @@ public class User extends BaseEntity {
 	@Column(name = "marketing_consented_at")
 	private LocalDateTime marketingConsentedAt;
 
+	// TODO: Builder 생성자에 profileImageUrl 파라미터 추가. 작업자: 시연
 	@Builder
 	public User(String email, String nickname) {
 		this.email = email;
@@ -79,6 +84,7 @@ public class User extends BaseEntity {
 		this.status = UserStatus.ACTIVATE;
 	}
 
+	// TODO: profileImageUrl 파라미터 추가 → .profileImageUrl(profileImageUrl). 작업자: 시연
 	public static User createOAuthUser(String email, String nickname) {
 		return User.builder()
 				.email(email)

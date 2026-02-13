@@ -17,6 +17,7 @@ public class KakaoLoginResponse {
     @Getter
     @Builder
     public static class UserInfo {
+        // TODO: 카카오 프로필 url 추가 profile_image_url << private String profileImageUrl; 추가해야함. 작업자: 시연
         private Long userId;
         private String email;
         private String nickname;
@@ -34,6 +35,7 @@ public class KakaoLoginResponse {
                         .userId(user.getId())
                         .email(user.getEmail())
                         .nickname(user.getNickname())
+                        // TODO: .profileImageUrl(user.getProfileImageUrl()) 추가. 작업자: 시연
                         .status(user.getStatus())
                         .build())
                 .onboardingRequired(!user.getOnboardingCompleted())
