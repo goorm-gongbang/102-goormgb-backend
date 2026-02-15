@@ -6,79 +6,42 @@
 
     <property name="SERVICE_NAME" value="${SERVICE_NAME:-unknown-service}"/>
     <property name="ENVIRONMENT" value="${ENVIRONMENT:-local}"/>
+    <property name="APP_VERSION" value="1.0.0"/>
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="STDOUT_JSON" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="STDOUT_JSON_ORIGIN" />
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <appender name="STDOUT_JSON_ORIGIN" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>{"service":"${SERVICE_NAME}","environment":"${ENVIRONMENT}"}</customFields>
+            <customFields>
+                {"service": "${SERVICE_NAME}", "environment": "${ENVIRONMENT}", "version": "${APP_VERSION}"}
+            </customFields>
         </encoder>
     </appender>
 
-    <root level="INFO">
-        <appender-ref ref="STDOUT"/>
-    </root>
+    <springProfile name="local">
+        <appender name="FILE_LOCAL_ORIGIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>logs/application.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>logs/app-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+                <maxFileSize>20MB</maxFileSize>
+                <maxHistory>3</maxHistory>
+                <totalSizeCap>200MB</totalSizeCap>
+            </rollingPolicy>
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        </appender>
 
-    <logger name="com.ticketing" level="DEBUG"/>
+        <root level="WARN">
+            <appender-ref ref="STDOUT_JSON"/>
+            <appender-ref ref="FILE_LOCAL_ORIGIN"/>
+        </root>
+        <logger name="com.goormgb.be" level="DEBUG"/>
+    </springProfile>
 
-</configuration>
-
-
-
-        <!--<?xml version="1.0" encoding="UTF-8"?>-->
-<!--<configuration>-->
-
-<!--    &lt;!&ndash; Spring 설정에서 서비스명/프로파일 자동 주입 &ndash;&gt;-->
-<!--    <springProperty scope="context" name="SERVICE_NAME" source="spring.application.name"/>-->
-<!--    <springProperty scope="context" name="ENVIRONMENT" source="spring.profiles.active"/>-->
-
-<!--    &lt;!&ndash; fallback (혹시 값이 비어있을 때) &ndash;&gt;-->
-<!--    <property name="SERVICE_NAME" value="${SERVICE_NAME:-unknown-service}"/>-->
-<!--    <property name="ENVIRONMENT" value="${ENVIRONMENT:-local}"/>-->
-<!--    <property name="APP_VERSION" value="${APP_VERSION:-1.0.0}"/>-->
-
-<!--    &lt;!&ndash; =========================-->
-<!--         STDOUT JSON (ALL ENV)-->
-<!--         ========================= &ndash;&gt;-->
-<!--    <appender name="STDOUT_JSON_ORIGIN" class="ch.qos.logback.core.ConsoleAppender">-->
-<!--        <encoder class="net.logstash.logback.encoder.LogstashEncoder">-->
-<!--            <customFields>{"service":"${SERVICE_NAME}","environment":"${ENVIRONMENT}","version":"${APP_VERSION}"}</customFields>-->
-<!--        </encoder>-->
-<!--    </appender>-->
-
-<!--    <appender name="STDOUT_JSON" class="ch.qos.logback.classic.AsyncAppender">-->
-<!--        <appender-ref ref="STDOUT_JSON_ORIGIN"/>-->
-<!--        <queueSize>1024</queueSize>-->
-<!--        <discardingThreshold>0</discardingThreshold>-->
-<!--        <includeCallerData>false</includeCallerData>-->
-<!--    </appender>-->
-
-<!--    &lt;!&ndash; =========================-->
-<!--         LOCAL PROFILE-->
-<!--         - stdout + file rolling (ok)-->
-<!--         ========================= &ndash;&gt;-->
-<!--    <springProfile name="local">-->
-<!--        <appender name="FILE_LOCAL_ORIGIN" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
-<!--            <file>logs/application.log</file>-->
-<!--            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">-->
-<!--                <fileNamePattern>logs/app-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>-->
-<!--                <maxFileSize>20MB</maxFileSize>-->
-<!--                <maxHistory>3</maxHistory>-->
-<!--                <totalSizeCap>200MB</totalSizeCap>-->
-<!--            </rollingPolicy>-->
-<!--            <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>-->
-<!--        </appender>-->
-
-<!--        <root level="DEBUG">-->
-<!--            <appender-ref ref="STDOUT_JSON"/>-->
-<!--            <appender-ref ref="FILE_LOCAL_ORIGIN"/>-->
-<!--        </root>-->
-
-<!--        <logger name="com.ticketing" level="DEBUG"/>-->
-<!--    </springProfile>-->
-
-<!--    &lt;!&ndash; =========================-->
-<!--         DEV PROFILE-->
-<!--         - stdout + file rolling (mini-pc dev ok)-->
-<!--         ========================= &ndash;&gt;-->
 <!--    <springProfile name="dev">-->
 <!--        <appender name="FILE_DEV_ORIGIN" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
 <!--            <file>/var/log/backend/application.log</file>-->
@@ -92,7 +55,7 @@
 <!--        </appender>-->
 
 <!--        <appender name="ASYNC_FILE_DEV" class="ch.qos.logback.classic.AsyncAppender">-->
-<!--            <appender-ref ref="FILE_DEV_ORIGIN"/>-->
+<!--            <appender-ref ref="FILE_DEV_ORIGIN" />-->
 <!--            <queueSize>1024</queueSize>-->
 <!--            <discardingThreshold>0</discardingThreshold>-->
 <!--        </appender>-->
@@ -101,26 +64,34 @@
 <!--            <appender-ref ref="STDOUT_JSON"/>-->
 <!--            <appender-ref ref="ASYNC_FILE_DEV"/>-->
 <!--        </root>-->
-
-<!--        <logger name="com.ticketing" level="DEBUG"/>-->
+<!--        <logger name="com.goormgb.be" level="DEBUG"/>-->
 <!--    </springProfile>-->
 
-<!--    &lt;!&ndash; =========================-->
-<!--         PROD PROFILE-->
-<!--         - stdout only-->
-<!--         - payment logs separated by logger name-->
-<!--         ========================= &ndash;&gt;-->
 <!--    <springProfile name="prod">-->
-
-<!--        &lt;!&ndash; 결제 전용 Appender (stdout) &ndash;&gt;-->
+<!--        &lt;!&ndash; 결제 전용 Appender &ndash;&gt;-->
 <!--        <appender name="PAYMENT_LOG_ORIGIN" class="ch.qos.logback.core.ConsoleAppender">-->
 <!--            <encoder class="net.logstash.logback.encoder.LogstashEncoder">-->
-<!--                <customFields>{"service":"${SERVICE_NAME}","environment":"${ENVIRONMENT}","log_category":"PAYMENT","s3_path":"web/prod/payment/"}</customFields>-->
+<!--                <customFields>-->
+<!--                    {"service": "${SERVICE_NAME}", "log_category": "PAYMENT", "s3_path": "web/prod/payment/"}-->
+<!--                </customFields>-->
+<!--                &lt;!&ndash; HTTP 요청 헤더 자동 수집 &ndash;&gt;-->
+<!--                <provider class="net.logstash.logback.composite.loggingevent.LoggingEventPatternJsonProvider">-->
+<!--                    <pattern>-->
+<!--                        {-->
+<!--                        "request_header": {-->
+<!--                        "ip": "%X{request_ip}",-->
+<!--                        "user_agent": "%X{user_agent}",-->
+<!--                        "referer": "%X{referer}",-->
+<!--                        "session_id": "%X{session_id}"-->
+<!--                        }-->
+<!--                        }-->
+<!--                    </pattern>-->
+<!--                </provider>-->
 <!--            </encoder>-->
 <!--        </appender>-->
 
 <!--        <appender name="ASYNC_PAYMENT" class="ch.qos.logback.classic.AsyncAppender">-->
-<!--            <appender-ref ref="PAYMENT_LOG_ORIGIN"/>-->
+<!--            <appender-ref ref="PAYMENT_LOG_ORIGIN" />-->
 <!--            <queueSize>512</queueSize>-->
 <!--            <discardingThreshold>0</discardingThreshold>-->
 <!--        </appender>-->
@@ -133,16 +104,14 @@
 <!--        <root level="INFO">-->
 <!--            <appender-ref ref="STDOUT_JSON"/>-->
 <!--        </root>-->
-
-<!--        <logger name="com.ticketing" level="INFO"/>-->
+<!--        <logger name="com.goormgb.be" level="INFO"/>-->
 <!--        <logger name="org.springframework" level="WARN"/>-->
 <!--        <logger name="org.hibernate" level="WARN"/>-->
 <!--    </springProfile>-->
 
-<!--    &lt;!&ndash; Common loggers &ndash;&gt;-->
-<!--    <logger name="io.opentelemetry" level="WARN"/>-->
-<!--    <logger name="org.springframework.security" level="INFO"/>-->
+    <logger name="io.opentelemetry" level="WARN"/>
+    <logger name="org.springframework.security" level="INFO"/>
 
-<!--    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>-->
+    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>
 
-<!--</configuration>-->
+</configuration>
