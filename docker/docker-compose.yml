@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   local-postgres:
     image: postgres:16
@@ -16,7 +14,7 @@ services:
     networks:
       - goormgb-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U goormgb" ]
+      test: ["CMD-SHELL", "pg_isready -U goormgb"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -30,15 +28,15 @@ services:
     networks:
       - goormgb-network
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   auth-guard:
     build:
-      context: .
-      dockerfile: ./Auth-Guard/Dockerfile
+      context: ..
+      dockerfile: Auth-Guard/Dockerfile
     container_name: auth-guard
     environment:
       DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
@@ -67,8 +65,8 @@ services:
 
   queue:
     build:
-      context: .
-      dockerfile: ./Queue/Dockerfile
+      context: ..
+      dockerfile: Queue/Dockerfile
     container_name: queue
     environment:
       DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
@@ -94,8 +92,8 @@ services:
 
   seat:
     build:
-      context: .
-      dockerfile: ./Seat/Dockerfile
+      context: ..
+      dockerfile: Seat/Dockerfile
     container_name: seat
     environment:
       DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
@@ -121,8 +119,8 @@ services:
 
   order-core:
     build:
-      context: .
-      dockerfile: ./Order-Core/Dockerfile
+      context: ..
+      dockerfile: Order-Core/Dockerfile
     container_name: order-core
     environment:
       DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
@@ -151,8 +149,8 @@ services:
 
   recommendation:
     build:
-      context: .
-      dockerfile: ./Recommendation/Dockerfile
+      context: ..
+      dockerfile: Recommendation/Dockerfile
     container_name: recommendation
     environment:
       DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
@@ -181,7 +179,6 @@ services:
 
 volumes:
   postgres-data:
-
 
 networks:
   goormgb-network:
