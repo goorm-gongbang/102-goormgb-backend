@@ -1,4 +1,4 @@
-package com.goormgb.be.config;
+package com.goormgb.be.metrics;
 
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;

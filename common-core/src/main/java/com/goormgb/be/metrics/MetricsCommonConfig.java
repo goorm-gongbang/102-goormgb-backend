@@ -1,4 +1,4 @@
-package com.goormgb.be.config;
+package com.goormgb.be.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.micrometer.metrics.autoconfigure.MeterRegistryCustomizer;
