@@ -4,5 +4,9 @@ apply plugin: 'org.springframework.boot'
 dependencies {
 	implementation project(':common-core')
 
+	// 필수: Actuator & Prometheus
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+
 	runtimeOnly 'org.postgresql:postgresql'
 }
