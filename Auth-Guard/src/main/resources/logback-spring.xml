@@ -23,6 +23,14 @@
         </encoder>
     </appender>
 
+    <appender name="LOCAL_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                %d{HH:mm:ss.SSS} %highlight(%-5level) [%thread] %cyan(%logger{30}) - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
     <springProfile name="local">
         <appender name="FILE_LOCAL_ORIGIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
             <file>logs/application.log</file>
@@ -36,36 +44,36 @@
         </appender>
 
         <root level="WARN">
-            <appender-ref ref="STDOUT_JSON"/>
+            <appender-ref ref="LOCAL_CONSOLE"/>
             <appender-ref ref="FILE_LOCAL_ORIGIN"/>
         </root>
         <logger name="com.goormgb.be" level="DEBUG"/>
     </springProfile>
 
-<!--    <springProfile name="dev">-->
-<!--        <appender name="FILE_DEV_ORIGIN" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
-<!--            <file>/var/log/backend/application.log</file>-->
-<!--            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">-->
-<!--                <fileNamePattern>/var/log/backend/app-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>-->
-<!--                <maxFileSize>50MB</maxFileSize>-->
-<!--                <maxHistory>7</maxHistory>-->
-<!--                <totalSizeCap>2GB</totalSizeCap>-->
-<!--            </rollingPolicy>-->
-<!--            <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>-->
-<!--        </appender>-->
+    <springProfile name="dev">
+        <appender name="FILE_DEV_ORIGIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>/var/log/backend/application.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>/var/log/backend/app-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+                <maxFileSize>50MB</maxFileSize>
+                <maxHistory>7</maxHistory>
+                <totalSizeCap>2GB</totalSizeCap>
+            </rollingPolicy>
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        </appender>
 
-<!--        <appender name="ASYNC_FILE_DEV" class="ch.qos.logback.classic.AsyncAppender">-->
-<!--            <appender-ref ref="FILE_DEV_ORIGIN" />-->
-<!--            <queueSize>1024</queueSize>-->
-<!--            <discardingThreshold>0</discardingThreshold>-->
-<!--        </appender>-->
+        <appender name="ASYNC_FILE_DEV" class="ch.qos.logback.classic.AsyncAppender">
+            <appender-ref ref="FILE_DEV_ORIGIN" />
+            <queueSize>1024</queueSize>
+            <discardingThreshold>0</discardingThreshold>
+        </appender>
 
-<!--        <root level="INFO">-->
-<!--            <appender-ref ref="STDOUT_JSON"/>-->
-<!--            <appender-ref ref="ASYNC_FILE_DEV"/>-->
-<!--        </root>-->
-<!--        <logger name="com.goormgb.be" level="DEBUG"/>-->
-<!--    </springProfile>-->
+        <root level="INFO">
+            <appender-ref ref="STDOUT_JSON"/>
+            <appender-ref ref="ASYNC_FILE_DEV"/>
+        </root>
+        <logger name="com.goormgb.be" level="DEBUG"/>
+    </springProfile>
 
 <!--    <springProfile name="prod">-->
 <!--        &lt;!&ndash; 결제 전용 Appender &ndash;&gt;-->
