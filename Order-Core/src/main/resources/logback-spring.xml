@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="logging/logback-base.xml"/>
+
+    <!-- 서비스별로만 필요한 로거/추가 appender가 있으면 여기서만 추가 -->
+</configuration>

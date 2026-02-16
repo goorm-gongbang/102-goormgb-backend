@@ -1,5 +1,6 @@
 package com.goormgb.be.authguard.auth.controller;
 
+import com.goormgb.be.authguard.metrics.AuthMetricsService;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,7 @@ public class DevAuthController {
 
 	private final DevAuthService devAuthService;
 	private final CookieUtils cookieUtils;
+	private final AuthMetricsService authMetricsService;
 
 	@Operation(summary = "개발용 회원가입", description = "ID/PW 기반 개발용 계정을 생성합니다.")
 	@PostMapping("/signup")
@@ -52,6 +54,8 @@ public class DevAuthController {
 			@Valid @RequestBody DevLoginRequest request,
 			HttpServletRequest httpRequest
 	) {
+		authMetricsService.increaseAuthAttempt();
+
 		DevAuthService.DevLoginResult result = devAuthService.login(
 				request.getLoginId(),
 				request.getPassword(),
@@ -59,6 +63,8 @@ public class DevAuthController {
 		);
 
 		String cookie = cookieUtils.createRefreshTokenCookie(result.refreshToken()).toString();
+
+		authMetricsService.increaseAuthSuccess();
 
 		return ResponseEntity.ok()
 				.header(HttpHeaders.SET_COOKIE, cookie)

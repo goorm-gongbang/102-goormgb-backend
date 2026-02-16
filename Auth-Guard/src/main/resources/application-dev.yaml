@@ -63,3 +63,25 @@ kakao:
   auth-url: https://kauth.kakao.com/oauth/authorize
   token-url: https://kauth.kakao.com/oauth/token
   user-info-url: https://kapi.kakao.com/v2/user/me
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    root: INFO
+    com.goormgb.be: DEBUG
