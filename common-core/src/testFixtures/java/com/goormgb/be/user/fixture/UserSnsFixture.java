@@ -15,11 +15,7 @@ public final class UserSnsFixture {
 	}
 
 	public static UserSns createDefault(User user) {
-		return UserSns.builder()
-				.user(user)
-				.provider(DEFAULT_PROVIDER)
-				.providerUserId(DEFAULT_PROVIDER_USER_ID)
-				.build();
+		return createWithProviderUserId(user, DEFAULT_PROVIDER_USER_ID);
 	}
 
 	public static UserSns createWithId(Long id, User user) {

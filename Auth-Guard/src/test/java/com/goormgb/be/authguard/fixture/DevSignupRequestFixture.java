@@ -14,18 +14,20 @@ public final class DevSignupRequestFixture {
 	private DevSignupRequestFixture() {
 	}
 
-	public static DevSignupRequest createDefault() {
+	private static DevSignupRequest create(String loginId, String password, String nickname, String email) {
 		DevSignupRequest request = new DevSignupRequest();
-		ReflectionTestUtils.setField(request, "loginId", DEFAULT_LOGIN_ID);
-		ReflectionTestUtils.setField(request, "password", DEFAULT_PASSWORD);
-		ReflectionTestUtils.setField(request, "nickname", DEFAULT_NICKNAME);
-		ReflectionTestUtils.setField(request, "email", DEFAULT_EMAIL);
+		ReflectionTestUtils.setField(request, "loginId", loginId);
+		ReflectionTestUtils.setField(request, "password", password);
+		ReflectionTestUtils.setField(request, "nickname", nickname);
+		ReflectionTestUtils.setField(request, "email", email);
 		return request;
 	}
 
+	public static DevSignupRequest createDefault() {
+		return create(DEFAULT_LOGIN_ID, DEFAULT_PASSWORD, DEFAULT_NICKNAME, DEFAULT_EMAIL);
+	}
+
 	public static DevSignupRequest createWithLoginId(String loginId) {
-		DevSignupRequest request = createDefault();
-		ReflectionTestUtils.setField(request, "loginId", loginId);
-		return request;
+		return create(loginId, DEFAULT_PASSWORD, DEFAULT_NICKNAME, DEFAULT_EMAIL);
 	}
 }

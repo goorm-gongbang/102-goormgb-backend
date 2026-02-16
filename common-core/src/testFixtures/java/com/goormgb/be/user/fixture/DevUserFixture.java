@@ -14,11 +14,7 @@ public final class DevUserFixture {
 	}
 
 	public static DevUser createDefault(User user) {
-		return DevUser.builder()
-				.loginId(DEFAULT_LOGIN_ID)
-				.passwordHash(DEFAULT_PASSWORD_HASH)
-				.user(user)
-				.build();
+		return createWithLoginId(DEFAULT_LOGIN_ID, user);
 	}
 
 	public static DevUser createWithId(Long id, User user) {

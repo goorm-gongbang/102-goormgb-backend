@@ -13,26 +13,26 @@ public final class UserFixture {
 	private UserFixture() {
 	}
 
-	public static User createDefault() {
+	private static User.UserBuilder defaultBuilder() {
 		return User.builder()
 				.email(DEFAULT_EMAIL)
-				.nickname(DEFAULT_NICKNAME)
+				.nickname(DEFAULT_NICKNAME);
+	}
+
+	public static User createDefault() {
+		return defaultBuilder()
 				.profileImageUrl(DEFAULT_PROFILE_IMAGE_URL)
 				.build();
 	}
 
 	public static User createWithProfileImage(String profileImageUrl) {
-		return User.builder()
-				.email(DEFAULT_EMAIL)
-				.nickname(DEFAULT_NICKNAME)
+		return defaultBuilder()
 				.profileImageUrl(profileImageUrl)
 				.build();
 	}
 
 	public static User createWithoutProfileImage() {
-		return User.builder()
-				.email(DEFAULT_EMAIL)
-				.nickname(DEFAULT_NICKNAME)
+		return defaultBuilder()
 				.build();
 	}
 

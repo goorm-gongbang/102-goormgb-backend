@@ -12,9 +12,7 @@ public final class KakaoLoginRequestFixture {
 	}
 
 	public static KakaoLoginRequest createDefault() {
-		KakaoLoginRequest request = new KakaoLoginRequest();
-		ReflectionTestUtils.setField(request, "authorizationCode", DEFAULT_AUTHORIZATION_CODE);
-		return request;
+		return createWithCode(DEFAULT_AUTHORIZATION_CODE);
 	}
 
 	public static KakaoLoginRequest createWithCode(String authorizationCode) {
