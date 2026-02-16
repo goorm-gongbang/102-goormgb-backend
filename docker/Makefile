@@ -32,8 +32,8 @@ local-up:
 local-down:
 	$(COMPOSE) down
 
-local-restart: 
-	local-down local-up
+local-restart:  local-down local-up
+  	@echo "Local environment restarted"
 
 local-ps:
 	$(COMPOSE) ps
