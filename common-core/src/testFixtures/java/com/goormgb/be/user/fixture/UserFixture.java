@@ -8,11 +8,28 @@ public final class UserFixture {
 
 	public static final String DEFAULT_EMAIL = "test@example.com";
 	public static final String DEFAULT_NICKNAME = "테스트유저";
+	public static final String DEFAULT_PROFILE_IMAGE_URL = "https://example.com/profile.jpg";
 
 	private UserFixture() {
 	}
 
 	public static User createDefault() {
+		return User.builder()
+				.email(DEFAULT_EMAIL)
+				.nickname(DEFAULT_NICKNAME)
+				.profileImageUrl(DEFAULT_PROFILE_IMAGE_URL)
+				.build();
+	}
+
+	public static User createWithProfileImage(String profileImageUrl) {
+		return User.builder()
+				.email(DEFAULT_EMAIL)
+				.nickname(DEFAULT_NICKNAME)
+				.profileImageUrl(profileImageUrl)
+				.build();
+	}
+
+	public static User createWithoutProfileImage() {
 		return User.builder()
 				.email(DEFAULT_EMAIL)
 				.nickname(DEFAULT_NICKNAME)
