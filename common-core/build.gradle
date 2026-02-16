@@ -1,4 +1,5 @@
 apply plugin: 'java-library'
+apply plugin: 'java-test-fixtures'
 
 // common-core는 라이브러리 → bootJar 없음, 실행 불가
 
@@ -26,4 +27,11 @@ dependencies {
 	implementation "net.logstash.logback:logstash-logback-encoder:7.4"
 
 	// 선택: OpenTelemetry를 코드에서 직접 사용하려면 (Agent 사용 시 불필요)
+
+	// testFixtures에서 Lombok 사용
+	testFixturesCompileOnly 'org.projectlombok:lombok'
+	testFixturesAnnotationProcessor 'org.projectlombok:lombok'
+
+	// testFixtures에서 ReflectionTestUtils 사용
+	testFixturesImplementation 'org.springframework:spring-test'
 }
