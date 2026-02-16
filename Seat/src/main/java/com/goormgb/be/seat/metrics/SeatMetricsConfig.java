@@ -50,11 +50,4 @@ public class SeatMetricsConfig {
                 .publishPercentiles(0.5, 0.95, 0.99)
                 .register(registry);
     }
-
-    @Bean
-    public void registerActiveSeatHoldGauge(Supplier<Number> holdCountSupplier, MeterRegistry registry) {
-        Gauge.builder("ticketing_seat_hold_token_active", holdCountSupplier)
-                .description("Current active temporary seat holds (TTL active)")
-                .register(registry);
-    }
 }
