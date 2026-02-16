@@ -17,4 +17,13 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
 	runtimeOnly 'org.postgresql:postgresql'
+
+	// 필수: Actuator & Prometheus
+	implementation "org.springframework.boot:spring-boot-starter-actuator"
+	implementation "io.micrometer:micrometer-registry-prometheus"
+
+	// 필수: JSON 로깅
+	implementation "net.logstash.logback:logstash-logback-encoder:7.4"
+
+	// 선택: OpenTelemetry를 코드에서 직접 사용하려면 (Agent 사용 시 불필요)
 }
