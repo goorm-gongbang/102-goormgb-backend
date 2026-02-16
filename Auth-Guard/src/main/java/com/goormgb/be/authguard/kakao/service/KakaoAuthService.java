@@ -52,13 +52,14 @@ public class KakaoAuthService {
         String providerUserId = String.valueOf(userResponse.getId());
         String email = userResponse.getEmail();
         String nickname = userResponse.getNickname();
+        String profileImageUrl = userResponse.getProfileImageUrl();
 
         // 3. user_sns 기준으로 기존 사용자 조회
         User user = userSnsRepository.findByProviderAndProviderUserId(
                 SocialProvider.KAKAO,
                 providerUserId
         ).map(UserSns::getUser)
-                .orElseGet(() -> signUp(email, nickname, providerUserId));
+                .orElseGet(() -> signUp(email, nickname, profileImageUrl, providerUserId));
 
         // 4. 상태 체크
         Preconditions.validate(
@@ -110,9 +111,10 @@ public class KakaoAuthService {
     private User signUp(
             String email,
             String nickname,
+            String profileImageUrl,
             String providerUserId
     ) {
-        User user = User.createOAuthUser(email, nickname);
+        User user = User.createOAuthUser(email, nickname, profileImageUrl);
         userRepository.save(user);
 
         UserSns userSns = UserSns.create(

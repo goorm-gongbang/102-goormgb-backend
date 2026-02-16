@@ -20,6 +20,7 @@ public class KakaoLoginResponse {
         private Long userId;
         private String email;
         private String nickname;
+        private String profileImageUrl;
         private UserStatus status;
     }
 
@@ -34,6 +35,7 @@ public class KakaoLoginResponse {
                         .userId(user.getId())
                         .email(user.getEmail())
                         .nickname(user.getNickname())
+                        .profileImageUrl(user.getProfileImageUrl())
                         .status(user.getStatus())
                         .build())
                 .onboardingRequired(!user.getOnboardingCompleted())

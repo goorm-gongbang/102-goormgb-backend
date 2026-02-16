@@ -28,6 +28,9 @@ public class User extends BaseEntity {
 	@Column(name = "nickname", length = 100)
 	private String nickname;
 
+	@Column(name = "profile_image_url")
+	 private String profileImageUrl;
+
 	@Column(name = "onboarding_completed", nullable = false)
 	private Boolean onboardingCompleted = false;
 
@@ -44,9 +47,10 @@ public class User extends BaseEntity {
 	private LocalDateTime marketingConsentedAt;
 
 	@Builder
-	public User(String email, String nickname) {
+	public User(String email, String nickname, String profileImageUrl) {
 		this.email = email;
 		this.nickname = nickname;
+		this.profileImageUrl = profileImageUrl;
 		this.onboardingCompleted = false;
 		this.marketingConsent = false;
 	}
@@ -79,10 +83,11 @@ public class User extends BaseEntity {
 		this.status = UserStatus.ACTIVATE;
 	}
 
-	public static User createOAuthUser(String email, String nickname) {
+	public static User createOAuthUser(String email, String nickname, String profileImageUrl) {
 		return User.builder()
 				.email(email)
 				.nickname(nickname)
+				.profileImageUrl(profileImageUrl)
 				.build();
 	}
 }
