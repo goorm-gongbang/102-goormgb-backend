@@ -1,7 +1,7 @@
 package com.goormgb.be.logging;
 
 import jakarta.servlet.*;
-        import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
