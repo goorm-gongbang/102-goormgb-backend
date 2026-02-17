@@ -23,8 +23,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-@Tag(name = "Dev Auth", description = "개발용 인증 API (local/dev 프로필 전용)")
-@Profile({"local", "dev"})
+@Tag(name = "Dev Auth", description = "개발용 인증 API (local/dev/test 프로필 전용)")
+@Profile({"local", "dev", "test"})
 @RestController
 @RequestMapping("/dev/auth")
 @RequiredArgsConstructor
