@@ -1,0 +1,45 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+        jdbc:
+          time-zone: UTC
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  session:
+    store-type: none
+
+jwt:
+  secret-key: test-secret-key-for-unit-test-goormgb-20260217
+  issuer: test-issuer
+  access-token:
+    audience: test-audience
+    expiration-minutes: 15
+  refresh-token:
+    audience: test-refresh-audience
+    expiration-days: 7
+  cookie:
+    secure: false
+
+kakao:
+  client-id: test-client-id
+  client-secret: test-client-secret
+  redirect-uri: http://localhost:3000/auth/callback/kakao
+  auth-url: https://kauth.kakao.com/oauth/authorize
+  token-url: https://kauth.kakao.com/oauth/token
+  user-info-url: https://kapi.kakao.com/v2/user/me
