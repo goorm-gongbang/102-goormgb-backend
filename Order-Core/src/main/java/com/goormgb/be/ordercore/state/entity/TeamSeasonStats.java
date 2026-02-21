@@ -1,4 +1,4 @@
-package com.goormgb.be.ordercore.state;
+package com.goormgb.be.ordercore.state.entity;
 
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.ordercore.club.entity.Club;
