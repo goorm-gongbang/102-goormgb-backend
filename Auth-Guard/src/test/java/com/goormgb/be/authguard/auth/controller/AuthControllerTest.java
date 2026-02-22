@@ -31,7 +31,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @WebMvcTest(controllers = AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
-class AuthControllerTest extends WebMvcTestSupport {
+class ㅏㄴ그AuthControllerTest extends WebMvcTestSupport {
 
 	@MockitoBean
 	private AuthService authService;
@@ -44,7 +44,7 @@ class AuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("POST /auth/token/refresh - 토큰 재발급 성공")
-	void tokenRefresh_성공() throws Exception {
+	void 토큰_재발급_성공() throws Exception {
 		// given
 		String oldRefreshToken = "old-refresh-token";
 		AuthService.TokenRefreshResult result =
@@ -68,7 +68,7 @@ class AuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("POST /auth/token/refresh - 쿠키 없으면 401")
-	void tokenRefresh_쿠키없음() throws Exception {
+	void 토큰_재발급_리프레시_쿠키_없음() throws Exception {
 		// given
 		given(cookieUtils.extractRefreshToken(any(HttpServletRequest.class))).willReturn(null);
 
@@ -80,7 +80,7 @@ class AuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("POST /auth/logout - 로그아웃 성공")
-	void logout_성공() throws Exception {
+	void 로그아웃_성공() throws Exception {
 		// given
 		String refreshToken = "refresh-token";
 
@@ -102,7 +102,7 @@ class AuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("POST /auth/logout - 쿠키 없으면 401")
-	void logout_쿠키없음() throws Exception {
+	void 로그아웃_리프레시_쿠키_없음() throws Exception {
 		// given
 		given(cookieUtils.extractRefreshToken(any(HttpServletRequest.class))).willReturn(null);
 
@@ -114,7 +114,7 @@ class AuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("POST /auth/withdraw - 회원 탈퇴 성공")
-	void withdraw_성공() throws Exception {
+	void 회원_탈퇴_성공() throws Exception {
 		// given
 		Long userId = 1L;
 		setAuthentication(userId);
