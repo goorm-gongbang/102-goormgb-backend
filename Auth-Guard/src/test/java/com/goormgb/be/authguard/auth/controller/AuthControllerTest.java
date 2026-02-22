@@ -31,7 +31,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @WebMvcTest(controllers = AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
-class ㅏㄴ그AuthControllerTest extends WebMvcTestSupport {
+class AuthControllerTest extends WebMvcTestSupport {
 
 	@MockitoBean
 	private AuthService authService;
