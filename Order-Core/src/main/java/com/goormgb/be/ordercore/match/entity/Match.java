@@ -24,6 +24,10 @@ public class Match extends BaseEntity {
     private LocalDateTime matchAt;
 
     // TODO: club_id 연결
+    @Column(name = "home_club_id", nullable = false)
+    private Long homeClubId;
+
+    // TODO: club_id 연결
     @Column(name = "away_club_id", nullable = false)
     private Long awayClubId;
 
@@ -36,16 +40,18 @@ public class Match extends BaseEntity {
     private SaleStatus saleStatus;
 
     @Builder
-    public Match(LocalDateTime matchAt, Long awayClubId, Long stadiumId, SaleStatus saleStatus) {
+    public Match(LocalDateTime matchAt, Long homeClubId, Long awayClubId, Long stadiumId, SaleStatus saleStatus) {
         this.matchAt = matchAt;
+        this.homeClubId = homeClubId;
         this.awayClubId = awayClubId;
         this.stadiumId = stadiumId;
         this.saleStatus = saleStatus;
     }
 
-    public static Match create(LocalDateTime matchAt, Long awayClubId, Long stadiumId, SaleStatus saleStatus) {
+    public static Match create(LocalDateTime matchAt, Long homeClubId, Long awayClubId, Long stadiumId, SaleStatus saleStatus) {
         return Match.builder()
                 .matchAt(matchAt)
+                .homeClubId(homeClubId)
                 .awayClubId(awayClubId)
                 .stadiumId(stadiumId)
                 .saleStatus(saleStatus)
