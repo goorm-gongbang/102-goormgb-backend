@@ -42,7 +42,7 @@ class DevAuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("POST /dev/auth/signup - 회원가입 성공")
-	void signup_성공() throws Exception {
+	void 회원가입_성공() throws Exception {
 		// given
 		DevSignupRequest request = DevSignupRequestFixture.createDefault();
 
@@ -64,7 +64,7 @@ class DevAuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("POST /dev/auth/signup - loginId 누락 시 400")
-	void signup_loginId_누락() throws Exception {
+	void 회원가입_로그인아이디_누락() throws Exception {
 		// given
 		DevSignupRequest request = DevSignupRequestFixture.createDefault();
 		org.springframework.test.util.ReflectionTestUtils.setField(request, "loginId", null);
@@ -78,7 +78,7 @@ class DevAuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("POST /dev/auth/signup - password 누락 시 400")
-	void signup_password_누락() throws Exception {
+	void 회원가입_패스워드_누락() throws Exception {
 		// given
 		DevSignupRequest request = DevSignupRequestFixture.createDefault();
 		org.springframework.test.util.ReflectionTestUtils.setField(request, "password", null);
@@ -92,7 +92,7 @@ class DevAuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("POST /dev/auth/login - 로그인 성공")
-	void login_성공() throws Exception {
+	void 로그인_성공() throws Exception {
 		// given
 		DevLoginRequest request = DevLoginRequestFixture.createDefault();
 		DevAuthService.DevLoginResult loginResult =
@@ -118,7 +118,7 @@ class DevAuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("POST /dev/auth/login - 잘못된 인증 정보 시 401")
-	void login_잘못된_인증() throws Exception {
+	void 로그인_잘못된_인증_정보() throws Exception {
 		// given
 		DevLoginRequest request = DevLoginRequestFixture.createDefault();
 

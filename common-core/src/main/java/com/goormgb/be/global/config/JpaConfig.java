@@ -1,4 +1,4 @@
-package com.goormgb.be.authguard.config;
+package com.goormgb.be.global.config;
 
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Configuration;
