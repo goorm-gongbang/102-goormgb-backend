@@ -41,7 +41,7 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("GET /auth/kakao/login-url - 카카오 로그인 URL 조회 성공")
-	void getLoginUrl_성공() throws Exception {
+	void 카카오_로그인_URL_조회_성공() throws Exception {
 		// given
 		String expectedUrl = "https://kauth.kakao.com/oauth/authorize?client_id=test&redirect_uri=http://localhost&response_type=code";
 		given(kakaoOAuthClient.createLoginUrl(isNull())).willReturn(expectedUrl);
@@ -55,7 +55,7 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("POST /auth/kakao/login - 카카오 로그인 성공")
-	void kakaoLogin_성공() throws Exception {
+	void 카카오_로그인_성공() throws Exception {
 		// given
 		KakaoLoginRequest request = KakaoLoginRequestFixture.createDefault();
 
@@ -95,7 +95,7 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 
 	@Test
 	@DisplayName("POST /auth/kakao/login - 인가 코드 없으면 400")
-	void kakaoLogin_코드없음() throws Exception {
+	void 카카오_로그인_인가코드_없음() throws Exception {
 		// given
 		KakaoLoginRequest request = new KakaoLoginRequest();
 
