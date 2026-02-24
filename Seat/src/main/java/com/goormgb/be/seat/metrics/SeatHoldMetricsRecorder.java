@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.function.Supplier;
 
-@Component
+// @Component // TODO: seat hold 기능 구현 후 활성화
 @RequiredArgsConstructor
 public class SeatHoldMetricsRecorder {
 
