@@ -16,7 +16,7 @@ jobs:
       PROJECT_KEY: ${{ secrets.PROJECT_KEY }}
 
     steps:
-      # 1. Jira 로그인 검증
+      # 1. Jira 로그인 검증 - 인증 실패 시 워크플로 중단
       - name: JIRA Login Check
         run: |
           curl --fail --request GET \
@@ -24,7 +24,30 @@ jobs:
           --user "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
           --header "Accept: application/json"
 
-      # 2. Jira 티켓 생성
+      # 2. 현재 활성화된 스프린트 ID 조회
+      - name: Get Active Sprint ID
+        id: get-sprint
+        run: |
+          # 보드 목록 조회
+          response=$(curl --fail --silent --request GET \
+            --url "https://${JIRA_BASE_URL}/rest/agile/1.0/board" \
+            --user "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
+            --header "Accept: application/json")
+
+          # 프로젝트 보드 ID 추출
+          board_id=$(echo "$response" | jq -r '.values[] | select(.name | contains("GRGB")) | .id')
+
+          # 활성 스프린트 조회
+          sprint_response=$(curl --fail --silent --request GET \
+            --url "https://${JIRA_BASE_URL}/rest/agile/1.0/board/${board_id}/sprint?state=active" \
+            --user "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
+            --header "Accept: application/json")
+
+          # 첫 번째 활성 스프린트 ID 추출 후 환경변수 저장
+          sprint_id=$(echo "$sprint_response" | jq -r '.values[0].id')
+          echo "sprint_id=$sprint_id" >> $GITHUB_ENV
+
+      # 3. Jira 티켓 생성 - 이슈 유형은 작업(Task), 활성 스프린트에 자동 포함
       - name: Create JIRA Issue
         id: create-issue
         run: |
@@ -36,7 +59,8 @@ jobs:
             --data "{
               \"fields\": {
                 \"project\": { \"key\": \"${PROJECT_KEY}\" },
-                \"issuetype\": { \"name\": \"Story\" },
+                \"issuetype\": { \"name\": \"작업\" },
+                \"customfield_10020\": ${{ env.sprint_id }},
                 \"summary\": \"${{ github.event.issue.title }}\",
                 \"description\": {
                   \"version\": 1,
@@ -53,10 +77,11 @@ jobs:
             }")
 
           echo "Response: $response"
+          # 생성된 Jira 티켓 키 추출 후 환경변수 저장 (ex. GRGB-162)
           issue_key=$(echo "$response" | jq -r '.key')
           echo "key=$issue_key" >> $GITHUB_ENV
 
-      # 3. GitHub Issue 제목에 Jira 키 prefix 추가
+      # 4. GitHub Issue 제목 앞에 Jira 티켓 번호 prefix 추가
       - name: Update Issue Title
         uses: actions-cool/issues-helper@v3
         with:
@@ -64,7 +89,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: '[${{ env.key }}] ${{ github.event.issue.title }}'
 
-      # 4. GitHub Issue에 Jira 링크 댓글 추가
+      # 5. GitHub Issue 댓글에 Jira 티켓 링크 자동 등록
       - name: Add Jira Link Comment
         uses: actions-cool/issues-helper@v3
         with:
