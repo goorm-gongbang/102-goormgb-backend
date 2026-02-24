@@ -5,6 +5,7 @@ import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.ordercore.stadium.entity.Stadium;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -32,4 +33,14 @@ public class Club extends BaseEntity {
 
     @Column(name = "homepage_redirect_url", length = 255)
     private String homepageRedirectUrl;
+
+    @Builder
+    public Club(String koName, String enName, String logoImg, String clubColor, Stadium stadium, String homepageRedirectUrl) {
+        this.koName = koName;
+        this.enName = enName;
+        this.logoImg = logoImg;
+        this.clubColor = clubColor;
+        this.stadium = stadium;
+        this.homepageRedirectUrl = homepageRedirectUrl;
+    }
 }
