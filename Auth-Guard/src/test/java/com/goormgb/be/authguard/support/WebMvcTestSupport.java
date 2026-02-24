@@ -7,7 +7,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import tools.jackson.databind.ObjectMapper;
 import com.goormgb.be.authguard.jwt.util.CookieUtils;
-import com.goormgb.be.global.jwt.filter.JwtAuthenticationFilter;
+import com.goormgb.be.authguard.jwt.filter.JwtAuthenticationFilter;
 
 @ActiveProfiles("test")
 public abstract class WebMvcTestSupport {
