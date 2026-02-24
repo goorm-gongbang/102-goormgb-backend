@@ -1,4 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <include resource="logging/logback-base.xml"/>
+
+    <springProperty scope="context" name="SERVICE_NAME" source="spring.application.name"/>
+    <springProperty scope="context" name="ENVIRONMENT" source="spring.profiles.active"/>
+
+    <property name="SERVICE_NAME" value="${SERVICE_NAME:-api-gateway}"/>
+    <property name="ENVIRONMENT" value="${ENVIRONMENT:-local}"/>
+    <property name="APP_VERSION" value="1.0.0"/>
+
+    <appender name="STDOUT_JSON_ORIGIN" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>
+                {"service": "${SERVICE_NAME}", "environment": "${ENVIRONMENT}", "version": "${APP_VERSION}"}
+            </customFields>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT_JSON" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="STDOUT_JSON_ORIGIN"/>
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <appender name="LOCAL_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%thread] %cyan(%logger{30}) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <springProfile name="local">
+        <root level="WARN">
+            <appender-ref ref="LOCAL_CONSOLE"/>
+        </root>
+        <logger name="com.goormgb.be" level="DEBUG"/>
+    </springProfile>
+
+    <springProfile name="dev">
+        <appender name="FILE_DEV_ORIGIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>/var/log/backend/application.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>/var/log/backend/app-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+                <maxFileSize>50MB</maxFileSize>
+                <maxHistory>7</maxHistory>
+                <totalSizeCap>2GB</totalSizeCap>
+            </rollingPolicy>
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        </appender>
+
+        <appender name="ASYNC_FILE_DEV" class="ch.qos.logback.classic.AsyncAppender">
+            <appender-ref ref="FILE_DEV_ORIGIN"/>
+            <queueSize>1024</queueSize>
+            <discardingThreshold>0</discardingThreshold>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="STDOUT_JSON"/>
+            <appender-ref ref="ASYNC_FILE_DEV"/>
+        </root>
+        <logger name="com.goormgb.be" level="DEBUG"/>
+    </springProfile>
+
+    <!-- 프로파일 미설정 시 기본 콘솔 출력 -->
+    <springProfile name="!local &amp; !dev">
+        <root level="INFO">
+            <appender-ref ref="LOCAL_CONSOLE"/>
+        </root>
+        <logger name="com.goormgb.be" level="DEBUG"/>
+    </springProfile>
+
+    <logger name="io.opentelemetry" level="WARN"/>
+    <logger name="org.springframework.security" level="INFO"/>
+
+    <shutdownHook class="ch.qos.logback.core.hook.DefaultShutdownHook"/>
+
 </configuration>
