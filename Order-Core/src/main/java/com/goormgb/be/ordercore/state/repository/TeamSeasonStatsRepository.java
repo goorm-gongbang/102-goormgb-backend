@@ -13,7 +13,7 @@ public interface TeamSeasonStatsRepository extends JpaRepository<TeamSeasonStats
 //
     Optional<TeamSeasonStats> findByClubIdAndSeasonYear(Long clubId, int seasonYear);
 
-    default TeamSeasonStats findByIdOtThrow(Long id, ErrorCode errorCode) {
+    default TeamSeasonStats findByIdOrThrow(Long id, ErrorCode errorCode) {
         return findById(id).orElseThrow(() -> new CustomException(errorCode));
     }
 
