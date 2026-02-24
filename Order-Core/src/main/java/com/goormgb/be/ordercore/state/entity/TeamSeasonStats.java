@@ -26,16 +26,16 @@ public class TeamSeasonStats extends BaseEntity {
     private int seasonYear;
 
     @Column(name = "season_ranking")
-    private int seasonRanking;
+    private Integer seasonRanking;
 
     @Column(name = "wins")
-    private int wins;
+    private Integer wins;
 
     @Column(name = "draws")
-    private int draws;
+    private Integer draws;
 
     @Column(name = "losses")
-    private int losses;
+    private Integer losses;
 
     @Column(name = "win_rate", precision = 5, scale = 3)
     private BigDecimal winRate;
