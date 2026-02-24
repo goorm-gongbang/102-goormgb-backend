@@ -13,12 +13,15 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ClubRepository extends JpaRepository<Club, Long> {
-
     // TODO: service 레이어 구현할 때 필요한 부분 수정
 //    List<ClubListItemResponse> findAllClubList();
 //
-//    @EntityGraph(attributePaths = {"stadium"})
-//    Optional<Club> findWithStadiumById(Long id);
+    @EntityGraph(attributePaths = {"stadium"})
+    Optional<Club> findWithStadiumById(Long id);
+
+    default Club findWithStadiumByIdOrThrow(Long id, ErrorCode errorCode){
+        return findWithStadiumById(id).orElseThrow(() -> new CustomException(errorCode));
+    }
 
     /**
      * FR-C02 구단 상세 기본 정보 조회용 쿼리.
