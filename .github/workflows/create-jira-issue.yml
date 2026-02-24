@@ -1,0 +1,74 @@
+name: Create Jira Issue
+
+on:
+  issues:
+    types:
+      - opened
+
+jobs:
+  issue-sync:
+    name: Create Jira Issue
+    runs-on: ubuntu-latest
+    env:
+      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+      PROJECT_KEY: ${{ secrets.PROJECT_KEY }}
+
+    steps:
+      # 1. Jira 로그인 검증
+      - name: JIRA Login Check
+        run: |
+          curl --fail --request GET \
+          --url "https://${JIRA_BASE_URL}/rest/api/3/myself" \
+          --user "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
+          --header "Accept: application/json"
+
+      # 2. Jira 티켓 생성
+      - name: Create JIRA Issue
+        id: create-issue
+        run: |
+          response=$(curl --fail --silent --request POST \
+            --url "https://${JIRA_BASE_URL}/rest/api/3/issue" \
+            --user "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" \
+            --header "Accept: application/json" \
+            --header "Content-Type: application/json" \
+            --data "{
+              \"fields\": {
+                \"project\": { \"key\": \"${PROJECT_KEY}\" },
+                \"issuetype\": { \"name\": \"Story\" },
+                \"summary\": \"${{ github.event.issue.title }}\",
+                \"description\": {
+                  \"version\": 1,
+                  \"type\": \"doc\",
+                  \"content\": [{
+                    \"type\": \"paragraph\",
+                    \"content\": [{
+                      \"type\": \"text\",
+                      \"text\": \"GitHub Issue: ${{ github.event.issue.html_url }}\"
+                    }]
+                  }]
+                }
+              }
+            }")
+
+          echo "Response: $response"
+          issue_key=$(echo "$response" | jq -r '.key')
+          echo "key=$issue_key" >> $GITHUB_ENV
+
+      # 3. GitHub Issue 제목에 Jira 키 prefix 추가
+      - name: Update Issue Title
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'update-issue'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: '[${{ env.key }}] ${{ github.event.issue.title }}'
+
+      # 4. GitHub Issue에 Jira 링크 댓글 추가
+      - name: Add Jira Link Comment
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'create-comment'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: '🎟️ Jira Issue Created: [${{ env.key }}](https://${{ secrets.JIRA_BASE_URL }}/browse/${{ env.key }})'
