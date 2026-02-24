@@ -30,7 +30,7 @@ public class ClubService {
                 .toList();
     }
 
-    public ClubDetailGetResponse GetClubDetail(Long id) {
+    public ClubDetailGetResponse getClubDetail(Long id) {
         var club = clubRepository.findWithStadiumByIdOrThrow(id, ErrorCode.CLUB_NOT_FOUND);
 
         int currentYear = LocalDate.now().getYear();
