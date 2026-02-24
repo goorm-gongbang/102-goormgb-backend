@@ -46,6 +46,10 @@ public enum ErrorCode {
 	// Club
 	CLUB_NOT_FOUND(HttpStatus.NOT_FOUND, "구단을 찾을 수 없습니다."),
 
+	// Match
+	MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "경기를 찾을 수 없습니다."),
+
+
 	;
 
 	private final HttpStatus status;
