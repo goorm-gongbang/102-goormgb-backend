@@ -18,6 +18,10 @@ configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
 	}
+	// WebFlux 기반 모듈 — WebMVC 전이 의존성 유입 차단
+	all {
+		exclude group: 'org.springframework.boot', module: 'spring-boot-starter-web'
+	}
 }
 
 repositories {
