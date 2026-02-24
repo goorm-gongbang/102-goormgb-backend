@@ -1,5 +1,7 @@
 package com.goormgb.be.ordercore.club.repository;
 
+import com.goormgb.be.global.exception.CustomException;
+import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.club.dto.response.ClubDetailFlatDto;
 import com.goormgb.be.ordercore.club.dto.response.ClubListItemResponse;
 import com.goormgb.be.ordercore.club.entity.Club;
@@ -12,14 +14,19 @@ import java.util.Optional;
 
 public interface ClubRepository extends JpaRepository<Club, Long> {
 
-    List<ClubListItemResponse> findAllClubList();
-
-    @EntityGraph(attributePaths = {"stadium"})
-    Optional<Club> findWithStadiumById(Long id);
+    // TODO: service 레이어 구현할 때 필요한 부분 수정
+//    List<ClubListItemResponse> findAllClubList();
+//
+//    @EntityGraph(attributePaths = {"stadium"})
+//    Optional<Club> findWithStadiumById(Long id);
 
     /**
      * FR-C02 구단 상세 기본 정보 조회용 쿼리.
      * DTO Projection 방식으로 단건 조회 성능을 최적화.
      */
-    List<ClubDetailFlatDto> findClubDetailFlat(@Param("clubId") Long clubId);
+//    List<ClubDetailFlatDto> findClubDetailFlat(@Param("clubId") Long clubId);
+
+    default Club findByIdOrThrow(Long id, ErrorCode errorCode){
+        return findById(id).orElseThrow(() -> new CustomException(errorCode));
+    }
 }
