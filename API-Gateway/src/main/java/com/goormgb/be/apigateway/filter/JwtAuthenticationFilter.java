@@ -15,6 +15,8 @@ import com.goormgb.be.apigateway.jwt.enums.TokenType;
 import com.goormgb.be.apigateway.jwt.provider.JwtTokenProvider;
 import com.goormgb.be.apigateway.jwt.repository.AccessTokenBlacklistRepository;
 
+import io.jsonwebtoken.Claims;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -26,6 +28,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
 	private static final String AUTHORIZATION_HEADER = "Authorization";
 	private static final String BEARER_PREFIX = "Bearer ";
+	private static final String HEADER_USER_ID = "X-User-Id";
+	private static final String HEADER_USER_ROLE = "X-User-Role";
 
 	// 인증 없이 통과시킬 경로 prefix 목록
 	private static final List<String> WHITELIST = List.of(
@@ -55,16 +59,16 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 		}
 
 		try {
-			jwtTokenProvider.validateToken(token);
+			Claims claims = jwtTokenProvider.parseClaims(token);
 
-			if (jwtTokenProvider.getTokenTypeFromToken(token) != TokenType.ACCESS) {
+			if (jwtTokenProvider.getTokenType(claims) != TokenType.ACCESS) {
 				log.debug("Token type is not ACCESS for path: {}", path);
 				return unauthorizedResponse(exchange);
 			}
 
-			String jti = jwtTokenProvider.getJtiFromToken(token);
-			Long userId = jwtTokenProvider.getUserIdFromToken(token);
-			String authority = jwtTokenProvider.getAuthorityFromToken(token);
+			String jti = jwtTokenProvider.getJti(claims);
+			Long userId = jwtTokenProvider.getUserId(claims);
+			String authority = jwtTokenProvider.getAuthority(claims);
 
 			return blacklistRepository.isBlacklisted(jti)
 					.flatMap(isBlacklisted -> {
@@ -74,8 +78,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 						}
 
 						ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
-								.header("X-User-Id", String.valueOf(userId))
-								.header("X-User-Role", authority)
+								.header(HEADER_USER_ID, String.valueOf(userId))
+								.header(HEADER_USER_ROLE, authority)
 								.build();
 
 						log.debug("JWT authenticated - userId: {}, role: {}", userId, authority);

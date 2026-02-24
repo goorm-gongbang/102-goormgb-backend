@@ -31,37 +31,36 @@ public class JwtTokenProvider {
 		this.secretKey = Keys.hmacShaKeyFor(jwtProperties.getSecretKey().getBytes());
 	}
 
-	public void validateToken(String token) {
+	/**
+	 * JWT를 한 번만 파싱하여 Claims를 반환한다.
+	 * 필터에서 이 메서드를 단 한 번 호출하고 반환된 Claims에서 필요한 정보를 추출해야 한다.
+	 */
+	public Claims parseClaims(String token) {
 		try {
-			parseClaimsFromToken(token);
+			return Jwts.parser()
+					.verifyWith(secretKey)
+					.build()
+					.parseSignedClaims(token)
+					.getPayload();
 		} catch (JwtException | IllegalArgumentException e) {
 			log.warn("Invalid JWT token: {}", e.getMessage());
 			throw new IllegalArgumentException("Invalid JWT token", e);
 		}
 	}
 
-	public Long getUserIdFromToken(String token) {
-		return Long.parseLong(parseClaimsFromToken(token).getSubject());
+	public TokenType getTokenType(Claims claims) {
+		return TokenType.valueOf(claims.get(CLAIM_TOKEN_TYPE, String.class));
 	}
 
-	public String getAuthorityFromToken(String token) {
-		return parseClaimsFromToken(token).get(CLAIM_AUTH, String.class);
+	public Long getUserId(Claims claims) {
+		return Long.parseLong(claims.getSubject());
 	}
 
-	public TokenType getTokenTypeFromToken(String token) {
-		String tokenTypeValue = parseClaimsFromToken(token).get(CLAIM_TOKEN_TYPE, String.class);
-		return TokenType.valueOf(tokenTypeValue);
+	public String getAuthority(Claims claims) {
+		return claims.get(CLAIM_AUTH, String.class);
 	}
 
-	public String getJtiFromToken(String token) {
-		return parseClaimsFromToken(token).getId();
-	}
-
-	private Claims parseClaimsFromToken(String token) {
-		return Jwts.parser()
-				.verifyWith(secretKey)
-				.build()
-				.parseSignedClaims(token)
-				.getPayload();
+	public String getJti(Claims claims) {
+		return claims.getId();
 	}
 }
