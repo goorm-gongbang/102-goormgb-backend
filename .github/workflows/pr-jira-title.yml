@@ -1,0 +1,54 @@
+name: Add Jira Key to PR Title
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+
+jobs:
+  update-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      # PR 본문에서 GRGB 이슈키 추출 후 제목 맨 뒤에 자동 추가
+      - name: Extract Jira Key and Update PR Title
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = context.payload.pull_request.title;
+            const body = context.payload.pull_request.body || '';
+
+            // 제목에 이미 GRGB 키가 있으면 스킵
+            if (/GRGB-\d+/.test(title)) {
+              console.log('Jira key already in title, skipping');
+              return;
+            }
+
+            // PR 본문에서 GRGB 이슈키 추출 (ex. GRGB-161)
+            const match = body.match(/GRGB-\d+/);
+            if (!match) {
+              console.log('No Jira key found in PR body, skipping');
+              return;
+            }
+
+            const jiraKey = match[0];
+            const newTitle = `${title} [${jiraKey}]`;
+
+            // PR 제목 맨 뒤에 Jira 이슈키 추가
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              title: newTitle
+            });
+
+            // 성공 시 PR 댓글 자동 등록
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `🔗 원활한 Jira 자동화를 위해 PR 제목에 이슈키 **${jiraKey}** 를 추가했어요!`
+            });
+
+            console.log(`Updated PR title: ${newTitle}`);
