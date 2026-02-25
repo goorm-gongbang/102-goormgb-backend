@@ -35,4 +35,18 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
             LocalDateTime start,
             LocalDateTime end
     );
+
+    @EntityGraph(attributePaths = {"homeClub", "awayClub"})
+    @Query("""
+    select m from Match m
+    where (m.homeClub.id = :clubId or m.awayClub.id = :clubId)
+      and m.matchAt >= :start
+      and m.matchAt < :end
+    order by m.matchAt asc
+""")
+    List<Match> findMonthlyByClubId(
+            @Param("clubId") Long clubId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }
