@@ -75,6 +75,13 @@ management:
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState, db
+    prometheus:
+      enabled: true
   prometheus:
     metrics:
       export:
