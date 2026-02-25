@@ -42,6 +42,14 @@ public enum ErrorCode {
 	BLACKLISTED_TOKEN(HttpStatus.UNAUTHORIZED, "로그아웃된 토큰입니다."),
 	OAUTH_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "토큰 발급에 실패했습니다."),
 	OAUTH_CODE_REQUEST_FAILED(HttpStatus.BAD_REQUEST, "인가 코드는 필수입니다."),
+
+	// Club
+	CLUB_NOT_FOUND(HttpStatus.NOT_FOUND, "구단을 찾을 수 없습니다."),
+
+	// Match
+	MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "경기를 찾을 수 없습니다."),
+
+
 	;
 
 	private final HttpStatus status;

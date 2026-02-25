@@ -29,13 +29,12 @@ public class AuthGuardSecurityConfig {
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers(
-					"/auth/kakao/**",
-					"/auth/token/refresh",
+					"/kakao/**",
+					"/token/refresh",
 					"/dev/auth/**",
 					"/swagger-ui/**",
 					"/v3/api-docs/**",
-//					"/actuator/health"
-						"/actuator/**"
+				"/actuator/health/**"
 				).permitAll()
 				.anyRequest().authenticated()
 			)
