@@ -34,8 +34,7 @@ public class AuthGuardSecurityConfig {
 					"/dev/auth/**",
 					"/swagger-ui/**",
 					"/v3/api-docs/**",
-//					"/actuator/health"
-					"/actuator/**"
+				"/actuator/health/**"
 				).permitAll()
 				.anyRequest().authenticated()
 			)
