@@ -47,7 +47,7 @@ springdoc:
   swagger-ui:
     urls:
       - name: Auth-Guard
-        url: http://localhost:8080/v3/api-docs
+        url: http://localhost:8080/auth/v3/api-docs
       - name: Queue
         url: http://localhost:8081/queue/v3/api-docs
       - name: Seat
