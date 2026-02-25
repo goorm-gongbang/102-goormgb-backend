@@ -20,6 +20,27 @@ spring:
             allowedHeaders:
               - "*"
             allowCredentials: true
+      routes:
+        - id: auth-guard
+          uri: ${AUTH_GUARD_URL}
+          predicates:
+            - Path=/auth/**
+        - id: queue
+          uri: ${QUEUE_URL}
+          predicates:
+            - Path=/queue/**
+        - id: seat
+          uri: ${SEAT_URL}
+          predicates:
+            - Path=/seat/**
+        - id: order-core
+          uri: ${ORDER_CORE_URL}
+          predicates:
+            - Path=/order/**
+        - id: recommendation
+          uri: ${RECOMMENDATION_URL}
+          predicates:
+            - Path=/recommendation/**
   jackson:
     time-zone: UTC
     date-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
@@ -34,3 +55,18 @@ jwt:
   issuer: ${JWT_ISSUER}
   access-token:
     audience: ${JWT_ACCESS_TOKEN_AUDIENCE}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: Auth-Guard
+        url: /auth/v3/api-docs
+      - name: Queue
+        url: /queue/v3/api-docs
+      - name: Seat
+        url: /seat/v3/api-docs
+      - name: Order-Core
+        url: /order/v3/api-docs
+      - name: Recommendation
+        url: /recommendation/v3/api-docs
