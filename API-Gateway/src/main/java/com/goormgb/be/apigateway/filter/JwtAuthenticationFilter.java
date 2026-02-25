@@ -35,9 +35,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 	private static final List<String> WHITELIST = List.of(
 			"/auth/kakao",
 			"/auth/token/refresh",
-			"/dev/auth",
+			"/auth/dev/auth",
 			"/swagger-ui",
 			"/v3/api-docs",
+			"/auth/v3/api-docs",
+			"/queue/v3/api-docs",
+			"/seat/v3/api-docs",
+			"/order/v3/api-docs",
+			"/recommendation/v3/api-docs",
 			"/actuator"
 	);
 
