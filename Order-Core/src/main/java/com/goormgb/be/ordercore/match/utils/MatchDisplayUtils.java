@@ -16,7 +16,7 @@ import java.util.Locale;
 public class MatchDisplayUtils {
 
     public MatchGuideDto toGuide(Match match) {
-        return MatchGuideDto.of(
+        return new MatchGuideDto(
                 createTeamsDisplay(match),
                 createAgeLimit(),
                 createPlaceDisplay(match),
