@@ -3,14 +3,17 @@ package com.goormgb.be.ordercore.match.repository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.match.entity.Match;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface MatchRepository extends JpaRepository<Match, Long> {
-    default Match findByOrThrow(Long id, ErrorCode errorCode) {
+    default Match findByIdOrThrow(Long id, ErrorCode errorCode) {
         return findById(id).orElseThrow(() -> new CustomException(errorCode));
     }
 
@@ -26,4 +29,10 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
         return findDetailById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.MATCH_NOT_FOUND));
     }
+
+    @EntityGraph(attributePaths = {"homeClub", "awayClub", "stadium"})
+    List<Match> findAllByMatchAtGreaterThanEqualAndMatchAtLessThanOrderByMatchAtAsc(
+            LocalDateTime start,
+            LocalDateTime end
+    );
 }
