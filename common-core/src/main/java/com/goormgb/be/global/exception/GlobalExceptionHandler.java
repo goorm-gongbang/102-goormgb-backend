@@ -2,6 +2,7 @@ package com.goormgb.be.global.exception;
 
 import java.util.Arrays;
 
+import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authorization.AuthorizationDeniedException;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import com.goormgb.be.global.response.ErrorResponse;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @Slf4j
 @RestControllerAdvice
@@ -38,5 +40,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(AuthorizationDeniedException.class)
 	public ResponseEntity<ErrorResponse.ErrorData> handleAuthorizationDenied(AuthorizationDeniedException e) {
 		return ErrorResponse.error(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity<ErrorResponse.ErrorData> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+		if ("date".equals(e.getName())) {
+			return ErrorResponse.error(HttpStatus.BAD_REQUEST, "올바른 날짜를 입력해주세요.");
+		}
+		return ErrorResponse.error(HttpStatus.BAD_REQUEST, "요청 파라미터 형식이 올바르지 않습니다.");
 	}
 }
