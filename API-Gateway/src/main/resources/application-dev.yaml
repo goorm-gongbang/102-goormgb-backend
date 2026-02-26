@@ -20,6 +20,27 @@ spring:
             allowedHeaders:
               - "*"
             allowCredentials: true
+      routes:
+        - id: auth-guard
+          uri: ${AUTH_GUARD_URL}
+          predicates:
+            - Path=/auth/**
+        - id: queue
+          uri: ${QUEUE_URL}
+          predicates:
+            - Path=/queue/**
+        - id: seat
+          uri: ${SEAT_URL}
+          predicates:
+            - Path=/seat/**
+        - id: order-core
+          uri: ${ORDER_CORE_URL}
+          predicates:
+            - Path=/order/**
+        - id: recommendation
+          uri: ${RECOMMENDATION_URL}
+          predicates:
+            - Path=/recommendation/**
 
   data:
     redis:
