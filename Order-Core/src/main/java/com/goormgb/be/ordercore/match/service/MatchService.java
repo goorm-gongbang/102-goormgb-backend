@@ -51,6 +51,8 @@ public class MatchService {
 
     public ClubMonthlyMatchesResponse getClubMonthlyMatches(Long clubId, int year, int month){
         Preconditions.validate(clubRepository.existsById(clubId), ErrorCode.CLUB_NOT_FOUND);
+        Preconditions.validate(month >= 1 && month <= 12, ErrorCode.INVALID_MATCH_MONTH);
+        Preconditions.validate(year >= 1900 && year <= 2100, ErrorCode.INVALID_MATCH_YEAR);
 
         YearMonth ym = YearMonth.of(year, month);
         LocalDateTime start = ym.atDay(1).atStartOfDay();

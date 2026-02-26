@@ -3,6 +3,7 @@ package com.goormgb.be.ordercore.club.controller;
 import com.goormgb.be.global.response.ApiResult;
 import com.goormgb.be.ordercore.club.dto.response.ClubDetailGetResponse;
 import com.goormgb.be.ordercore.club.service.ClubService;
+import com.goormgb.be.ordercore.match.dto.response.ClubMonthlyMatchesResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +23,17 @@ public class ClubController {
     public ApiResult<ClubDetailGetResponse> getClubDetail(
             @PathVariable Long clubId
     ) {
-        var club = clubService.getClubDetail(clubId);
-
-        return ApiResult.ok(club);
+        return ApiResult.ok(clubService.getClubDetail(clubId));
     }
+
+    @Operation(summary = "구단 경기 일정(월 단위) 조회", description = "구단 월 단위 경기 일정을 조회합니다.")
+    @GetMapping("/{clubId}/matches")
+    public ApiResult<ClubMonthlyMatchesResponse> getClubMonthlyMatches(
+            @PathVariable Long clubId,
+            @RequestParam int year,
+            @RequestParam int month
+    ) {
+        return ApiResult.ok(clubService.getClubMonthlyMatches(clubId, year, month));
+    }
+
 }
