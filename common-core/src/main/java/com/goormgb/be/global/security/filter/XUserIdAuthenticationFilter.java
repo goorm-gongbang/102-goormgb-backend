@@ -13,8 +13,10 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 
-@Component @Slf4j
+@Slf4j
+@Component
 public class XUserIdAuthenticationFilter extends OncePerRequestFilter {
 
 	private static final String HEADER_USER_ID = "X-User-Id";
@@ -31,18 +33,24 @@ public class XUserIdAuthenticationFilter extends OncePerRequestFilter {
 		String userRole = request.getHeader(HEADER_USER_ROLE);
 
 		if (userId != null && !userId.isBlank()) {
-			SimpleGrantedAuthority authority = new SimpleGrantedAuthority(
-				userRole != null && !userRole.isBlank() ? userRole : "ROLE_USER"
-			);
+			try {
+				Long parsedUserId = Long.valueOf(userId);
 
-			UsernamePasswordAuthenticationToken authentication =
-				new UsernamePasswordAuthenticationToken(
-					Long.valueOf(userId),
-					null,
-					List.of(authority)
+				SimpleGrantedAuthority authority = new SimpleGrantedAuthority(
+					userRole != null && !userRole.isBlank() ? userRole : "ROLE_USER"
 				);
 
-			SecurityContextHolder.getContext().setAuthentication(authentication);
+				UsernamePasswordAuthenticationToken authentication =
+					new UsernamePasswordAuthenticationToken(
+						parsedUserId,
+						null,
+						List.of(authority)
+					);
+
+				SecurityContextHolder.getContext().setAuthentication(authentication);
+			} catch (NumberFormatException e) {
+				log.warn("Invalid X-User-Id header value: {}", userId);
+			}
 		}
 
 		filterChain.doFilter(request, response);
