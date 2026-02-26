@@ -24,14 +24,12 @@ public class ClubService {
     final private ClubRepository clubRepository;
     final private TeamSeasonStatsRepository teamSeasonStatsRepository;
 
-    public List<ClubGetResponse> getAllClubs(){
+    public ClubGetResponse getAllClubs(){
         var clubs = clubRepository.findAll();
 
         Preconditions.validate(!clubs.isEmpty(), ErrorCode.CLUB_NOT_FOUND);
 
-        return clubs.stream()
-                .map(ClubGetResponse::from)
-                .toList();
+        return ClubGetResponse.from(clubs);
     }
 
     public ClubDetailGetResponse getClubDetail(Long id) {
