@@ -30,19 +30,6 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
-jwt:
-  secret-key: ${JWT_SECRET_KEY}
-
-  issuer: ${JWT_ISSUER}
-  access-token:
-    audience: ${JWT_ACCESS_TOKEN_AUDIENCE}
-    expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION}
-  refresh-token:
-    audience: ${JWT_REFRESH_TOKEN_AUDIENCE}
-    expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION}
-  cookie:
-    secure: false
-
 springdoc:
   swagger-ui:
     urls:
