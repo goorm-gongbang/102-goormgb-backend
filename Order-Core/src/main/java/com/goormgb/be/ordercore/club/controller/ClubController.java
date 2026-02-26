@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/clubs")
 public class ClubController {
-    final private ClubService clubService;
+    private final ClubService clubService;
 
     @Operation(summary = "구단 상세 조회", description = "구단 상세를 조회합니다.")
     @GetMapping("/{clubId}")
