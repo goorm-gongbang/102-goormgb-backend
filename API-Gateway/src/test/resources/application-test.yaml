@@ -1,0 +1,11 @@
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+jwt:
+  secret-key: goormgb-test-secret-key-do-not-use-in-production-20260227
+  issuer: test-issuer
+  access-token:
+    audience: test-audience

@@ -44,15 +44,6 @@ springdoc:
       - name: Recommendation
         url: http://localhost:8084/recommendation/v3/api-docs
 
-kakao:
-  client-id: ${KAKAO_CLIENT_ID}
-  client-secret: ${KAKAO_CLIENT_SECRET}
-  redirect-uri: ${KAKAO_REDIRECT_URI}
-
-  auth-url: https://kauth.kakao.com/oauth/authorize
-  token-url: https://kauth.kakao.com/oauth/token
-  user-info-url: https://kapi.kakao.com/v2/user/me
-
 management:
   endpoints:
     web:

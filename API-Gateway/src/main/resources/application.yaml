@@ -6,41 +6,43 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOriginPatterns:
-              - "${ALLOWED_ORIGINS}"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders:
-              - "*"
-            allowCredentials: true
-      routes:
-        - id: auth-guard
-          uri: ${AUTH_GUARD_URL}
-          predicates:
-            - Path=/auth/**
-        - id: queue
-          uri: ${QUEUE_URL}
-          predicates:
-            - Path=/queue/**
-        - id: seat
-          uri: ${SEAT_URL}
-          predicates:
-            - Path=/seat/**
-        - id: order-core
-          uri: ${ORDER_CORE_URL}
-          predicates:
-            - Path=/order/**
-        - id: recommendation
-          uri: ${RECOMMENDATION_URL}
-          predicates:
-            - Path=/recommendation/**
+      server:
+        webflux:
+          globalcors:
+            corsConfigurations:
+              '[/**]':
+                allowedOriginPatterns:
+                  - "${ALLOWED_ORIGINS}"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
+          routes:
+            - id: auth-guard
+              uri: ${AUTH_GUARD_URL}
+              predicates:
+                - Path=/auth/**
+            - id: queue
+              uri: ${QUEUE_URL}
+              predicates:
+                - Path=/queue/**
+            - id: seat
+              uri: ${SEAT_URL}
+              predicates:
+                - Path=/seat/**
+            - id: order-core
+              uri: ${ORDER_CORE_URL}
+              predicates:
+                - Path=/order/**
+            - id: recommendation
+              uri: ${RECOMMENDATION_URL}
+              predicates:
+                - Path=/recommendation/**
   jackson:
     time-zone: UTC
     date-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
