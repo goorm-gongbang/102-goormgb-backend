@@ -5,6 +5,8 @@ import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.ordercore.club.dto.response.ClubDetailGetResponse;
 import com.goormgb.be.ordercore.club.dto.response.ClubGetResponse;
 import com.goormgb.be.ordercore.club.repository.ClubRepository;
+import com.goormgb.be.ordercore.match.dto.response.ClubMonthlyMatchesResponse;
+import com.goormgb.be.ordercore.match.service.MatchService;
 import com.goormgb.be.ordercore.state.repository.TeamSeasonStatsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,17 +19,17 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ClubService {
+    final private MatchService matchService;
+
     final private ClubRepository clubRepository;
     final private TeamSeasonStatsRepository teamSeasonStatsRepository;
 
-    public List<ClubGetResponse> getAllClubs(){
+    public ClubGetResponse getAllClubs(){
         var clubs = clubRepository.findAll();
 
         Preconditions.validate(!clubs.isEmpty(), ErrorCode.CLUB_NOT_FOUND);
 
-        return clubs.stream()
-                .map(ClubGetResponse::from)
-                .toList();
+        return ClubGetResponse.from(clubs);
     }
 
     public ClubDetailGetResponse getClubDetail(Long id) {
@@ -41,4 +43,7 @@ public class ClubService {
         return ClubDetailGetResponse.of(club, stats);
     }
 
+    public ClubMonthlyMatchesResponse getClubMonthlyMatches(Long clubId, int year, int month) {
+        return matchService.getClubMonthlyMatches(clubId, year, month);
+    }
 }

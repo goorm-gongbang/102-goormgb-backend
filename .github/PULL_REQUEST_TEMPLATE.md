@@ -11,7 +11,7 @@
 
 
 ### 📌 관련 Jira Issue
-- GRBG-XX
+- GRGB-XX
 
 
 ## 🧪 테스트 방법(선택)

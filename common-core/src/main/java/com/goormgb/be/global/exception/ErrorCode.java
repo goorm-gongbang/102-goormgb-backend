@@ -48,6 +48,8 @@ public enum ErrorCode {
 
 	// Match
 	MATCH_NOT_FOUND(HttpStatus.NOT_FOUND, "경기를 찾을 수 없습니다."),
+	INVALID_MATCH_MONTH(HttpStatus.BAD_REQUEST, "올바른 경기 월을 입력해주세요."),
+	INVALID_MATCH_YEAR(HttpStatus.BAD_REQUEST, "올바른 경기 년도를 입력해주세요."),
 
 
 	;

@@ -33,8 +33,10 @@ public class AuthGuardSecurityConfig {
 					"/token/refresh",
 					"/dev/auth/**",
 					"/swagger-ui/**",
+					"/swagger-ui.html",
+					"/swagger-resources/**",
 					"/v3/api-docs/**",
-				"/actuator/health/**"
+					"/actuator/health/**"
 				).permitAll()
 				.anyRequest().authenticated()
 			)
