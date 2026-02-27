@@ -44,8 +44,8 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
 	public ResponseEntity<ErrorResponse.ErrorData> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
-		if ("date".equals(e.getName())) {
-			return ErrorResponse.error(HttpStatus.BAD_REQUEST, "올바른 날짜를 입력해주세요.");
+		if (e.getRequiredType() != null && e.getRequiredType().equals(java.time.LocalDate.class)) {
+			return ErrorResponse.error(HttpStatus.BAD_REQUEST, "올바른 날짜를 입력해주세요. (형식: yyyy-MM-dd)");
 		}
 		return ErrorResponse.error(HttpStatus.BAD_REQUEST, "요청 파라미터 형식이 올바르지 않습니다.");
 	}
