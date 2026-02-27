@@ -14,14 +14,13 @@ COPY Queue/build.gradle Queue/
 COPY Seat/build.gradle Seat/
 COPY Recommendation/build.gradle Recommendation/
 
-# 3. 필요한 소스 코드만 복사 (공통 모듈 + 현재 서비스)
-COPY common-core/src common-core/src
-COPY Seat/src Seat/src
+# 3. 필요한 소스 코드만 복사 (현재 서비스만 — common-core 의존 없음)
+COPY API-Gateway/src API-Gateway/src
 
 # 4. 빌드 수행 (테스트 제외)
-RUN gradle :Seat:bootJar -x test --no-daemon
+RUN gradle :API-Gateway:bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=builder /app/Seat/build/libs/*.jar app.jar
+COPY --from=builder /app/API-Gateway/build/libs/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -1,6 +1,10 @@
 version: '3.8'
 
 services:
+  api-gateway:
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+
   auth-guard:
     environment:
       SPRING_PROFILES_ACTIVE: local
