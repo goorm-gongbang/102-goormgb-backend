@@ -14,10 +14,14 @@ COPY Queue/build.gradle Queue/
 COPY Seat/build.gradle Seat/
 COPY Recommendation/build.gradle Recommendation/
 
-# 3. 필요한 소스 코드만 복사 (현재 서비스만 — common-core 의존 없음)
+# 3. 의존성 다운로드 (소스 코드 복사 전)
+# 소스 코드가 없으므로 빌드는 실패하지만, 의존성은 다운로드되어 캐시됩니다.
+RUN gradle :API-Gateway:classes -x test --no-daemon || true
+
+# 4. 필요한 소스 코드만 복사 (현재 서비스만 — common-core 의존 없음)
 COPY API-Gateway/src API-Gateway/src
 
-# 4. 빌드 수행 (테스트 제외)
+# 5. 실제 빌드 수행
 RUN gradle :API-Gateway:bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine
