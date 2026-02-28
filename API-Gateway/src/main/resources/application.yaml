@@ -1,0 +1,74 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            corsConfigurations:
+              '[/**]':
+                allowedOriginPatterns:
+                  - "${ALLOWED_ORIGINS}"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
+          routes:
+            - id: auth-guard
+              uri: ${AUTH_GUARD_URL}
+              predicates:
+                - Path=/auth/**
+            - id: queue
+              uri: ${QUEUE_URL}
+              predicates:
+                - Path=/queue/**
+            - id: seat
+              uri: ${SEAT_URL}
+              predicates:
+                - Path=/seat/**
+            - id: order-core
+              uri: ${ORDER_CORE_URL}
+              predicates:
+                - Path=/order/**
+            - id: recommendation
+              uri: ${RECOMMENDATION_URL}
+              predicates:
+                - Path=/recommendation/**
+  jackson:
+    time-zone: UTC
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+  issuer: ${JWT_ISSUER}
+  access-token:
+    audience: ${JWT_ACCESS_TOKEN_AUDIENCE}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: Auth-Guard
+        url: /auth/v3/api-docs
+      - name: Queue
+        url: /queue/v3/api-docs
+      - name: Seat
+        url: /seat/v3/api-docs
+      - name: Order-Core
+        url: /order/v3/api-docs
+      - name: Recommendation
+        url: /recommendation/v3/api-docs

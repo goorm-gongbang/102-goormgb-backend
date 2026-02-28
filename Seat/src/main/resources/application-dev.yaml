@@ -30,19 +30,6 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
-jwt:
-  secret-key: ${JWT_SECRET_KEY}
-
-  issuer: ${JWT_ISSUER}
-  access-token:
-    audience: ${JWT_ACCESS_TOKEN_AUDIENCE}
-    expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION}
-  refresh-token:
-    audience: ${JWT_REFRESH_TOKEN_AUDIENCE}
-    expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION}
-  cookie:
-    secure: false
-
 springdoc:
   swagger-ui:
     urls:
@@ -56,15 +43,6 @@ springdoc:
         url: http://localhost:8083/order/v3/api-docs
       - name: Recommendation
         url: http://localhost:8084/recommendation/v3/api-docs
-
-kakao:
-  client-id: ${KAKAO_CLIENT_ID}
-  client-secret: ${KAKAO_CLIENT_SECRET}
-  redirect-uri: ${KAKAO_REDIRECT_URI}
-
-  auth-url: https://kauth.kakao.com/oauth/authorize
-  token-url: https://kauth.kakao.com/oauth/token
-  user-info-url: https://kapi.kakao.com/v2/user/me
 
 management:
   endpoints:

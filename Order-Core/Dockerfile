@@ -6,6 +6,7 @@ COPY build.gradle .
 COPY settings.gradle .
 
 # 2. 모든 모듈의 build.gradle 복사 (Gradle 멀티 모듈 구조 유지 필수)
+COPY API-Gateway/build.gradle API-Gateway/
 COPY Auth-Guard/build.gradle Auth-Guard/
 COPY common-core/build.gradle common-core/
 COPY Order-Core/build.gradle Order-Core/

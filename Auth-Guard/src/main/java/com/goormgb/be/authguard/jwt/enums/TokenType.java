@@ -1,4 +1,4 @@
-package com.goormgb.be.global.jwt.enums;
+package com.goormgb.be.authguard.jwt.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

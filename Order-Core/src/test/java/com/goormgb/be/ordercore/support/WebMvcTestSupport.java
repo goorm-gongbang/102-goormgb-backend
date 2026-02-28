@@ -6,7 +6,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import tools.jackson.databind.ObjectMapper;
-import com.goormgb.be.global.jwt.filter.JwtAuthenticationFilter;
+import com.goormgb.be.global.security.filter.XUserIdAuthenticationFilter;
 
 @ActiveProfiles("test")
 public abstract class WebMvcTestSupport {
@@ -18,5 +18,5 @@ public abstract class WebMvcTestSupport {
 	protected ObjectMapper objectMapper;
 
 	@MockitoBean
-	protected JwtAuthenticationFilter jwtAuthenticationFilter;
+	protected XUserIdAuthenticationFilter xUserIdAuthenticationFilter;
 }

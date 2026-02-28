@@ -33,6 +33,31 @@ services:
       timeout: 5s
       retries: 5
 
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: API-Gateway/Dockerfile
+    container_name: api-gateway
+    environment:
+      AUTH_GUARD_URL: http://auth-guard:8080
+      QUEUE_URL: http://queue:8081
+      SEAT_URL: http://seat:8082
+      ORDER_CORE_URL: http://order-core:8083
+      RECOMMENDATION_URL: http://recommendation:8084
+      REDIS_HOST: local-redis
+      REDIS_PORT: 6379
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_ACCESS_TOKEN_AUDIENCE: ${JWT_ACCESS_TOKEN_AUDIENCE}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+    ports:
+      - "8085:8085"
+    depends_on:
+      local-redis:
+        condition: service_healthy
+    networks:
+      - goormgb-network
+
   auth-guard:
     build:
       context: ..
@@ -53,8 +78,6 @@ services:
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
       KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}
-    ports:
-      - "8080:8080"
     depends_on:
       local-postgres:
         condition: service_healthy
@@ -74,14 +97,6 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: local-redis
       REDIS_PORT: 6379
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      JWT_ISSUER: ${JWT_ISSUER}
-      JWT_ACCESS_TOKEN_AUDIENCE: ${JWT_ACCESS_TOKEN_AUDIENCE}
-      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
-      JWT_REFRESH_TOKEN_AUDIENCE: ${JWT_REFRESH_TOKEN_AUDIENCE}
-      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
-    ports:
-      - "8081:8081"
     depends_on:
       local-postgres:
         condition: service_healthy
@@ -101,14 +116,6 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: local-redis
       REDIS_PORT: 6379
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      JWT_ISSUER: ${JWT_ISSUER}
-      JWT_ACCESS_TOKEN_AUDIENCE: ${JWT_ACCESS_TOKEN_AUDIENCE}
-      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
-      JWT_REFRESH_TOKEN_AUDIENCE: ${JWT_REFRESH_TOKEN_AUDIENCE}
-      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
-    ports:
-      - "8082:8082"
     depends_on:
       local-postgres:
         condition: service_healthy
@@ -128,17 +135,6 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: local-redis
       REDIS_PORT: 6379
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      JWT_ISSUER: ${JWT_ISSUER}
-      JWT_ACCESS_TOKEN_AUDIENCE: ${JWT_ACCESS_TOKEN_AUDIENCE}
-      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
-      JWT_REFRESH_TOKEN_AUDIENCE: ${JWT_REFRESH_TOKEN_AUDIENCE}
-      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
-      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
-      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
-      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}
-    ports:
-      - "8083:8083"
     depends_on:
       local-postgres:
         condition: service_healthy
@@ -158,17 +154,6 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: local-redis
       REDIS_PORT: 6379
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      JWT_ISSUER: ${JWT_ISSUER}
-      JWT_ACCESS_TOKEN_AUDIENCE: ${JWT_ACCESS_TOKEN_AUDIENCE}
-      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
-      JWT_REFRESH_TOKEN_AUDIENCE: ${JWT_REFRESH_TOKEN_AUDIENCE}
-      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
-      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
-      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
-      KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}
-    ports:
-      - "8084:8084"
     depends_on:
       local-postgres:
         condition: service_healthy

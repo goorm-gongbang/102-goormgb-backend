@@ -1,0 +1,72 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            corsConfigurations:
+              '[/**]':
+                allowedOriginPatterns:
+                  - "${ALLOWED_ORIGINS}"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
+          routes:
+            - id: auth-guard
+              uri: ${AUTH_GUARD_URL}
+              predicates:
+                - Path=/auth/**
+            - id: queue
+              uri: ${QUEUE_URL}
+              predicates:
+                - Path=/queue/**
+            - id: seat
+              uri: ${SEAT_URL}
+              predicates:
+                - Path=/seat/**
+            - id: order-core
+              uri: ${ORDER_CORE_URL}
+              predicates:
+                - Path=/order/**
+            - id: recommendation
+              uri: ${RECOMMENDATION_URL}
+              predicates:
+                - Path=/recommendation/**
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    root: INFO
+    com.goormgb.be: DEBUG
