@@ -1,11 +1,44 @@
 spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            corsConfigurations:
+              '[/**]':
+                allowedOriginPatterns:
+                  - "http://localhost"
+                allowedMethods: [GET, POST, PUT, DELETE, OPTIONS]
+                allowedHeaders: ["*"]
+                allowCredentials: true
+          routes:
+            - id: auth-guard
+              uri: http://localhost
+              predicates:
+                - Path=/auth/**
+            - id: queue
+              uri: http://localhost
+              predicates:
+                - Path=/queue/**
+            - id: seat
+              uri: http://localhost
+              predicates:
+                - Path=/seat/**
+            - id: order-core
+              uri: http://localhost
+              predicates:
+                - Path=/order/**
+            - id: recommendation
+              uri: http://localhost
+              predicates:
+                - Path=/recommendation/**
   data:
     redis:
       host: localhost
       port: 6379
 
 jwt:
-  secret-key: goormgb-test-secret-key-do-not-use-in-production-20260227
+  secret-key: goormgb-test-secret-key-do-not-use-in-production-20260227-must-be-at-least-256-bits
   issuer: test-issuer
   access-token:
     audience: test-audience
