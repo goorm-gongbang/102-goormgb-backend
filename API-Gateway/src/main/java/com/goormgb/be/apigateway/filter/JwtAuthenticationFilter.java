@@ -43,7 +43,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 			"/seat/v3/api-docs",
 			"/order/v3/api-docs",
 			"/recommendation/v3/api-docs",
-			"/actuator"
+			"/actuator",
+			"/order/clubs",
+			"/order/matches"
 	);
 
 	private final JwtTokenProvider jwtTokenProvider;
