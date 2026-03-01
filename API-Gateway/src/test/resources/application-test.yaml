@@ -38,7 +38,7 @@ spring:
       port: 6379
 
 jwt:
-  secret-key: goormgb-test-secret-key-do-not-use-in-production-20260227-must-be-at-least-256-bits
+  secret-key: goormgb-test-secret-key-do-not-use-in-production-20260302-must-be-at-least-256-bits
   issuer: test-issuer
   access-token:
     audience: test-audience

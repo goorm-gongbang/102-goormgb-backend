@@ -12,7 +12,7 @@ import io.jsonwebtoken.security.Keys;
 
 public final class JwtTokenFixture {
 
-	public static final String SECRET_KEY = "goormgb-test-secret-key-do-not-use-in-production-20260321-must-be-at-least-256-bits";
+	public static final String SECRET_KEY = "goormgb-test-secret-key-do-not-use-in-production-20260302-must-be-at-least-256-bits";
 	public static final String WRONG_SECRET_KEY = "wrong-secret-key-that-is-long-enough-for-hmac-sha256!!";
 	public static final Long DEFAULT_USER_ID = 1L;
 	public static final String DEFAULT_ROLE = "ROLE_USER";
