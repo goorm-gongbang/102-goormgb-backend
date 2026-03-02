@@ -13,6 +13,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import static com.goormgb.be.ordercore.fixture.club.ClubControllerFixture.*;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -73,6 +74,24 @@ class ClubControllerTest extends WebMvcTestSupport {
                 .andExpect(jsonPath("$.data.stadium.stadiumId").value(10L))
                 .andExpect(jsonPath("$.data.currentSeasonStats.seasonYear").value(2026))
                 .andExpect(jsonPath("$.data.currentSeasonStats.winRate").value(0.720));
+    }
+
+    @Test
+    @DisplayName("GET /clubs/{clubId} - 시즌 정보가 없는 경우")
+    void 구단_상세_조회_성공_시즌정보없음() throws Exception {
+        // given
+        Long clubId = clubId();
+        ClubDetailGetResponse response = clubDetailGetResponseWithoutStats(clubId);
+        given(clubService.getClubDetail(clubId)).willReturn(response);
+
+        // when & then
+        mockMvc.perform(get("/clubs/" + clubId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.clubId").value(clubId))
+                .andExpect(jsonPath("$.data.koName").value("구름 FC"))
+                .andExpect(jsonPath("$.data.stadium.stadiumId").value(10L))
+                .andExpect(jsonPath("$.data.currentSeasonStats").value(nullValue()));
     }
 
     @Test

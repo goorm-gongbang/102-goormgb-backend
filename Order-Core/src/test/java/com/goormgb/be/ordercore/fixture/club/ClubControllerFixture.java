@@ -76,6 +76,21 @@ public final class ClubControllerFixture {
         );
     }
 
+    public static ClubDetailGetResponse clubDetailGetResponseWithoutStats(Long clubId) {
+        return new ClubDetailGetResponse(
+                clubId,
+                "구름 FC",
+                "https://cdn.goormgb.com/logo/goorm.png",
+                "#0055FF",
+                new ClubDetailGetResponse.StadiumDto(
+                        10L,
+                        "구름 스타디움"
+                ),
+                "https://www.goormfc.com",
+                null
+        );
+    }
+
     public static ClubMonthlyMatchesResponse clubMonthlyMatchesResponse(Long clubId, int year, int month) {
         // TODO: 실제 DTO 필드에 맞춰 생성 로직 작성
         return null;
