@@ -69,7 +69,7 @@ class ClubControllerTest extends WebMvcTestSupport {
         given(clubService.getClubDetail(clubId)).willReturn(response);
 
         // when & then
-        mockMvc.perform(get("/clubs/" + clubId))
+        mockMvc.perform(get("/clubs/{clubId}", clubId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.clubId").value(clubId))
