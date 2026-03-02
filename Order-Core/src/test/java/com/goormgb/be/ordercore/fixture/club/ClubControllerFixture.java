@@ -3,8 +3,10 @@ package com.goormgb.be.ordercore.fixture.club;
 import com.goormgb.be.ordercore.club.dto.response.ClubDetailGetResponse;
 import com.goormgb.be.ordercore.club.dto.response.ClubGetResponse;
 import com.goormgb.be.ordercore.match.dto.response.ClubMonthlyMatchesResponse;
+import com.goormgb.be.ordercore.match.enums.SaleStatus;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public final class ClubControllerFixture {
@@ -92,7 +94,34 @@ public final class ClubControllerFixture {
     }
 
     public static ClubMonthlyMatchesResponse clubMonthlyMatchesResponse(Long clubId, int year, int month) {
-        // TODO: 실제 DTO 필드에 맞춰 생성 로직 작성
-        return null;
+        return ClubMonthlyMatchesResponse.of(
+                clubId,
+                year,
+                month,
+                List.of(
+                        new ClubMonthlyMatchesResponse.MatchItem(
+                                1001L,
+                                LocalDateTime.of(year, month, 10, 18, 30),
+                                new ClubMonthlyMatchesResponse.OpponentClub(
+                                        2L,
+                                        "테크업 유나이티드",
+                                        "https://cdn.goormgb.com/logo/techup.png"
+                                ),
+                                SaleStatus.ON_SALE,
+                                true   // 홈 경기
+                        ),
+                        new ClubMonthlyMatchesResponse.MatchItem(
+                                1002L,
+                                LocalDateTime.of(year, month, 24, 19, 0),
+                                new ClubMonthlyMatchesResponse.OpponentClub(
+                                        3L,
+                                        "코딩 시티",
+                                        "https://cdn.goormgb.com/logo/coding.png"
+                                ),
+                                SaleStatus.SOLD_OUT,
+                                false  // 원정 경기
+                        )
+                )
+        );
     }
 }
