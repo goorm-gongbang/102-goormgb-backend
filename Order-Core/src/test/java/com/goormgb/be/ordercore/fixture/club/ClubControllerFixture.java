@@ -4,6 +4,7 @@ import com.goormgb.be.ordercore.club.dto.response.ClubDetailGetResponse;
 import com.goormgb.be.ordercore.club.dto.response.ClubGetResponse;
 import com.goormgb.be.ordercore.match.dto.response.ClubMonthlyMatchesResponse;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public final class ClubControllerFixture {
@@ -51,8 +52,28 @@ public final class ClubControllerFixture {
     }
 
     public static ClubDetailGetResponse clubDetailGetResponse(Long clubId) {
-        // TODO: 실제 DTO 필드에 맞춰 생성 로직 작성
-        return null;
+        return new ClubDetailGetResponse(
+                clubId,
+                "구름 FC",
+                "https://cdn.goormgb.com/logo/goorm.png",
+                "#0055FF",
+                new ClubDetailGetResponse.StadiumDto(
+                        10L,
+                        "구름 스타디움"
+                ),
+                "https://www.goormfc.com",
+                new ClubDetailGetResponse.CurrentSeasonStatsDto(
+                        2026,
+                        1,
+                        18,
+                        3,
+                        5,
+                        new BigDecimal("0.720"),
+                        new BigDecimal("0.312"),
+                        new BigDecimal("2.85"),
+                        new BigDecimal("0.0")
+                )
+        );
     }
 
     public static ClubMonthlyMatchesResponse clubMonthlyMatchesResponse(Long clubId, int year, int month) {
