@@ -47,7 +47,7 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 		given(kakaoOAuthClient.createLoginUrl(isNull())).willReturn(expectedUrl);
 
 		// when & then
-		mockMvc.perform(get("/auth/kakao/login-url"))
+		mockMvc.perform(get("/kakao/login-url"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("OK"))
 			.andExpect(jsonPath("$.data.loginUrl").value(expectedUrl));
@@ -80,7 +80,7 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 		given(cookieUtils.createRefreshTokenCookie("kakao-refresh-token")).willReturn(cookie);
 
 		// when & then
-		mockMvc.perform(post("/auth/kakao/login")
+		mockMvc.perform(post("/kakao/login")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
 			.andExpect(status().isOk())
@@ -100,7 +100,7 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 		KakaoLoginRequest request = new KakaoLoginRequest();
 
 		// when & then
-		mockMvc.perform(post("/auth/kakao/login")
+		mockMvc.perform(post("/kakao/login")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(request)))
 			.andExpect(status().isBadRequest())

@@ -58,7 +58,7 @@ class AuthControllerTest extends WebMvcTestSupport {
 		given(cookieUtils.createRefreshTokenCookie("new-refresh-token")).willReturn(cookie);
 
 		// when & then
-		mockMvc.perform(post("/auth/token/refresh"))
+		mockMvc.perform(post("/token/refresh"))
 			.andExpect(status().isOk())
 			.andExpect(header().exists(HttpHeaders.SET_COOKIE))
 			.andExpect(jsonPath("$.code").value("OK"))
@@ -73,7 +73,7 @@ class AuthControllerTest extends WebMvcTestSupport {
 		given(cookieUtils.extractRefreshToken(any(HttpServletRequest.class))).willReturn(null);
 
 		// when & then
-		mockMvc.perform(post("/auth/token/refresh"))
+		mockMvc.perform(post("/token/refresh"))
 			.andExpect(status().isUnauthorized())
 			.andExpect(jsonPath("$.message").value("Refresh Token이 존재하지 않거나 만료, 유효하지 않습니다."));
 	}
@@ -92,7 +92,7 @@ class AuthControllerTest extends WebMvcTestSupport {
 		given(cookieUtils.deleteRefreshTokenCookie()).willReturn(deleteCookie);
 
 		// when & then
-		mockMvc.perform(post("/auth/logout"))
+		mockMvc.perform(post("/logout"))
 			.andExpect(status().isOk())
 			.andExpect(header().exists(HttpHeaders.SET_COOKIE))
 			.andExpect(header().string(HttpHeaders.SET_COOKIE, org.hamcrest.Matchers.containsString("Max-Age=0")))
@@ -107,7 +107,7 @@ class AuthControllerTest extends WebMvcTestSupport {
 		given(cookieUtils.extractRefreshToken(any(HttpServletRequest.class))).willReturn(null);
 
 		// when & then
-		mockMvc.perform(post("/auth/logout"))
+		mockMvc.perform(post("/logout"))
 			.andExpect(status().isUnauthorized())
 			.andExpect(jsonPath("$.message").value("Refresh Token이 존재하지 않거나 만료, 유효하지 않습니다."));
 	}
@@ -126,7 +126,7 @@ class AuthControllerTest extends WebMvcTestSupport {
 		given(authService.withdraw(userId)).willReturn(response);
 
 		// when & then
-		mockMvc.perform(post("/auth/withdraw"))
+		mockMvc.perform(post("/withdraw"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("OK"))
 			.andExpect(jsonPath("$.message").value("탈퇴 처리 완료"))
