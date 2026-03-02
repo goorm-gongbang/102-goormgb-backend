@@ -26,8 +26,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.ordercore.fixture.OnboardingPreferenceDtoFixture;
-import com.goormgb.be.ordercore.fixture.OnboardingPreferenceRequestFixture;
+import com.goormgb.be.ordercore.fixture.onboarding.OnboardingPreferenceDtoFixture;
+import com.goormgb.be.ordercore.fixture.onboarding.OnboardingPreferenceRequestFixture;
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceCreateRequest;
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceUpdateRequest;
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingPreferenceCreateResponse;
