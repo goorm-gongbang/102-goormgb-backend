@@ -1,4 +1,4 @@
-package com.goormgb.be.ordercore.fixture;
+package com.goormgb.be.ordercore.fixture.onboarding;
 
 import com.goormgb.be.ordercore.onboarding.entity.OnboardingPreference;
 import com.goormgb.be.ordercore.onboarding.enums.EnvironmentPref;

@@ -1,4 +1,4 @@
-package com.goormgb.be.ordercore.fixture;
+package com.goormgb.be.ordercore.fixture.onboarding;
 
 import java.util.List;
 
