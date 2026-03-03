@@ -40,10 +40,10 @@ public class KakaoAuthService {
 	private final JwtProperties jwtProperties;
 	private final RefreshTokenRepository refreshTokenRepository;
 
-	public KakaoLoginResponse kakaoLogin(String authorizationCode, HttpServletRequest request) {
+	public KakaoLoginResponse kakaoLogin(String authorizationCode, String redirectUri, HttpServletRequest request) {
 
 		// 1. authorizationCode → 카카오 Access Token 요청
-		KakaoTokenResponse kakaoAccessToken = kakaoOAuthClient.requestAccessToken(authorizationCode);
+		KakaoTokenResponse kakaoAccessToken = kakaoOAuthClient.requestAccessToken(authorizationCode, redirectUri);
 
 		Optional.ofNullable(kakaoAccessToken)
 				.filter(token -> token.getAccessToken() != null)

@@ -68,7 +68,7 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 				.onboardingRequired(false)
 				.build();
 
-		given(kakaoAuthService.kakaoLogin(eq(request.getAuthorizationCode()), any(HttpServletRequest.class)))
+		given(kakaoAuthService.kakaoLogin(eq(request.getAuthorizationCode()), eq(request.getRedirectUri()), any(HttpServletRequest.class)))
 				.willReturn(loginResponse);
 
 		ResponseCookie cookie = ResponseCookie.from("refreshToken", "kakao-refresh-token")
@@ -108,7 +108,7 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 				.onboardingRequired(true)
 				.build();
 
-		given(kakaoAuthService.kakaoLogin(eq(request.getAuthorizationCode()), any(HttpServletRequest.class)))
+		given(kakaoAuthService.kakaoLogin(eq(request.getAuthorizationCode()), eq(request.getRedirectUri()), any(HttpServletRequest.class)))
 				.willReturn(loginResponse);
 
 		ResponseCookie cookie = ResponseCookie.from("refreshToken", "kakao-refresh-token")

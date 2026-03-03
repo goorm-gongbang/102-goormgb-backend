@@ -42,6 +42,9 @@ public enum ErrorCode {
 	BLACKLISTED_TOKEN(HttpStatus.UNAUTHORIZED, "로그아웃된 토큰입니다."),
 	OAUTH_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "토큰 발급에 실패했습니다."),
 	OAUTH_CODE_REQUEST_FAILED(HttpStatus.BAD_REQUEST, "인가 코드는 필수입니다."),
+	OAUTH_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "인가 코드가 만료되었거나 이미 사용되었습니다."),
+	OAUTH_REDIRECT_URI_MISMATCH(HttpStatus.BAD_REQUEST, "Redirect URI가 일치하지 않습니다."),
+	OAUTH_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY, "카카오 인증 서버 요청에 실패했습니다."),
 
 	// Club
 	CLUB_NOT_FOUND(HttpStatus.NOT_FOUND, "구단을 찾을 수 없습니다."),

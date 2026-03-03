@@ -7,4 +7,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class KakaoLoginRequest {
 	private String authorizationCode;
+	private String redirectUri;
 }
