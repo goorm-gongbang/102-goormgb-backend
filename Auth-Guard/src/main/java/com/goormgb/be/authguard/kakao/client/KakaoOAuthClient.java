@@ -7,20 +7,25 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.goormgb.be.authguard.kakao.config.KakaoOAuthProperties;
 import com.goormgb.be.authguard.kakao.dto.KakaoTokenResponse;
 import com.goormgb.be.authguard.kakao.dto.KakaoUserResponse;
+import com.goormgb.be.global.exception.CustomException;
+import com.goormgb.be.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 카카오 OAuth 서버와 통신만 담당
  * 인가 코드 → Access Token
  * Access Token → 사용자 정보
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class KakaoOAuthClient {
@@ -70,10 +75,23 @@ public class KakaoOAuthClient {
 
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
 
-		return restTemplate.postForObject(
-				properties.getTokenUrl(),
-				request,
-				KakaoTokenResponse.class);
+		try {
+			return restTemplate.postForObject(
+					properties.getTokenUrl(),
+					request,
+					KakaoTokenResponse.class);
+		} catch (HttpClientErrorException e) {
+			String body = e.getResponseBodyAsString();
+			log.warn("카카오 토큰 요청 실패: {}", body);
+
+			if (body.contains("KOE320")) {
+				throw new CustomException(ErrorCode.OAUTH_CODE_EXPIRED);
+			}
+			if (body.contains("KOE303")) {
+				throw new CustomException(ErrorCode.OAUTH_REDIRECT_URI_MISMATCH);
+			}
+			throw new CustomException(ErrorCode.OAUTH_PROVIDER_ERROR);
+		}
 	}
 
 	/**
