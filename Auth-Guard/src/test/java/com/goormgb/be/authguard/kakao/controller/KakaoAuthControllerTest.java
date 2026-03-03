@@ -82,6 +82,7 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 				.andExpect(header().exists(HttpHeaders.SET_COOKIE))
 				.andExpect(jsonPath("$.code").value("OK"))
 				.andExpect(jsonPath("$.data.accessToken").value("kakao-access-token"))
+				.andExpect(jsonPath("$.data.refreshToken").doesNotExist())
 				.andExpect(jsonPath("$.data.user.userId").value(1))
 				.andExpect(jsonPath("$.data.user.email").value("user@kakao.com"))
 				.andExpect(jsonPath("$.data.user.nickname").value("카카오유저"))
