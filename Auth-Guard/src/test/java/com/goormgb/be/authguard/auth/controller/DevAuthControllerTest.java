@@ -92,7 +92,7 @@ class DevAuthControllerTest extends WebMvcTestSupport {
 		// given
 		DevLoginRequest request = DevLoginRequestFixture.createDefault();
 		DevAuthService.DevLoginResult loginResult =
-				new DevAuthService.DevLoginResult("access-token-value", "refresh-token-value");
+				new DevAuthService.DevLoginResult("access-token-value", "refresh-token-value", false, false);
 
 		given(devAuthService.login(eq(request.getLoginId()), eq(request.getPassword()), any(HttpServletRequest.class)))
 				.willReturn(loginResult);
@@ -109,7 +109,26 @@ class DevAuthControllerTest extends WebMvcTestSupport {
 				.andExpect(header().exists(HttpHeaders.SET_COOKIE))
 				.andExpect(jsonPath("$.code").value("OK"))
 				.andExpect(jsonPath("$.message").value("로그인 성공"))
-				.andExpect(jsonPath("$.data.accessToken").value("access-token-value"));
+				.andExpect(jsonPath("$.data.accessToken").value("access-token-value"))
+				.andExpect(jsonPath("$.data.agreementRequired").value(false))
+				.andExpect(jsonPath("$.data.onboardingRequired").value(false));
+	}
+
+	@Test
+	@DisplayName("POST /dev/auth/login - 비활성화된 계정 로그인 시 403")
+	void 로그인_비활성화_계정() throws Exception {
+		// given
+		DevLoginRequest request = DevLoginRequestFixture.createDefault();
+
+		given(devAuthService.login(eq(request.getLoginId()), eq(request.getPassword()), any(HttpServletRequest.class)))
+				.willThrow(new CustomException(ErrorCode.USER_DEACTIVATED));
+
+		// when & then
+		mockMvc.perform(post("/dev/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("비활성화된 사용자입니다."));
 	}
 
 	@Test

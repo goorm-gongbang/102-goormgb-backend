@@ -14,8 +14,10 @@ import com.goormgb.be.authguard.jwt.provider.JwtTokenProvider;
 import com.goormgb.be.authguard.jwt.repository.RefreshTokenRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.user.entity.DevUser;
 import com.goormgb.be.user.entity.User;
+import com.goormgb.be.user.enums.UserStatus;
 import com.goormgb.be.user.repository.DevUserRepository;
 import com.goormgb.be.user.repository.UserRepository;
 
@@ -69,6 +71,12 @@ public class DevAuthService {
 		}
 
 		User user = devUser.getUser();
+
+		Preconditions.validate(
+				user.getStatus() != UserStatus.DEACTIVATE,
+				ErrorCode.USER_DEACTIVATED
+		);
+
 		user.updateLastLoginAt();
 
 		String accessToken = jwtTokenProvider.createAccessToken(user.getId(), DEFAULT_AUTHORITY);
@@ -93,7 +101,10 @@ public class DevAuthService {
 
 		log.info("Dev user logged in - loginId: {}, userId: {}", loginId, user.getId());
 
-		return new DevLoginResult(accessToken, refreshToken);
+		boolean agreementRequired = !Boolean.TRUE.equals(user.getMarketingConsent());
+		boolean onboardingRequired = !Boolean.TRUE.equals(user.getOnboardingCompleted());
+
+		return new DevLoginResult(accessToken, refreshToken, agreementRequired, onboardingRequired);
 	}
 
 	private String getClientIp(HttpServletRequest request) {
@@ -104,6 +115,7 @@ public class DevAuthService {
 		return request.getRemoteAddr();
 	}
 
-	public record DevLoginResult(String accessToken, String refreshToken) {
+	public record DevLoginResult(String accessToken, String refreshToken, boolean agreementRequired,
+								 boolean onboardingRequired) {
 	}
 }
