@@ -77,7 +77,7 @@ public class KakaoAuthController {
 
 		// 서비스 로직 실행
 		KakaoLoginResponse loginResponse = kakaoAuthService.kakaoLogin(
-				request.getAuthorizationCode(), httpRequest
+				request.getAuthorizationCode(), request.getRedirectUri(), httpRequest
 		);
 
 		// Refresh Token Cookie 생성
