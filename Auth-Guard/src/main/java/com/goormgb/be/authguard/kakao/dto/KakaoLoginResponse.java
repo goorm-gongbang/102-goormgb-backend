@@ -1,5 +1,6 @@
 package com.goormgb.be.authguard.kakao.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.enums.UserStatus;
 
@@ -11,6 +12,7 @@ import lombok.Getter;
 public class KakaoLoginResponse {
 
 	private String accessToken;
+	@JsonIgnore
 	private String refreshToken;
 	private UserInfo user;
 	private boolean onboardingRequired;
@@ -32,6 +34,7 @@ public class KakaoLoginResponse {
 	) {
 		return KakaoLoginResponse.builder()
 				.accessToken(accessToken)
+				.refreshToken(refreshToken)
 				.user(UserInfo.builder()
 						.userId(user.getId())
 						.email(user.getEmail())
