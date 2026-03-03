@@ -2,18 +2,18 @@ apply plugin: 'java'
 apply plugin: 'org.springframework.boot'
 
 dependencies {
-	implementation project(':common-core')
-	testImplementation(testFixtures(project(':common-core')))
+    implementation project(':common-core')
+    testImplementation(testFixtures(project(':common-core')))
 
-	// 필수: Actuator & Prometheus
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'io.micrometer:micrometer-registry-prometheus'
+    // 필수: Actuator & Prometheus
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 
-	// 필수: JSON 로깅
-	implementation "net.logstash.logback:logstash-logback-encoder:7.4"
+    // 필수: JSON 로깅
+    implementation "net.logstash.logback:logstash-logback-encoder:7.4"
 
-	runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'org.postgresql:postgresql'
 
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
 }

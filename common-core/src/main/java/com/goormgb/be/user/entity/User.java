@@ -1,16 +1,20 @@
 package com.goormgb.be.user.entity;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.user.enums.UserStatus;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "users")
@@ -29,7 +33,7 @@ public class User extends BaseEntity {
 	private String nickname;
 
 	@Column(name = "profile_image_url")
-	 private String profileImageUrl;
+	private String profileImageUrl;
 
 	@Column(name = "onboarding_completed", nullable = false)
 	private Boolean onboardingCompleted = false;

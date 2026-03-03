@@ -1,8 +1,8 @@
 package com.goormgb.be.authguard.fixture;
 
-import com.goormgb.be.authguard.kakao.dto.KakaoLoginRequest;
-
 import org.springframework.test.util.ReflectionTestUtils;
+
+import com.goormgb.be.authguard.kakao.dto.KakaoLoginRequest;
 
 public final class KakaoLoginRequestFixture {
 

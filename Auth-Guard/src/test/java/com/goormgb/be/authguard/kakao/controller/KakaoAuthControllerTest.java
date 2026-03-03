@@ -1,14 +1,9 @@
 package com.goormgb.be.authguard.kakao.controller;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,9 +43,9 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 
 		// when & then
 		mockMvc.perform(get("/kakao/login-url"))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.code").value("OK"))
-			.andExpect(jsonPath("$.data.loginUrl").value(expectedUrl));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.data.loginUrl").value(expectedUrl));
 	}
 
 	@Test
@@ -60,37 +55,37 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 		KakaoLoginRequest request = KakaoLoginRequestFixture.createDefault();
 
 		KakaoLoginResponse loginResponse = KakaoLoginResponse.builder()
-			.accessToken("kakao-access-token")
-			.refreshToken("kakao-refresh-token")
-			.user(KakaoLoginResponse.UserInfo.builder()
-				.userId(1L)
-				.email("user@kakao.com")
-				.nickname("카카오유저")
-				.profileImageUrl("https://img.kakao.com/profile.jpg")
-				.status(UserStatus.ACTIVATE)
-				.build())
-			.onboardingRequired(true)
-			.build();
+				.accessToken("kakao-access-token")
+				.refreshToken("kakao-refresh-token")
+				.user(KakaoLoginResponse.UserInfo.builder()
+						.userId(1L)
+						.email("user@kakao.com")
+						.nickname("카카오유저")
+						.profileImageUrl("https://img.kakao.com/profile.jpg")
+						.status(UserStatus.ACTIVATE)
+						.build())
+				.onboardingRequired(true)
+				.build();
 
 		given(kakaoAuthService.kakaoLogin(eq(request.getAuthorizationCode()), any(HttpServletRequest.class)))
-			.willReturn(loginResponse);
+				.willReturn(loginResponse);
 
 		ResponseCookie cookie = ResponseCookie.from("refreshToken", "kakao-refresh-token")
-			.httpOnly(true).path("/").build();
+				.httpOnly(true).path("/").build();
 		given(cookieUtils.createRefreshTokenCookie("kakao-refresh-token")).willReturn(cookie);
 
 		// when & then
 		mockMvc.perform(post("/kakao/login")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(request)))
-			.andExpect(status().isOk())
-			.andExpect(header().exists(HttpHeaders.SET_COOKIE))
-			.andExpect(jsonPath("$.code").value("OK"))
-			.andExpect(jsonPath("$.data.accessToken").value("kakao-access-token"))
-			.andExpect(jsonPath("$.data.user.userId").value(1))
-			.andExpect(jsonPath("$.data.user.email").value("user@kakao.com"))
-			.andExpect(jsonPath("$.data.user.nickname").value("카카오유저"))
-			.andExpect(jsonPath("$.data.onboardingRequired").value(true));
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isOk())
+				.andExpect(header().exists(HttpHeaders.SET_COOKIE))
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.data.accessToken").value("kakao-access-token"))
+				.andExpect(jsonPath("$.data.user.userId").value(1))
+				.andExpect(jsonPath("$.data.user.email").value("user@kakao.com"))
+				.andExpect(jsonPath("$.data.user.nickname").value("카카오유저"))
+				.andExpect(jsonPath("$.data.onboardingRequired").value(true));
 	}
 
 	@Test
@@ -101,9 +96,9 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 
 		// when & then
 		mockMvc.perform(post("/kakao/login")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(request)))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.message").value("인가 코드는 필수입니다."));
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("인가 코드는 필수입니다."));
 	}
 }

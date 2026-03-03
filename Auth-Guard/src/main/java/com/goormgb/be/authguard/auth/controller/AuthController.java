@@ -1,7 +1,5 @@
 package com.goormgb.be.authguard.auth.controller;
 
-import com.goormgb.be.authguard.auth.dto.WithdrawalResponse;
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -9,6 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.goormgb.be.authguard.auth.dto.TokenRefreshResponse;
+import com.goormgb.be.authguard.auth.dto.WithdrawalResponse;
 import com.goormgb.be.authguard.auth.service.AuthService;
 import com.goormgb.be.authguard.jwt.util.CookieUtils;
 import com.goormgb.be.global.exception.ErrorCode;

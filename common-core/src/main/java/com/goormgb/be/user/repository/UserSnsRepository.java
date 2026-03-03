@@ -1,11 +1,11 @@
 package com.goormgb.be.user.repository;
 
-import com.goormgb.be.user.entity.UserSns;
-import com.goormgb.be.user.enums.SocialProvider;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import com.goormgb.be.user.entity.UserSns;
+import com.goormgb.be.user.enums.SocialProvider;
 
 public interface UserSnsRepository extends JpaRepository<UserSns, Long> {
 	Optional<UserSns> findByProviderAndProviderUserId(

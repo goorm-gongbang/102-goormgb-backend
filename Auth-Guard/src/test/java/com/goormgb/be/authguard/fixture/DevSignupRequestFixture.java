@@ -1,8 +1,8 @@
 package com.goormgb.be.authguard.fixture;
 
-import com.goormgb.be.authguard.auth.dto.DevSignupRequest;
-
 import org.springframework.test.util.ReflectionTestUtils;
+
+import com.goormgb.be.authguard.auth.dto.DevSignupRequest;
 
 public final class DevSignupRequestFixture {
 

@@ -16,7 +16,6 @@ import com.goormgb.be.apigateway.jwt.provider.JwtTokenProvider;
 import com.goormgb.be.apigateway.jwt.repository.AccessTokenBlacklistRepository;
 
 import io.jsonwebtoken.Claims;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;

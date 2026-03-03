@@ -1,5 +1,7 @@
 package com.goormgb.be.ordercore.fixture.onboarding;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import com.goormgb.be.ordercore.onboarding.entity.OnboardingPreference;
 import com.goormgb.be.ordercore.onboarding.enums.EnvironmentPref;
 import com.goormgb.be.ordercore.onboarding.enums.MoodPref;
@@ -10,8 +12,6 @@ import com.goormgb.be.ordercore.onboarding.enums.SeatPositionPref;
 import com.goormgb.be.ordercore.onboarding.enums.Section;
 import com.goormgb.be.ordercore.onboarding.enums.Viewpoint;
 import com.goormgb.be.user.entity.User;
-
-import org.springframework.test.util.ReflectionTestUtils;
 
 public final class OnboardingPreferenceFixture {
 

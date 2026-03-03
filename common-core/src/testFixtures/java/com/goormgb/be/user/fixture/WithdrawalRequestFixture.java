@@ -1,9 +1,9 @@
 package com.goormgb.be.user.fixture;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.entity.WithdrawalRequest;
-
-import org.springframework.test.util.ReflectionTestUtils;
 
 public final class WithdrawalRequestFixture {
 

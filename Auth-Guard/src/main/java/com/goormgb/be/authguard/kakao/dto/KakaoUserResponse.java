@@ -1,12 +1,12 @@
 package com.goormgb.be.authguard.kakao.dto;
 
+import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.Optional;
 
 /**
  * 카카오 사용자 정보 응답 DTO
@@ -19,45 +19,44 @@ import java.util.Optional;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KakaoUserResponse {
-    private Long id;
+	private Long id;
 
-    @JsonProperty("kakao_account")
-    private KakaoAccount kakaoAccount;
+	@JsonProperty("kakao_account")
+	private KakaoAccount kakaoAccount;
 
+	@Getter
+	@NoArgsConstructor
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	static class KakaoAccount {
+		private String email;
+		private Profile profile;
+	}
 
-        @Getter
-        @NoArgsConstructor
-        @JsonIgnoreProperties(ignoreUnknown = true)
-        static class KakaoAccount {
-            private String email;
-            private Profile profile;
-        }
+	@Getter
+	@NoArgsConstructor
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	static class Profile {
+		private String nickname;
 
-        @Getter
-        @NoArgsConstructor
-        @JsonIgnoreProperties(ignoreUnknown = true)
-        static class Profile {
-            private String nickname;
+		@JsonProperty("profile_image_url")
+		private String profileImageUrl;
+	}
 
-            @JsonProperty("profile_image_url")
-            private String profileImageUrl;
-        }
+	public String getEmail() {
+		return Optional.ofNullable(kakaoAccount).map(KakaoUserResponse.KakaoAccount::getEmail).orElse(null);
+	}
 
-        public String getEmail() {
-            return Optional.ofNullable(kakaoAccount).map(KakaoUserResponse.KakaoAccount::getEmail).orElse(null);
-        }
+	public String getNickname() {
+		return Optional.ofNullable(kakaoAccount)         // 1단계: 계정 확인
+				.map(KakaoAccount::getProfile)           // 2단계: 프로필 확인
+				.map(Profile::getNickname)               // 3단계: 닉네임 확인
+				.orElse(null);
+	}
 
-        public String getNickname() {
-        return Optional.ofNullable(kakaoAccount)         // 1단계: 계정 확인
-                .map(KakaoAccount::getProfile)           // 2단계: 프로필 확인
-                .map(Profile::getNickname)               // 3단계: 닉네임 확인
-                .orElse(null);
-    }
-
-     public String getProfileImageUrl() {
-         return Optional.ofNullable(kakaoAccount)
-                 .map(KakaoAccount::getProfile)
-                 .map(Profile::getProfileImageUrl)
-                 .orElse(null);
-     }
+	public String getProfileImageUrl() {
+		return Optional.ofNullable(kakaoAccount)
+				.map(KakaoAccount::getProfile)
+				.map(Profile::getProfileImageUrl)
+				.orElse(null);
+	}
 }

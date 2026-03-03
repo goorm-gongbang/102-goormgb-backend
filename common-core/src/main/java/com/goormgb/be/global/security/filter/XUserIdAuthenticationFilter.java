@@ -24,9 +24,9 @@ public class XUserIdAuthenticationFilter extends OncePerRequestFilter {
 
 	@Override
 	protected void doFilterInternal(
-		HttpServletRequest request,
-		HttpServletResponse response,
-		FilterChain filterChain
+			HttpServletRequest request,
+			HttpServletResponse response,
+			FilterChain filterChain
 	) throws ServletException, IOException {
 
 		String userId = request.getHeader(HEADER_USER_ID);
@@ -37,15 +37,15 @@ public class XUserIdAuthenticationFilter extends OncePerRequestFilter {
 				Long parsedUserId = Long.valueOf(userId);
 
 				SimpleGrantedAuthority authority = new SimpleGrantedAuthority(
-					userRole != null && !userRole.isBlank() ? userRole : "ROLE_USER"
+						userRole != null && !userRole.isBlank() ? userRole : "ROLE_USER"
 				);
 
 				UsernamePasswordAuthenticationToken authentication =
-					new UsernamePasswordAuthenticationToken(
-						parsedUserId,
-						null,
-						List.of(authority)
-					);
+						new UsernamePasswordAuthenticationToken(
+								parsedUserId,
+								null,
+								List.of(authority)
+						);
 
 				SecurityContextHolder.getContext().setAuthentication(authentication);
 			} catch (NumberFormatException e) {

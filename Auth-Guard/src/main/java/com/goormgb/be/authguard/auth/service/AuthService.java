@@ -4,20 +4,14 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 
-import com.goormgb.be.authguard.auth.dto.WithdrawalResponse;
-import com.goormgb.be.user.entity.WithdrawalRequest;
-import com.goormgb.be.user.repository.WithdrawalRequestRepository;
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import com.goormgb.be.authguard.jwt.config.JwtProperties;
-
-import io.jsonwebtoken.Claims;
-
 import com.goormgb.be.authguard.auth.dto.RefreshTokenInfo;
+import com.goormgb.be.authguard.auth.dto.WithdrawalResponse;
+import com.goormgb.be.authguard.jwt.config.JwtProperties;
 import com.goormgb.be.authguard.jwt.enums.TokenType;
 import com.goormgb.be.authguard.jwt.provider.JwtTokenProvider;
 import com.goormgb.be.authguard.jwt.repository.AccessTokenBlacklistRepository;
@@ -25,9 +19,12 @@ import com.goormgb.be.authguard.jwt.repository.RefreshTokenRepository;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.user.entity.User;
+import com.goormgb.be.user.entity.WithdrawalRequest;
 import com.goormgb.be.user.enums.UserStatus;
 import com.goormgb.be.user.repository.UserRepository;
+import com.goormgb.be.user.repository.WithdrawalRequestRepository;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -23,21 +23,21 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
-			.csrf(AbstractHttpConfigurer::disable)
-			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-			.authorizeHttpRequests(auth -> auth
-				.requestMatchers(
-					"/swagger-ui/**",
-					"/swagger-ui.html",
-					"/swagger-resources/**",
-					"/v3/api-docs/**",
-					"/actuator/health/**",
-					"/clubs/**",
-					"/matches/**"
-				).permitAll()
-				.anyRequest().authenticated()
-			)
-			.addFilterBefore(xUserIdAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+				.csrf(AbstractHttpConfigurer::disable)
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers(
+								"/swagger-ui/**",
+								"/swagger-ui.html",
+								"/swagger-resources/**",
+								"/v3/api-docs/**",
+								"/actuator/health/**",
+								"/clubs/**",
+								"/matches/**"
+						).permitAll()
+						.anyRequest().authenticated()
+				)
+				.addFilterBefore(xUserIdAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
 	}

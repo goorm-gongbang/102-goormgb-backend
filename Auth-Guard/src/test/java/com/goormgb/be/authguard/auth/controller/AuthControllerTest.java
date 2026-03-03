@@ -1,13 +1,9 @@
 package com.goormgb.be.authguard.auth.controller;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willDoNothing;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,8 +34,8 @@ class AuthControllerTest extends WebMvcTestSupport {
 
 	private void setAuthentication(Long userId) {
 		SecurityContextHolder.getContext().setAuthentication(
-			new UsernamePasswordAuthenticationToken(userId, null,
-				List.of(new SimpleGrantedAuthority("ROLE_USER"))));
+				new UsernamePasswordAuthenticationToken(userId, null,
+						List.of(new SimpleGrantedAuthority("ROLE_USER"))));
 	}
 
 	@Test
@@ -48,22 +44,22 @@ class AuthControllerTest extends WebMvcTestSupport {
 		// given
 		String oldRefreshToken = "old-refresh-token";
 		AuthService.TokenRefreshResult result =
-			new AuthService.TokenRefreshResult("new-access-token", "new-refresh-token");
+				new AuthService.TokenRefreshResult("new-access-token", "new-refresh-token");
 
 		given(cookieUtils.extractRefreshToken(any(HttpServletRequest.class))).willReturn(oldRefreshToken);
 		given(authService.refresh(eq(oldRefreshToken), any(HttpServletRequest.class))).willReturn(result);
 
 		ResponseCookie cookie = ResponseCookie.from("refreshToken", "new-refresh-token")
-			.httpOnly(true).path("/").build();
+				.httpOnly(true).path("/").build();
 		given(cookieUtils.createRefreshTokenCookie("new-refresh-token")).willReturn(cookie);
 
 		// when & then
 		mockMvc.perform(post("/token/refresh"))
-			.andExpect(status().isOk())
-			.andExpect(header().exists(HttpHeaders.SET_COOKIE))
-			.andExpect(jsonPath("$.code").value("OK"))
-			.andExpect(jsonPath("$.message").value("토큰 재발급 성공"))
-			.andExpect(jsonPath("$.data.accessToken").value("new-access-token"));
+				.andExpect(status().isOk())
+				.andExpect(header().exists(HttpHeaders.SET_COOKIE))
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("토큰 재발급 성공"))
+				.andExpect(jsonPath("$.data.accessToken").value("new-access-token"));
 	}
 
 	@Test
@@ -74,8 +70,8 @@ class AuthControllerTest extends WebMvcTestSupport {
 
 		// when & then
 		mockMvc.perform(post("/token/refresh"))
-			.andExpect(status().isUnauthorized())
-			.andExpect(jsonPath("$.message").value("Refresh Token이 존재하지 않거나 만료, 유효하지 않습니다."));
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message").value("Refresh Token이 존재하지 않거나 만료, 유효하지 않습니다."));
 	}
 
 	@Test
@@ -88,16 +84,16 @@ class AuthControllerTest extends WebMvcTestSupport {
 		willDoNothing().given(authService).logout(any(HttpServletRequest.class), eq(refreshToken));
 
 		ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
-			.httpOnly(true).path("/").maxAge(0).build();
+				.httpOnly(true).path("/").maxAge(0).build();
 		given(cookieUtils.deleteRefreshTokenCookie()).willReturn(deleteCookie);
 
 		// when & then
 		mockMvc.perform(post("/logout"))
-			.andExpect(status().isOk())
-			.andExpect(header().exists(HttpHeaders.SET_COOKIE))
-			.andExpect(header().string(HttpHeaders.SET_COOKIE, org.hamcrest.Matchers.containsString("Max-Age=0")))
-			.andExpect(jsonPath("$.code").value("OK"))
-			.andExpect(jsonPath("$.message").value("로그아웃 성공"));
+				.andExpect(status().isOk())
+				.andExpect(header().exists(HttpHeaders.SET_COOKIE))
+				.andExpect(header().string(HttpHeaders.SET_COOKIE, org.hamcrest.Matchers.containsString("Max-Age=0")))
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("로그아웃 성공"));
 	}
 
 	@Test
@@ -108,8 +104,8 @@ class AuthControllerTest extends WebMvcTestSupport {
 
 		// when & then
 		mockMvc.perform(post("/logout"))
-			.andExpect(status().isUnauthorized())
-			.andExpect(jsonPath("$.message").value("Refresh Token이 존재하지 않거나 만료, 유효하지 않습니다."));
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message").value("Refresh Token이 존재하지 않거나 만료, 유효하지 않습니다."));
 	}
 
 	@Test
@@ -127,11 +123,11 @@ class AuthControllerTest extends WebMvcTestSupport {
 
 		// when & then
 		mockMvc.perform(post("/withdraw"))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.code").value("OK"))
-			.andExpect(jsonPath("$.message").value("탈퇴 처리 완료"))
-			.andExpect(jsonPath("$.data.status").value("DEACTIVATE"))
-			.andExpect(jsonPath("$.data.withdrawnAt").exists())
-			.andExpect(jsonPath("$.data.reactivateUntil").exists());
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("탈퇴 처리 완료"))
+				.andExpect(jsonPath("$.data.status").value("DEACTIVATE"))
+				.andExpect(jsonPath("$.data.withdrawnAt").exists())
+				.andExpect(jsonPath("$.data.reactivateUntil").exists());
 	}
 }

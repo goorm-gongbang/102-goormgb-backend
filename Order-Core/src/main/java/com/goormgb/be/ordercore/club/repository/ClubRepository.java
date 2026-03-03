@@ -1,31 +1,31 @@
 package com.goormgb.be.ordercore.club.repository;
 
-import com.goormgb.be.global.exception.CustomException;
-import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.ordercore.club.entity.Club;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import com.goormgb.be.global.exception.CustomException;
+import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.ordercore.club.entity.Club;
 
 public interface ClubRepository extends JpaRepository<Club, Long> {
-    // TODO: service 레이어 구현할 때 필요한 부분 수정
-//    List<ClubListItemResponse> findAllClubList();
-//
-    @EntityGraph(attributePaths = {"stadium"})
-    Optional<Club> findWithStadiumById(Long id);
+	// TODO: service 레이어 구현할 때 필요한 부분 수정
+	//    List<ClubListItemResponse> findAllClubList();
+	//
+	@EntityGraph(attributePaths = {"stadium"})
+	Optional<Club> findWithStadiumById(Long id);
 
-    default Club findWithStadiumByIdOrThrow(Long id, ErrorCode errorCode){
-        return findWithStadiumById(id).orElseThrow(() -> new CustomException(errorCode));
-    }
+	default Club findWithStadiumByIdOrThrow(Long id, ErrorCode errorCode) {
+		return findWithStadiumById(id).orElseThrow(() -> new CustomException(errorCode));
+	}
 
-    /**
-     * FR-C02 구단 상세 기본 정보 조회용 쿼리.
-     * DTO Projection 방식으로 단건 조회 성능을 최적화.
-     */
-//    List<ClubDetailFlatDto> findClubDetailFlat(@Param("clubId") Long clubId);
-
-    default Club findByIdOrThrow(Long id, ErrorCode errorCode){
-        return findById(id).orElseThrow(() -> new CustomException(errorCode));
-    }
+	/**
+	 * FR-C02 구단 상세 기본 정보 조회용 쿼리.
+	 * DTO Projection 방식으로 단건 조회 성능을 최적화.
+	 */
+	//    List<ClubDetailFlatDto> findClubDetailFlat(@Param("clubId") Long clubId);
+	default Club findByIdOrThrow(Long id, ErrorCode errorCode) {
+		return findById(id).orElseThrow(() -> new CustomException(errorCode));
+	}
 }

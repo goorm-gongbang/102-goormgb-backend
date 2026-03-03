@@ -1,7 +1,8 @@
 package com.goormgb.be.apigateway.jwt.provider;
 
+import static org.assertj.core.api.Assertions.*;
+
 import java.util.Date;
-import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,9 +14,6 @@ import com.goormgb.be.apigateway.jwt.config.JwtProperties;
 import com.goormgb.be.apigateway.jwt.enums.TokenType;
 
 import io.jsonwebtoken.Claims;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class JwtTokenProviderTest {
 

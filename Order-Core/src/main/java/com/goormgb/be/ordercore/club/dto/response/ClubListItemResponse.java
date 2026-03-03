@@ -7,9 +7,9 @@ import lombok.Getter;
 @AllArgsConstructor
 public class ClubListItemResponse {
 
-    private Long clubId;
-    private String koName;
-    private String enName;
-    private String logoImg;
-    private String clubColor;
+	private Long clubId;
+	private String koName;
+	private String enName;
+	private String logoImg;
+	private String clubColor;
 }

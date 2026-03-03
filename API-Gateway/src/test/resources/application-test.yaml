@@ -8,8 +8,8 @@ spring:
               '[/**]':
                 allowedOriginPatterns:
                   - "http://localhost"
-                allowedMethods: [GET, POST, PUT, DELETE, OPTIONS]
-                allowedHeaders: ["*"]
+                allowedMethods: [ GET, POST, PUT, DELETE, OPTIONS ]
+                allowedHeaders: [ "*" ]
                 allowCredentials: true
           routes:
             - id: auth-guard
