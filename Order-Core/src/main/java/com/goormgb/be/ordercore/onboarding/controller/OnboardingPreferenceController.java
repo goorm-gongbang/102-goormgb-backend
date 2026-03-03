@@ -15,6 +15,7 @@ import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceCreat
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceUpdateRequest;
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingPreferenceCreateResponse;
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingPreferenceGetResponse;
+import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingStatusGetResponse;
 import com.goormgb.be.ordercore.onboarding.service.OnboardingPreferenceService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,7 +35,7 @@ public class OnboardingPreferenceController {
 	@GetMapping("/preferences")
 	@ResponseStatus(HttpStatus.OK)
 	public ApiResult<OnboardingPreferenceGetResponse> getPreferences(
-			@AuthenticationPrincipal Long userId
+		@AuthenticationPrincipal Long userId
 	) {
 		var preferences = onboardingPreferenceService.getPreferences(userId);
 
@@ -45,52 +46,52 @@ public class OnboardingPreferenceController {
 	@PostMapping("/preferences")
 	@ResponseStatus(HttpStatus.CREATED)
 	public ApiResult<OnboardingPreferenceCreateResponse> createPreferences(
-			@AuthenticationPrincipal Long userId,
-			@io.swagger.v3.oas.annotations.parameters.RequestBody(
-					content = @Content(mediaType = "application/json",
-							examples = @ExampleObject(value = """
-									{
-									  "marketingConsent": {
-									    "marketingAgreed": true
-									  },
-									  "preferences": [
-									    {
-									      "priority": 1,
-									      "viewpoint": "CENTER",
-									      "seatHeight": "LOW",
-									      "section": "MIDDLE",
-									      "seatPositionPref": "AISLE",
-									      "environmentPref": "SHADE",
-									      "moodPref": "CHEERFUL",
-									      "obstructionSensitivity": "NET_SENSITIVE",
-									      "priceMode": "ANY"
-									    },
-									    {
-									      "priority": 2,
-									      "viewpoint": "INFIELD_1B",
-									      "seatHeight": "MID",
-									      "section": "CENTER_SIDE",
-									      "seatPositionPref": "ANY",
-									      "environmentPref": "ANY",
-									      "moodPref": "ANY",
-									      "obstructionSensitivity": "NORMAL",
-									      "priceMode": "ANY"
-									    },
-									    {
-									      "priority": 3,
-									      "viewpoint": "OUTFIELD_L",
-									      "seatHeight": "HIGH",
-									      "section": "CORNER",
-									      "seatPositionPref": "ANY",
-									      "environmentPref": "ANY",
-									      "moodPref": "ANY",
-									      "obstructionSensitivity": "ANY",
-									      "priceMode": "ANY"
-									    }
-									  ]
-									}
-									""")))
-			@RequestBody OnboardingPreferenceCreateRequest request
+		@AuthenticationPrincipal Long userId,
+		@io.swagger.v3.oas.annotations.parameters.RequestBody(
+			content = @Content(mediaType = "application/json",
+				examples = @ExampleObject(value = """
+					{
+					  "marketingConsent": {
+					    "marketingAgreed": true
+					  },
+					  "preferences": [
+					    {
+					      "priority": 1,
+					      "viewpoint": "CENTER",
+					      "seatHeight": "LOW",
+					      "section": "MIDDLE",
+					      "seatPositionPref": "AISLE",
+					      "environmentPref": "SHADE",
+					      "moodPref": "CHEERFUL",
+					      "obstructionSensitivity": "NET_SENSITIVE",
+					      "priceMode": "ANY"
+					    },
+					    {
+					      "priority": 2,
+					      "viewpoint": "INFIELD_1B",
+					      "seatHeight": "MID",
+					      "section": "CENTER_SIDE",
+					      "seatPositionPref": "ANY",
+					      "environmentPref": "ANY",
+					      "moodPref": "ANY",
+					      "obstructionSensitivity": "NORMAL",
+					      "priceMode": "ANY"
+					    },
+					    {
+					      "priority": 3,
+					      "viewpoint": "OUTFIELD_L",
+					      "seatHeight": "HIGH",
+					      "section": "CORNER",
+					      "seatPositionPref": "ANY",
+					      "environmentPref": "ANY",
+					      "moodPref": "ANY",
+					      "obstructionSensitivity": "ANY",
+					      "priceMode": "ANY"
+					    }
+					  ]
+					}
+					""")))
+		@RequestBody OnboardingPreferenceCreateRequest request
 	) {
 		var response = onboardingPreferenceService.createPreferences(userId, request);
 
@@ -101,54 +102,62 @@ public class OnboardingPreferenceController {
 	@PutMapping("/preferences")
 	@ResponseStatus(HttpStatus.OK)
 	public ApiResult<Void> updatePreferences(
-			@AuthenticationPrincipal Long userId,
-			@io.swagger.v3.oas.annotations.parameters.RequestBody(
-					content = @Content(mediaType = "application/json",
-							examples = @ExampleObject(value = """
-									{
-									  "preferences": [
-									    {
-									      "priority": 1,
-									      "viewpoint": "INFIELD_3B",
-									      "seatHeight": "LOW",
-									      "section": "CENTER_SIDE",
-									      "seatPositionPref": "ANY",
-									      "environmentPref": "ANY",
-									      "moodPref": "QUIET",
-									      "obstructionSensitivity": "NORMAL",
-									      "priceMode": "RANGE",
-									      "priceMin": 15000,
-									      "priceMax": 40000
-									    },
-									    {
-									      "priority": 2,
-									      "viewpoint": "CENTER",
-									      "seatHeight": "MID",
-									      "section": "MIDDLE",
-									      "seatPositionPref": "AISLE",
-									      "environmentPref": "SHADE",
-									      "moodPref": "CHEERFUL",
-									      "obstructionSensitivity": "NET_SENSITIVE",
-									      "priceMode": "ANY"
-									    },
-									    {
-									      "priority": 3,
-									      "viewpoint": "OUTFIELD_R",
-									      "seatHeight": "ANY",
-									      "section": "CORNER",
-									      "seatPositionPref": "ANY",
-									      "environmentPref": "ANY",
-									      "moodPref": "ANY",
-									      "obstructionSensitivity": "ANY",
-									      "priceMode": "ANY"
-									    }
-									  ]
-									}
-									""")))
-			@RequestBody OnboardingPreferenceUpdateRequest request
+		@AuthenticationPrincipal Long userId,
+		@io.swagger.v3.oas.annotations.parameters.RequestBody(
+			content = @Content(mediaType = "application/json",
+				examples = @ExampleObject(value = """
+					{
+					  "preferences": [
+					    {
+					      "priority": 1,
+					      "viewpoint": "INFIELD_3B",
+					      "seatHeight": "LOW",
+					      "section": "CENTER_SIDE",
+					      "seatPositionPref": "ANY",
+					      "environmentPref": "ANY",
+					      "moodPref": "QUIET",
+					      "obstructionSensitivity": "NORMAL",
+					      "priceMode": "RANGE",
+					      "priceMin": 15000,
+					      "priceMax": 40000
+					    },
+					    {
+					      "priority": 2,
+					      "viewpoint": "CENTER",
+					      "seatHeight": "MID",
+					      "section": "MIDDLE",
+					      "seatPositionPref": "AISLE",
+					      "environmentPref": "SHADE",
+					      "moodPref": "CHEERFUL",
+					      "obstructionSensitivity": "NET_SENSITIVE",
+					      "priceMode": "ANY"
+					    },
+					    {
+					      "priority": 3,
+					      "viewpoint": "OUTFIELD_R",
+					      "seatHeight": "ANY",
+					      "section": "CORNER",
+					      "seatPositionPref": "ANY",
+					      "environmentPref": "ANY",
+					      "moodPref": "ANY",
+					      "obstructionSensitivity": "ANY",
+					      "priceMode": "ANY"
+					    }
+					  ]
+					}
+					""")))
+		@RequestBody OnboardingPreferenceUpdateRequest request
 	) {
 		onboardingPreferenceService.updatePreferences(userId, request);
 
 		return ApiResult.ok();
+	}
+
+	@Operation(summary = "온보딩 완료 여부 조회", description = "온보딩 완료 여부를 조회합니다.")
+	@GetMapping("/status")
+	public ApiResult<OnboardingStatusGetResponse> getOnboardingStatus(
+		@AuthenticationPrincipal Long userId
+	) {
+		return ApiResult.ok(onboardingPreferenceService.getOnboardingStatus(userId));
 	}
 }

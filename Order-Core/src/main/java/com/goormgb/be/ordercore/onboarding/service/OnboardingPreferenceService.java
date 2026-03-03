@@ -16,6 +16,7 @@ import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceCreat
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceUpdateRequest;
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingPreferenceCreateResponse;
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingPreferenceGetResponse;
+import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingStatusGetResponse;
 import com.goormgb.be.ordercore.onboarding.entity.OnboardingPreference;
 import com.goormgb.be.ordercore.onboarding.enums.SeatHeight;
 import com.goormgb.be.ordercore.onboarding.enums.Section;
@@ -33,6 +34,13 @@ public class OnboardingPreferenceService {
 	private final UserRepository userRepository;
 
 	@Transactional(readOnly = true)
+	public OnboardingStatusGetResponse getOnboardingStatus(Long userId) {
+		var user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+
+		return OnboardingStatusGetResponse.from(user);
+	}
+
+	@Transactional(readOnly = true)
 	public OnboardingPreferenceGetResponse getPreferences(Long userId) {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
@@ -43,7 +51,7 @@ public class OnboardingPreferenceService {
 
 	@Transactional
 	public OnboardingPreferenceCreateResponse createPreferences(Long userId,
-			OnboardingPreferenceCreateRequest request) {
+		OnboardingPreferenceCreateRequest request) {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
 		// 온보딩 완료 여부 검증
@@ -54,10 +62,10 @@ public class OnboardingPreferenceService {
 
 		// 저장
 		var entities = request
-				.preferences()
-				.stream()
-				.map(preference -> toEntity(user, preference))
-				.toList();
+			.preferences()
+			.stream()
+			.map(preference -> toEntity(user, preference))
+			.toList();
 
 		onboardingPreferenceRepository.saveAll(entities);
 
@@ -89,24 +97,24 @@ public class OnboardingPreferenceService {
 
 		for (OnboardingPreferenceDto pref : preferences) {
 			OnboardingPreference preferenceToUpdate = existingPreferences
-					.stream()
-					.filter(p -> p
-							.getPriority()
-							.equals(pref.priority()))
-					.findFirst()
-					.orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND_FOR_UPDATE));
+				.stream()
+				.filter(p -> p
+					.getPriority()
+					.equals(pref.priority()))
+				.findFirst()
+				.orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND_FOR_UPDATE));
 
 			preferenceToUpdate.update(
-					pref.viewpoint(),
-					pref.seatHeight(),
-					pref.section(),
-					pref.seatPositionPref(),
-					pref.environmentPref(),
-					pref.moodPref(),
-					pref.obstructionSensitivity(),
-					pref.priceMode(),
-					pref.priceMin(),
-					pref.priceMax()
+				pref.viewpoint(),
+				pref.seatHeight(),
+				pref.section(),
+				pref.seatPositionPref(),
+				pref.environmentPref(),
+				pref.moodPref(),
+				pref.obstructionSensitivity(),
+				pref.priceMode(),
+				pref.priceMin(),
+				pref.priceMax()
 			);
 		}
 	}
@@ -114,7 +122,7 @@ public class OnboardingPreferenceService {
 	private void validatePreferences(List<OnboardingPreferenceDto> preferences) {
 		Preconditions.validate(preferences != null, ErrorCode.ONBOARDING_NOT_COMPLETED);
 		Preconditions.validate(preferences
-				.size() == 3, ErrorCode.MISSING_REQUIRED_PREFERENCE_FIELD);
+			.size() == 3, ErrorCode.MISSING_REQUIRED_PREFERENCE_FIELD);
 
 		// 우선순위 검증
 		validatePriority(preferences);
@@ -128,8 +136,8 @@ public class OnboardingPreferenceService {
 
 	private void validatePriority(List<OnboardingPreferenceDto> preferences) {
 		Set<Integer> priorities = preferences.stream()
-				.map(OnboardingPreferenceDto::priority)
-				.collect(Collectors.toSet());
+			.map(OnboardingPreferenceDto::priority)
+			.collect(Collectors.toSet());
 
 		Preconditions.validate(priorities.size() == 3, ErrorCode.INVALID_PREFERENCE_RANK);
 		Preconditions.validate(priorities.containsAll(List.of(1, 2, 3)), ErrorCode.INVALID_PREFERENCE_PRIORITY_VALUE);
@@ -142,7 +150,7 @@ public class OnboardingPreferenceService {
 
 		for (OnboardingPreferenceDto dto : preferences) {
 			Preconditions.validate(dto.viewpoint() != null && dto.seatHeight() != null && dto.section() != null,
-					ErrorCode.MISSING_REQUIRED_PREFERENCE_FIELD);
+				ErrorCode.MISSING_REQUIRED_PREFERENCE_FIELD);
 
 			Preconditions.validate(viewpoints.add(dto.viewpoint()), ErrorCode.DUPLICATE_PREFERENCE_VIEWPOINT);
 			Preconditions.validate(seatHeights.add(dto.seatHeight()), ErrorCode.DUPLICATE_PREFERENCE_SEAT_HEIGHT);
@@ -156,25 +164,25 @@ public class OnboardingPreferenceService {
 
 	private OnboardingPreference toEntity(User user, OnboardingPreferenceDto preference) {
 		return OnboardingPreference
-				.builder()
-				.user(user)
-				.priority(preference.priority())
-				.viewpoint(preference.viewpoint())
-				.seatHeight(preference.seatHeight())
-				.section(preference.section())
-				.seatPositionPref(preference.seatPositionPref())
-				.environmentPref(preference.environmentPref())
-				.moodPref(preference.moodPref())
-				.obstructionSensitivity(preference.obstructionSensitivity())
-				.priceMode(preference.priceMode())
-				.priceMin(preference.priceMin())
-				.priceMax(preference.priceMax())
-				.build();
+			.builder()
+			.user(user)
+			.priority(preference.priority())
+			.viewpoint(preference.viewpoint())
+			.seatHeight(preference.seatHeight())
+			.section(preference.section())
+			.seatPositionPref(preference.seatPositionPref())
+			.environmentPref(preference.environmentPref())
+			.moodPref(preference.moodPref())
+			.obstructionSensitivity(preference.obstructionSensitivity())
+			.priceMode(preference.priceMode())
+			.priceMin(preference.priceMin())
+			.priceMax(preference.priceMax())
+			.build();
 	}
 
 	private void applyMarketingConsent(User user, OnboardingPreferenceCreateRequest.MarketingConsent marketingConsent) {
 		Preconditions.validate(marketingConsent != null && marketingConsent.marketingAgreed() != null,
-				ErrorCode.INVALID_MARKETING_CONSENT);
+			ErrorCode.INVALID_MARKETING_CONSENT);
 
 		user.updateMarketingConsent(marketingConsent.marketingAgreed());
 	}
