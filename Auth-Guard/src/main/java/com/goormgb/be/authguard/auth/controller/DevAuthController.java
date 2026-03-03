@@ -68,6 +68,8 @@ public class DevAuthController {
 
 		return ResponseEntity.ok()
 				.header(HttpHeaders.SET_COOKIE, cookie)
-				.body(ApiResult.ok("로그인 성공", TokenRefreshResponse.of(result.accessToken())));
+				.body(ApiResult.ok("로그인 성공",
+						TokenRefreshResponse.of(result.accessToken(), result.agreementRequired(),
+								result.onboardingRequired())));
 	}
 }
