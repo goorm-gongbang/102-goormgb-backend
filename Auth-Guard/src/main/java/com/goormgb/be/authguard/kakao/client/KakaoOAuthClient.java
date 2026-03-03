@@ -52,13 +52,17 @@ public class KakaoOAuthClient {
 	 * @param authorizationCode 카카오 로그인 성공 후 받은 code
 	 * @return 카카오 Access Token
 	 */
-	public KakaoTokenResponse requestAccessToken(String authorizationCode) {
+	public KakaoTokenResponse requestAccessToken(String authorizationCode, String redirectUri) {
+		String effectiveRedirectUri = StringUtils.hasText(redirectUri)
+				? redirectUri
+				: properties.getRedirectUri();
+
 		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
 
 		params.add("grant_type", "authorization_code");
 		params.add("client_id", properties.getClientId());
 		params.add("client_secret", properties.getClientSecret());
-		params.add("redirect_uri", properties.getRedirectUri());
+		params.add("redirect_uri", effectiveRedirectUri);
 		params.add("code", authorizationCode);
 
 		HttpHeaders headers = new HttpHeaders();
