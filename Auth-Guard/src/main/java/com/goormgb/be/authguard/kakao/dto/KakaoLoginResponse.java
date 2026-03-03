@@ -14,6 +14,8 @@ public class KakaoLoginResponse {
 	private String accessToken;
 	@JsonIgnore
 	private String refreshToken;
+	@JsonIgnore
+	private boolean newUser;
 	private UserInfo user;
 	private boolean onboardingRequired;
 
@@ -30,11 +32,13 @@ public class KakaoLoginResponse {
 	public static KakaoLoginResponse of(
 			String accessToken,
 			String refreshToken,
-			User user
+			User user,
+			boolean newUser
 	) {
 		return KakaoLoginResponse.builder()
 				.accessToken(accessToken)
 				.refreshToken(refreshToken)
+				.newUser(newUser)
 				.user(UserInfo.builder()
 						.userId(user.getId())
 						.email(user.getEmail())
