@@ -1,9 +1,9 @@
 package com.goormgb.be.user.fixture;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import com.goormgb.be.user.entity.DevUser;
 import com.goormgb.be.user.entity.User;
-
-import org.springframework.test.util.ReflectionTestUtils;
 
 public final class DevUserFixture {
 

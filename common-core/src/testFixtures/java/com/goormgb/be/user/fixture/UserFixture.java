@@ -1,8 +1,8 @@
 package com.goormgb.be.user.fixture;
 
-import com.goormgb.be.user.entity.User;
-
 import org.springframework.test.util.ReflectionTestUtils;
+
+import com.goormgb.be.user.entity.User;
 
 public final class UserFixture {
 

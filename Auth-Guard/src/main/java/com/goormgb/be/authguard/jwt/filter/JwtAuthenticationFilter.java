@@ -29,63 +29,63 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer ";
+	private static final String AUTHORIZATION_HEADER = "Authorization";
+	private static final String BEARER_PREFIX = "Bearer ";
 
-    private final JwtTokenProvider jwtTokenProvider;
-    private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
+	private final JwtTokenProvider jwtTokenProvider;
+	private final AccessTokenBlacklistRepository accessTokenBlacklistRepository;
 
-    @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
-        String token = resolveToken(request);
+	@Override
+	protected void doFilterInternal(
+			HttpServletRequest request,
+			HttpServletResponse response,
+			FilterChain filterChain
+	) throws ServletException, IOException {
+		String token = resolveToken(request);
 
-        if (StringUtils.hasText(token)) {
-            try {
-                if (jwtTokenProvider.validateToken(token)) {
-                    TokenType tokenType = jwtTokenProvider.getTokenTypeFromToken(token);
+		if (StringUtils.hasText(token)) {
+			try {
+				if (jwtTokenProvider.validateToken(token)) {
+					TokenType tokenType = jwtTokenProvider.getTokenTypeFromToken(token);
 
-                    if (tokenType == TokenType.ACCESS) {
-                        String jti = jwtTokenProvider.getJtiFromToken(token);
+					if (tokenType == TokenType.ACCESS) {
+						String jti = jwtTokenProvider.getJtiFromToken(token);
 
-                        Preconditions.validate(
-                                !accessTokenBlacklistRepository.existsByJti(jti),
-                                ErrorCode.BLACKLISTED_TOKEN
-                        );
+						Preconditions.validate(
+								!accessTokenBlacklistRepository.existsByJti(jti),
+								ErrorCode.BLACKLISTED_TOKEN
+						);
 
-                        Long userId = jwtTokenProvider.getUserIdFromToken(token);
-                        String authority = jwtTokenProvider.getAuthorityFromToken(token);
+						Long userId = jwtTokenProvider.getUserIdFromToken(token);
+						String authority = jwtTokenProvider.getAuthorityFromToken(token);
 
-                        UsernamePasswordAuthenticationToken authentication =
-                                new UsernamePasswordAuthenticationToken(
-                                        userId,
-                                        null,
-                                        List.of(new SimpleGrantedAuthority(authority))
-                                );
+						UsernamePasswordAuthenticationToken authentication =
+								new UsernamePasswordAuthenticationToken(
+										userId,
+										null,
+										List.of(new SimpleGrantedAuthority(authority))
+								);
 
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
-                        log.debug("Set authentication for user: {}", userId);
-                    }
-                }
-            } catch (CustomException e) {
-                log.debug("JWT validation failed: {}", e.getMessage());
-                SecurityContextHolder.clearContext();
-            }
-        }
+						SecurityContextHolder.getContext().setAuthentication(authentication);
+						log.debug("Set authentication for user: {}", userId);
+					}
+				}
+			} catch (CustomException e) {
+				log.debug("JWT validation failed: {}", e.getMessage());
+				SecurityContextHolder.clearContext();
+			}
+		}
 
-        filterChain.doFilter(request, response);
-    }
+		filterChain.doFilter(request, response);
+	}
 
-    private String resolveToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
+	private String resolveToken(HttpServletRequest request) {
+		String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
 
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
-            return bearerToken.substring(BEARER_PREFIX.length());
-        }
+		if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
+			return bearerToken.substring(BEARER_PREFIX.length());
+		}
 
-        return null;
-    }
+		return null;
+	}
 }

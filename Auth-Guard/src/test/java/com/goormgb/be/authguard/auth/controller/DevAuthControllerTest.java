@@ -1,13 +1,9 @@
 package com.goormgb.be.authguard.auth.controller;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willDoNothing;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,19 +43,19 @@ class DevAuthControllerTest extends WebMvcTestSupport {
 		DevSignupRequest request = DevSignupRequestFixture.createDefault();
 
 		willDoNothing().given(devAuthService).signup(
-			eq(request.getLoginId()),
-			eq(request.getPassword()),
-			eq(request.getNickname()),
-			eq(request.getEmail())
+				eq(request.getLoginId()),
+				eq(request.getPassword()),
+				eq(request.getNickname()),
+				eq(request.getEmail())
 		);
 
 		// when & then
 		mockMvc.perform(post("/dev/auth/signup")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(request)))
-			.andExpect(status().isCreated())
-			.andExpect(jsonPath("$.code").value("OK"))
-			.andExpect(jsonPath("$.message").value("회원가입 성공"));
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("회원가입 성공"));
 	}
 
 	@Test
@@ -71,9 +67,9 @@ class DevAuthControllerTest extends WebMvcTestSupport {
 
 		// when & then
 		mockMvc.perform(post("/dev/auth/signup")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(request)))
-			.andExpect(status().isBadRequest());
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isBadRequest());
 	}
 
 	@Test
@@ -85,9 +81,9 @@ class DevAuthControllerTest extends WebMvcTestSupport {
 
 		// when & then
 		mockMvc.perform(post("/dev/auth/signup")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(request)))
-			.andExpect(status().isBadRequest());
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isBadRequest());
 	}
 
 	@Test
@@ -96,24 +92,24 @@ class DevAuthControllerTest extends WebMvcTestSupport {
 		// given
 		DevLoginRequest request = DevLoginRequestFixture.createDefault();
 		DevAuthService.DevLoginResult loginResult =
-			new DevAuthService.DevLoginResult("access-token-value", "refresh-token-value");
+				new DevAuthService.DevLoginResult("access-token-value", "refresh-token-value");
 
 		given(devAuthService.login(eq(request.getLoginId()), eq(request.getPassword()), any(HttpServletRequest.class)))
-			.willReturn(loginResult);
+				.willReturn(loginResult);
 
 		ResponseCookie cookie = ResponseCookie.from("refreshToken", "refresh-token-value")
-			.httpOnly(true).path("/").build();
+				.httpOnly(true).path("/").build();
 		given(cookieUtils.createRefreshTokenCookie("refresh-token-value")).willReturn(cookie);
 
 		// when & then
 		mockMvc.perform(post("/dev/auth/login")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(request)))
-			.andExpect(status().isOk())
-			.andExpect(header().exists(HttpHeaders.SET_COOKIE))
-			.andExpect(jsonPath("$.code").value("OK"))
-			.andExpect(jsonPath("$.message").value("로그인 성공"))
-			.andExpect(jsonPath("$.data.accessToken").value("access-token-value"));
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isOk())
+				.andExpect(header().exists(HttpHeaders.SET_COOKIE))
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("로그인 성공"))
+				.andExpect(jsonPath("$.data.accessToken").value("access-token-value"));
 	}
 
 	@Test
@@ -123,13 +119,13 @@ class DevAuthControllerTest extends WebMvcTestSupport {
 		DevLoginRequest request = DevLoginRequestFixture.createDefault();
 
 		given(devAuthService.login(eq(request.getLoginId()), eq(request.getPassword()), any(HttpServletRequest.class)))
-			.willThrow(new CustomException(ErrorCode.INVALID_CREDENTIALS));
+				.willThrow(new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
 		// when & then
 		mockMvc.perform(post("/dev/auth/login")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(request)))
-			.andExpect(status().isUnauthorized())
-			.andExpect(jsonPath("$.message").value("잘못된 인증 정보입니다."));
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message").value("잘못된 인증 정보입니다."));
 	}
 }

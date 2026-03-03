@@ -1,6 +1,5 @@
 package com.goormgb.be.authguard.auth.controller;
 
-import com.goormgb.be.authguard.metrics.AuthMetricsService;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -15,6 +14,7 @@ import com.goormgb.be.authguard.auth.dto.DevSignupRequest;
 import com.goormgb.be.authguard.auth.dto.TokenRefreshResponse;
 import com.goormgb.be.authguard.auth.service.DevAuthService;
 import com.goormgb.be.authguard.jwt.util.CookieUtils;
+import com.goormgb.be.authguard.metrics.AuthMetricsService;
 import com.goormgb.be.global.response.ApiResult;
 
 import io.swagger.v3.oas.annotations.Operation;

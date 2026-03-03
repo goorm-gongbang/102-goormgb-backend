@@ -4,29 +4,29 @@ apply plugin: 'java-test-fixtures'
 // common-core는 라이브러리 → bootJar 없음, 실행 불가
 
 dependencies {
-	// api = 이 모듈을 의존하는 서비스에 전이됨
-	api 'org.springframework.boot:spring-boot-starter-data-jpa'
-	api 'org.springframework.boot:spring-boot-starter-security'
-	api 'org.springframework.boot:spring-boot-starter-data-redis'
-	api 'org.springframework.boot:spring-boot-starter-validation'
-	api 'org.springframework.boot:spring-boot-starter-webmvc'
-	api 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1'
+    // api = 이 모듈을 의존하는 서비스에 전이됨
+    api 'org.springframework.boot:spring-boot-starter-data-jpa'
+    api 'org.springframework.boot:spring-boot-starter-security'
+    api 'org.springframework.boot:spring-boot-starter-data-redis'
+    api 'org.springframework.boot:spring-boot-starter-validation'
+    api 'org.springframework.boot:spring-boot-starter-webmvc'
+    api 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1'
 
-	runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'org.postgresql:postgresql'
 
-	// 필수: Actuator & Prometheus
-	implementation "org.springframework.boot:spring-boot-starter-actuator"
-	implementation "io.micrometer:micrometer-registry-prometheus"
+    // 필수: Actuator & Prometheus
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+    implementation "io.micrometer:micrometer-registry-prometheus"
 
-	// 필수: JSON 로깅
-	implementation "net.logstash.logback:logstash-logback-encoder:7.4"
+    // 필수: JSON 로깅
+    implementation "net.logstash.logback:logstash-logback-encoder:7.4"
 
-	// 선택: OpenTelemetry를 코드에서 직접 사용하려면 (Agent 사용 시 불필요)
+    // 선택: OpenTelemetry를 코드에서 직접 사용하려면 (Agent 사용 시 불필요)
 
-	// testFixtures에서 Lombok 사용
-	testFixturesCompileOnly 'org.projectlombok:lombok'
-	testFixturesAnnotationProcessor 'org.projectlombok:lombok'
+    // testFixtures에서 Lombok 사용
+    testFixturesCompileOnly 'org.projectlombok:lombok'
+    testFixturesAnnotationProcessor 'org.projectlombok:lombok'
 
-	// testFixtures에서 ReflectionTestUtils 사용
-	testFixturesImplementation 'org.springframework:spring-test'
+    // testFixtures에서 ReflectionTestUtils 사용
+    testFixturesImplementation 'org.springframework:spring-test'
 }

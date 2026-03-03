@@ -5,8 +5,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import tools.jackson.databind.ObjectMapper;
 import com.goormgb.be.global.security.filter.XUserIdAuthenticationFilter;
+
+import tools.jackson.databind.ObjectMapper;
 
 @ActiveProfiles("test")
 public abstract class WebMvcTestSupport {

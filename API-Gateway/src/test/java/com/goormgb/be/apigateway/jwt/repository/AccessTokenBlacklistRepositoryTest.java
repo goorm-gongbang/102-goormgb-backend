@@ -1,5 +1,7 @@
 package com.goormgb.be.apigateway.jwt.repository;
 
+import static org.mockito.Mockito.*;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,8 +12,6 @@ import org.springframework.data.redis.core.ReactiveRedisTemplate;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AccessTokenBlacklistRepositoryTest {

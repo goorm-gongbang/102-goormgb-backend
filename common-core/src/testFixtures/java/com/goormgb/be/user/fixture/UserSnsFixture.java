@@ -1,10 +1,10 @@
 package com.goormgb.be.user.fixture;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.entity.UserSns;
 import com.goormgb.be.user.enums.SocialProvider;
-
-import org.springframework.test.util.ReflectionTestUtils;
 
 public final class UserSnsFixture {
 

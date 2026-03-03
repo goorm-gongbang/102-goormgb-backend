@@ -6,9 +6,8 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum PurchaseStatus {
-    PURCHASABLE("구매 가능"),
-    NOT_PURCHASABLE("구매 불가")
-    ;
+	PURCHASABLE("구매 가능"),
+	NOT_PURCHASABLE("구매 불가");
 
-    private final String description;
+	private final String description;
 }

@@ -25,22 +25,22 @@ public class AuthGuardSecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
-			.csrf(AbstractHttpConfigurer::disable)
-			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-			.authorizeHttpRequests(auth -> auth
-				.requestMatchers(
-					"/kakao/**",
-					"/token/refresh",
-					"/dev/auth/**",
-					"/swagger-ui/**",
-					"/swagger-ui.html",
-					"/swagger-resources/**",
-					"/v3/api-docs/**",
-					"/actuator/health/**"
-				).permitAll()
-				.anyRequest().authenticated()
-			)
-			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+				.csrf(AbstractHttpConfigurer::disable)
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers(
+								"/kakao/**",
+								"/token/refresh",
+								"/dev/auth/**",
+								"/swagger-ui/**",
+								"/swagger-ui.html",
+								"/swagger-resources/**",
+								"/v3/api-docs/**",
+								"/actuator/health/**"
+						).permitAll()
+						.anyRequest().authenticated()
+				)
+				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
 	}

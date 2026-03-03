@@ -1,13 +1,11 @@
 {
   // 전체 파일 저장시 포맷
   "editor.formatOnSave": true,
-
   // Java
   "[java]": {
     "editor.defaultFormatter": "redhat.java",
     "editor.tabSize": 4
   },
-
   // JavaScript/TypeScript (Prettier)
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
@@ -25,12 +23,10 @@
   "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-
   // JSON
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   },

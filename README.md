@@ -1,7 +1,9 @@
 # goormgb-backend
+
 구름공방 백엔드 레포지토리
 
 ## 목차
+
 - [커밋 메시지 규칙](#커밋-메시지-규칙)
 - [PR 작성 규칙](#pr-작성-규칙)
 - [PR 승인 규칙](#pr-승인-규칙)
@@ -24,18 +26,18 @@
 
 ### 타입 분류
 
-| 타입 | 설명 |
-| --- | --- |
-| **feat** | 새로운 기능 추가 |
-| **fix** | 버그 수정 |
-| **build** | 빌드 관련 변경 (모듈 설치/삭제 등) |
-| **chore** | 자잘한 변경 (코드 영향 없음) |
-| **ci** | CI/CD 관련 설정 변경 |
-| **docs** | 문서 수정 |
-| **style** | 포맷팅, 세미콜론 등 비기능적 수정 |
-| **refactor** | 코드 리팩터링 |
-| **test** | 테스트 코드 추가/수정 |
-| **perf** | 성능 개선 |
+| 타입           | 설명                    |
+|--------------|-----------------------|
+| **feat**     | 새로운 기능 추가             |
+| **fix**      | 버그 수정                 |
+| **build**    | 빌드 관련 변경 (모듈 설치/삭제 등) |
+| **chore**    | 자잘한 변경 (코드 영향 없음)     |
+| **ci**       | CI/CD 관련 설정 변경        |
+| **docs**     | 문서 수정                 |
+| **style**    | 포맷팅, 세미콜론 등 비기능적 수정   |
+| **refactor** | 코드 리팩터링               |
+| **test**     | 테스트 코드 추가/수정          |
+| **perf**     | 성능 개선                 |
 
 ### 커밋 메시지 구조
 
@@ -172,12 +174,12 @@ feat/fix/docs (작업 브랜치)
     hotfixes/* (긴급 수정) ← main에서 분기
 ```
 
-| 브랜치 | 설명 |
-| --- | --- |
-| **main** | 운영 배포 브랜치. 직접 커밋 금지. PR로만 반영 |
-| **dev** | 기능 통합 브랜치. feature들이 모이는 곳 (개발/알파 환경 테스트) |
-| **feat/*** | 기능 개발 브랜치 (예: feat/order-create) |
-| **hotfixes/*** | 운영(main)에서 터진 긴급 수정 브랜치 |
+| 브랜치            | 설명                                        |
+|----------------|-------------------------------------------|
+| **main**       | 운영 배포 브랜치. 직접 커밋 금지. PR로만 반영              |
+| **dev**        | 기능 통합 브랜치. feature들이 모이는 곳 (개발/알파 환경 테스트) |
+| **feat/***     | 기능 개발 브랜치 (예: feat/order-create)          |
+| **hotfixes/*** | 운영(main)에서 터진 긴급 수정 브랜치                   |
 
 ### 백엔드 Merge Flow (작업 절차)
 
@@ -193,11 +195,12 @@ feat/fix/docs (작업 브랜치)
 
 - **형식**: `타입/작업-요약`
 - **규칙**:
-  - 영문 소문자
-  - 공백 대신 하이픈(-)
-  - "무엇을" 중심으로 짧게
+    - 영문 소문자
+    - 공백 대신 하이픈(-)
+    - "무엇을" 중심으로 짧게
 
 **예시**:
+
 - `feat/order-create-api`
 - `fix/payment-amount-calc`
 - `refactor/auth-service-layer`
@@ -205,12 +208,13 @@ feat/fix/docs (작업 브랜치)
 
 ### Merge 방식
 
-| 상황 | Merge 방식 |
-| --- | --- |
-| 일반 PR | **Squash & Merge** |
+| 상황        | Merge 방식                          |
+|-----------|-----------------------------------|
+| 일반 PR     | **Squash & Merge**                |
 | Hotfix PR | **Merge Commit** (운영 장애 대응 이력 확보) |
 
 **Squash 사용 이유**:
+
 - 브랜치 간 히스토리가 "PR 단위"로만 남아 추적이 쉬움
 - 잔 커밋이 dev/main 로그를 오염시키지 않음
 - 릴리즈 단위 회귀/롤백 시 "어떤 PR이 들어갔는지" 바로 확인 가능
@@ -219,8 +223,8 @@ feat/fix/docs (작업 브랜치)
 
 1. **브랜치 생성**: main에서 `hotfixes/*` 분기
 2. **반영 순서**:
-   - hotfixes/* → main (Merge Commit)
-   - hotfixes/* → dev (Backport)
+    - hotfixes/* → main (Merge Commit)
+    - hotfixes/* → dev (Backport)
 
 ### Merge 충돌 해결 원칙
 
@@ -232,23 +236,23 @@ feat/fix/docs (작업 브랜치)
 
 ## 브랜치 보호 규칙
 
-| 항목 | 설정 | 설명 |
-| --- | --- | --- |
-| Restrict deletions | ✅ | main 브랜치 삭제 금지 |
-| Require linear history | ✅ | Merge 시 커밋 히스토리 일관성 유지 |
-| Require pull request before merging | ✅ | PR을 통해서만 병합 가능 |
-| Required approvals | ✅ 1명 | 최소 1명의 리뷰어 승인 필요 |
-| Require conversation resolution | ✅ | 리뷰 코멘트 모두 해결 후 머지 가능 |
-| Block force pushes | ✅ | 강제 푸시 금지 |
-| Allowed merge methods | Squash only | Squash만 허용 (Hotfix 제외) |
-| Allow auto-merge | ✅ | 조건 충족 시 자동 merge |
-| Always suggest updating PR branches | ✅ | 베이스 브랜치 변경 시 업데이트 제안 |
+| 항목                                  | 설정          | 설명                     |
+|-------------------------------------|-------------|------------------------|
+| Restrict deletions                  | ✅           | main 브랜치 삭제 금지         |
+| Require linear history              | ✅           | Merge 시 커밋 히스토리 일관성 유지 |
+| Require pull request before merging | ✅           | PR을 통해서만 병합 가능         |
+| Required approvals                  | ✅ 1명        | 최소 1명의 리뷰어 승인 필요       |
+| Require conversation resolution     | ✅           | 리뷰 코멘트 모두 해결 후 머지 가능   |
+| Block force pushes                  | ✅           | 강제 푸시 금지               |
+| Allowed merge methods               | Squash only | Squash만 허용 (Hotfix 제외) |
+| Allow auto-merge                    | ✅           | 조건 충족 시 자동 merge       |
+| Always suggest updating PR branches | ✅           | 베이스 브랜치 변경 시 업데이트 제안   |
 
 ### 요약
 
-| 항목 | 규칙 |
-| --- | --- |
-| Merge 방법 | PR + 1명 승인 |
-| 금지 | main 직접 푸시 / force push |
+| 항목       | 규칙                                 |
+|----------|------------------------------------|
+| Merge 방법 | PR + 1명 승인                         |
+| 금지       | main 직접 푸시 / force push            |
 | Merge 방식 | Squash only (Hotfix는 Merge Commit) |
-| 자동 병합 | 보호 규칙 성립 + PR 승인 후 자동 Squash 병합 |
+| 자동 병합    | 보호 규칙 성립 + PR 승인 후 자동 Squash 병합    |

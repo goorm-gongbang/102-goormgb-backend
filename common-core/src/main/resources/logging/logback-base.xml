@@ -9,7 +9,7 @@
     <property name="APP_VERSION" value="1.0.0"/>
 
     <appender name="STDOUT_JSON" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="STDOUT_JSON_ORIGIN" />
+        <appender-ref ref="STDOUT_JSON_ORIGIN"/>
         <queueSize>1024</queueSize>
         <discardingThreshold>0</discardingThreshold>
         <includeCallerData>false</includeCallerData>
@@ -63,7 +63,7 @@
         </appender>
 
         <appender name="ASYNC_FILE_DEV" class="ch.qos.logback.classic.AsyncAppender">
-            <appender-ref ref="FILE_DEV_ORIGIN" />
+            <appender-ref ref="FILE_DEV_ORIGIN"/>
             <queueSize>1024</queueSize>
             <discardingThreshold>0</discardingThreshold>
         </appender>

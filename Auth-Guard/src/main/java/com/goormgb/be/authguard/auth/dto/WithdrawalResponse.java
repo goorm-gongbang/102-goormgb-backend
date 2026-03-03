@@ -1,9 +1,9 @@
 package com.goormgb.be.authguard.auth.dto;
 
+import java.time.LocalDateTime;
+
 import com.goormgb.be.user.entity.WithdrawalRequest;
 import com.goormgb.be.user.enums.UserStatus;
-
-import java.time.LocalDateTime;
 
 public record WithdrawalResponse(
 		String status,

@@ -6,12 +6,13 @@ API Gateway 도입 후, Docker 환경과 IntelliJ 로컬 환경에서 동일한 
 
 ## 핵심 문제: Docker vs IntelliJ 네트워크 차이
 
-| 환경 | 네트워크 | `localhost`의 의미 |
-|------|----------|-------------------|
-| IntelliJ | 모든 서비스가 같은 머신에서 실행 | 다른 서비스에 접근 가능 |
-| Docker | 각 서비스가 별도 컨테이너(별도 네트워크) | **자기 자신 컨테이너만 가리킴** |
+| 환경       | 네트워크                    | `localhost`의 의미     |
+|----------|-------------------------|---------------------|
+| IntelliJ | 모든 서비스가 같은 머신에서 실행      | 다른 서비스에 접근 가능       |
+| Docker   | 각 서비스가 별도 컨테이너(별도 네트워크) | **자기 자신 컨테이너만 가리킴** |
 
-예를 들어 Gateway 컨테이너에서 `http://localhost:8083`으로 요청하면, Order-Core가 아니라 **Gateway 자기 자신의 8083 포트**로 요청하게 되어 `Connection refused` 에러가 발생합니다.
+예를 들어 Gateway 컨테이너에서 `http://localhost:8083`으로 요청하면, Order-Core가 아니라 **Gateway 자기 자신의 8083 포트**로 요청하게 되어
+`Connection refused` 에러가 발생합니다.
 
 ## 해결 방법: `${ENV_VAR:기본값}` 패턴
 
@@ -37,10 +38,10 @@ routes:
 
 ### 동작 방식
 
-| 환경 | `ORDER_CORE_URL` 환경변수 | 사용되는 값 |
-|------|--------------------------|-----------|
-| IntelliJ | 없음 (미설정) | 기본값 `http://localhost:8083` |
-| Docker | `http://order-core:8083` (docker-compose.yml에서 주입) | `http://order-core:8083` |
+| 환경       | `ORDER_CORE_URL` 환경변수                              | 사용되는 값                      |
+|----------|----------------------------------------------------|-----------------------------|
+| IntelliJ | 없음 (미설정)                                           | 기본값 `http://localhost:8083` |
+| Docker   | `http://order-core:8083` (docker-compose.yml에서 주입) | `http://order-core:8083`    |
 
 Spring의 `${VAR:default}` 문법 덕분에 하나의 yaml 파일로 두 환경을 모두 커버할 수 있습니다.
 
@@ -83,6 +84,7 @@ RECOMMENDATION_URL=http://recommendation:8084
 ### 3. 나머지 downstream 서비스 (Auth-Guard, Queue, Seat, Order-Core, Recommendation)
 
 이들은 변경 불필요. 이유:
+
 - DB, Redis 접속 정보는 이미 `${DB_URL:jdbc:postgresql://localhost:5432/goormgb}` 패턴으로 되어 있음
 - Docker 환경에서 `docker-compose.yml`의 `environment`로 덮어쓰기됨
 - 이 서비스들은 다른 서비스로 라우팅하지 않으므로 localhost 문제가 발생하지 않음
