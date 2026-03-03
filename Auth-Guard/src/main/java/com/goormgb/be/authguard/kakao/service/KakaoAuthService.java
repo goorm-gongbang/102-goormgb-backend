@@ -57,11 +57,16 @@ public class KakaoAuthService {
 		String profileImageUrl = userResponse.getProfileImageUrl();
 
 		// 3. user_sns 기준으로 기존 사용자 조회
-		User user = userSnsRepository.findByProviderAndProviderUserId(
-						SocialProvider.KAKAO,
-						providerUserId
-				).map(UserSns::getUser)
-				.orElseGet(() -> signUp(email, nickname, profileImageUrl, providerUserId));
+		boolean isNewUser = false;
+		Optional<UserSns> existingUserSns = userSnsRepository.findByProviderAndProviderUserId(
+				SocialProvider.KAKAO, providerUserId);
+		User user;
+		if (existingUserSns.isPresent()) {
+			user = existingUserSns.get().getUser();
+		} else {
+			user = signUp(email, nickname, profileImageUrl, providerUserId);
+			isNewUser = true;
+		}
 
 		// 4. 상태 체크
 		Preconditions.validate(
@@ -101,9 +106,7 @@ public class KakaoAuthService {
 
 		refreshTokenRepository.save(tokenInfo);
 
-		// 컨트롤러에서 쿠키 설정을 위해 응답 DTO에 refreshToken을 잠시 포함하거나
-		// 서비스 결과 객체를 따로 만들어 리턴하는 것이 좋습니다.
-		return KakaoLoginResponse.of(accessToken, refreshToken, user);
+		return KakaoLoginResponse.of(accessToken, refreshToken, user, isNewUser);
 
 	}
 

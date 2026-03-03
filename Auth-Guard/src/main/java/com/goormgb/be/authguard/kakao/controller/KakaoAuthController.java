@@ -3,6 +3,7 @@ package com.goormgb.be.authguard.kakao.controller;
 import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -82,7 +83,9 @@ public class KakaoAuthController {
 		// Refresh Token Cookie 생성
 		String cookie = cookieUtils.createRefreshTokenCookie(loginResponse.getRefreshToken()).toString();
 
-		return ResponseEntity.ok()
+		HttpStatus status = loginResponse.isNewUser() ? HttpStatus.CREATED : HttpStatus.OK;
+
+		return ResponseEntity.status(status)
 				.header(HttpHeaders.SET_COOKIE, cookie)
 				.body(ApiResult.ok(loginResponse));
 

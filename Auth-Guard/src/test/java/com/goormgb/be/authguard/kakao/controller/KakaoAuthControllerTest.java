@@ -49,14 +49,15 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 	}
 
 	@Test
-	@DisplayName("POST /auth/kakao/login - 카카오 로그인 성공")
-	void 카카오_로그인_성공() throws Exception {
+	@DisplayName("POST /auth/kakao/login - 기존 사용자 로그인 시 200 OK")
+	void 카카오_로그인_기존_사용자_200() throws Exception {
 		// given
 		KakaoLoginRequest request = KakaoLoginRequestFixture.createDefault();
 
 		KakaoLoginResponse loginResponse = KakaoLoginResponse.builder()
 				.accessToken("kakao-access-token")
 				.refreshToken("kakao-refresh-token")
+				.newUser(false)
 				.user(KakaoLoginResponse.UserInfo.builder()
 						.userId(1L)
 						.email("user@kakao.com")
@@ -64,7 +65,7 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 						.profileImageUrl("https://img.kakao.com/profile.jpg")
 						.status(UserStatus.ACTIVATE)
 						.build())
-				.onboardingRequired(true)
+				.onboardingRequired(false)
 				.build();
 
 		given(kakaoAuthService.kakaoLogin(eq(request.getAuthorizationCode()), any(HttpServletRequest.class)))
@@ -83,9 +84,47 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 				.andExpect(jsonPath("$.code").value("OK"))
 				.andExpect(jsonPath("$.data.accessToken").value("kakao-access-token"))
 				.andExpect(jsonPath("$.data.refreshToken").doesNotExist())
-				.andExpect(jsonPath("$.data.user.userId").value(1))
-				.andExpect(jsonPath("$.data.user.email").value("user@kakao.com"))
-				.andExpect(jsonPath("$.data.user.nickname").value("카카오유저"))
+				.andExpect(jsonPath("$.data.newUser").doesNotExist())
+				.andExpect(jsonPath("$.data.onboardingRequired").value(false));
+	}
+
+	@Test
+	@DisplayName("POST /auth/kakao/login - 신규 사용자 가입 시 201 Created")
+	void 카카오_로그인_신규_사용자_201() throws Exception {
+		// given
+		KakaoLoginRequest request = KakaoLoginRequestFixture.createDefault();
+
+		KakaoLoginResponse loginResponse = KakaoLoginResponse.builder()
+				.accessToken("kakao-access-token")
+				.refreshToken("kakao-refresh-token")
+				.newUser(true)
+				.user(KakaoLoginResponse.UserInfo.builder()
+						.userId(2L)
+						.email("newuser@kakao.com")
+						.nickname("신규유저")
+						.profileImageUrl("https://img.kakao.com/profile.jpg")
+						.status(UserStatus.ACTIVATE)
+						.build())
+				.onboardingRequired(true)
+				.build();
+
+		given(kakaoAuthService.kakaoLogin(eq(request.getAuthorizationCode()), any(HttpServletRequest.class)))
+				.willReturn(loginResponse);
+
+		ResponseCookie cookie = ResponseCookie.from("refreshToken", "kakao-refresh-token")
+				.httpOnly(true).path("/").build();
+		given(cookieUtils.createRefreshTokenCookie("kakao-refresh-token")).willReturn(cookie);
+
+		// when & then
+		mockMvc.perform(post("/kakao/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isCreated())
+				.andExpect(header().exists(HttpHeaders.SET_COOKIE))
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.data.accessToken").value("kakao-access-token"))
+				.andExpect(jsonPath("$.data.refreshToken").doesNotExist())
+				.andExpect(jsonPath("$.data.newUser").doesNotExist())
 				.andExpect(jsonPath("$.data.onboardingRequired").value(true));
 	}
 
