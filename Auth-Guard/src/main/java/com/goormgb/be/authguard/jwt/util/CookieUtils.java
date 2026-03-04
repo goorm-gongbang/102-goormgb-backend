@@ -29,7 +29,9 @@ public class CookieUtils {
 		return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
 				.httpOnly(true)     // XSS 방지
 				.secure(jwtProperties.getCookie().isSecure())
-				.sameSite("Lax")    // CSRF 공격 완화
+				// TODO: 프론트 배포 환경이 동일 도메인(goormgb.space)으로 확정되면
+				//  SameSite=Lax, secure=false로 되돌릴 것.
+				.sameSite("None")   // cross-site 요청에서도 쿠키 전송 (HTTPS 필수)
 				.path("/")          // 모든 경로에서 쿠키전송
 				.maxAge(maxAgeSeconds)// 7일 만료
 				.build();
@@ -42,7 +44,9 @@ public class CookieUtils {
 		return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, "")
 				.httpOnly(true)
 				.secure(jwtProperties.getCookie().isSecure())
-				.sameSite("Lax")
+				// TODO: 프론트 배포 환경이 동일 도메인(goormgb.space)으로 확정되면
+				//  SameSite=Lax, secure=false로 되돌릴 것.
+				.sameSite("None")
 				.path("/")
 				.maxAge(0)    // 즉시 만료 -> 브라우저에서 삭제
 				.build();
