@@ -41,7 +41,9 @@ jwt:
     audience: ${JWT_REFRESH_TOKEN_AUDIENCE}
     expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION}
   cookie:
-    secure: false
+    # TODO: 프론트 배포 환경이 동일 도메인(goormgb.space)으로 확정되면
+    # SameSite=Lax, secure=false로 되돌릴 것.
+    secure: true
 
 springdoc:
   swagger-ui:
