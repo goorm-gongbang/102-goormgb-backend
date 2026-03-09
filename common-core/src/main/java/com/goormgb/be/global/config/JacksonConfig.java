@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 public class JacksonConfig {
 
 	private static final DateTimeFormatter UTC_FORMATTER =
-			DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+			DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").withZone(ZoneOffset.UTC);
 
 	@Bean
 	public SimpleModule localDateTimeUtcModule() {
