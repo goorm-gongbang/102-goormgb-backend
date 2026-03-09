@@ -40,7 +40,7 @@ public class JacksonConfig {
 				if (value == null) {
 					gen.writeNull();
 				} else {
-					gen.writeString(value.atOffset(ZoneOffset.UTC).format(UTC_FORMATTER));
+					gen.writeString(UTC_FORMATTER.format(value));
 				}
 			}
 		});
