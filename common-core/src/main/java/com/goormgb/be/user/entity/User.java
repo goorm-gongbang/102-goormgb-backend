@@ -1,7 +1,6 @@
 package com.goormgb.be.user.entity;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
 
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.user.enums.UserStatus;
@@ -39,16 +38,16 @@ public class User extends BaseEntity {
 	private Boolean onboardingCompleted = false;
 
 	@Column(name = "onboarding_completed_at")
-	private LocalDateTime onboardingCompletedAt;
+	private Instant onboardingCompletedAt;
 
 	@Column(name = "last_login_at")
-	private LocalDateTime lastLoginAt;
+	private Instant lastLoginAt;
 
 	@Column(name = "marketing_consent", nullable = false)
 	private Boolean marketingConsent = false;
 
 	@Column(name = "marketing_consented_at")
-	private LocalDateTime marketingConsentedAt;
+	private Instant marketingConsentedAt;
 
 	@Builder
 	public User(String email, String nickname, String profileImageUrl) {
@@ -65,17 +64,17 @@ public class User extends BaseEntity {
 
 	public void completeOnboarding() {
 		this.onboardingCompleted = true;
-		this.onboardingCompletedAt = LocalDateTime.now(ZoneOffset.UTC);
+		this.onboardingCompletedAt = Instant.now();
 	}
 
 	public void updateLastLoginAt() {
-		this.lastLoginAt = LocalDateTime.now(ZoneOffset.UTC);
+		this.lastLoginAt = Instant.now();
 	}
 
 	public void updateMarketingConsent(boolean consent) {
 		this.marketingConsent = consent;
 		if (consent) {
-			this.marketingConsentedAt = LocalDateTime.now(ZoneOffset.UTC);
+			this.marketingConsentedAt = Instant.now();
 		}
 	}
 
