@@ -1,6 +1,6 @@
 package com.goormgb.be.ordercore.match.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import com.goormgb.be.ordercore.match.enums.SaleStatus;
@@ -18,7 +18,7 @@ public record ClubMonthlyMatchesResponse(
 
 	public record MatchItem(
 			Long matchId,
-			LocalDateTime matchAt,
+			Instant matchAt,
 			OpponentClub opponentClub,
 			SaleStatus saleStatus,
 			boolean isHomeMatch

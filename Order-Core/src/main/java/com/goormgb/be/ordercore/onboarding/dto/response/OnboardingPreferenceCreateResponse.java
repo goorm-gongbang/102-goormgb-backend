@@ -1,14 +1,14 @@
 package com.goormgb.be.ordercore.onboarding.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import com.goormgb.be.user.entity.User;
 
 public record OnboardingPreferenceCreateResponse(
 		boolean onboardingStatus,
-		LocalDateTime onboardingCompletedAt,
+		Instant onboardingCompletedAt,
 		boolean marketingConsent,
-		LocalDateTime marketingConsentedAt
+		Instant marketingConsentedAt
 ) {
 	public static OnboardingPreferenceCreateResponse from(User user) {
 		return new OnboardingPreferenceCreateResponse(
