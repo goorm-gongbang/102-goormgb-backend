@@ -45,7 +45,7 @@ class JwtAuthenticationFilterTest {
 	@BeforeEach
 	void setUp() {
 		JwtProperties properties = new JwtProperties();
-		properties.setSecretKey(JwtTokenFixture.SECRET_KEY);
+		properties.setPublicKey(JwtTokenFixture.PUBLIC_KEY_BASE64);
 		properties.setIssuer("test-issuer");
 
 		JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(properties);

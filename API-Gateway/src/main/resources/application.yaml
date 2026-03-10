@@ -53,7 +53,7 @@ spring:
       port: ${REDIS_PORT}
 
 jwt:
-  secret-key: ${JWT_SECRET_KEY}
+  public-key: ${JWT_PUBLIC_KEY}
   issuer: ${JWT_ISSUER}
   access-token:
     audience: ${JWT_ACCESS_TOKEN_AUDIENCE}
