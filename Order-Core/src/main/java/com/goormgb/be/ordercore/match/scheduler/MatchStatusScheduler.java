@@ -56,7 +56,7 @@ public class MatchStatusScheduler {
 	@Transactional
 	public void closeEndedMatches() {
 		Instant startOfToday = Instant.now().truncatedTo(ChronoUnit.DAYS);
-		int count = matchRepository.bulkUpdateEndedMatches(startOfToday, SaleStatus.ENDED, SaleStatus.ENDED);
+int count = matchRepository.bulkUpdateEndedMatches(startOfToday, SaleStatus.ENDED);
 
 		if (count > 0) {
 			log.info("[MatchStatusScheduler] → ENDED 전환 완료: {}건", count);
