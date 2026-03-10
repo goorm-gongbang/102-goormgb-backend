@@ -1,12 +1,12 @@
 package com.goormgb.be.ordercore.onboarding.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import com.goormgb.be.user.entity.User;
 
 public record OnboardingStatusGetResponse(
 	Boolean onboardingStatus,
-	LocalDateTime onboardingCompletedAt
+	Instant onboardingCompletedAt
 ) {
 	public static OnboardingStatusGetResponse from(User user) {
 		return new OnboardingStatusGetResponse(

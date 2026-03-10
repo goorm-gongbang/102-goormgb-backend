@@ -1,7 +1,9 @@
 package com.goormgb.be.ordercore.fixture.club;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import com.goormgb.be.ordercore.club.dto.response.ClubDetailGetResponse;
@@ -102,7 +104,7 @@ public final class ClubControllerFixture {
 				List.of(
 						new ClubMonthlyMatchesResponse.MatchItem(
 								1001L,
-								LocalDateTime.of(year, month, 10, 18, 30),
+								LocalDateTime.of(year, month, 10, 18, 30).toInstant(ZoneOffset.UTC),
 								new ClubMonthlyMatchesResponse.OpponentClub(
 										2L,
 										"테크업 유나이티드",
@@ -113,7 +115,7 @@ public final class ClubControllerFixture {
 						),
 						new ClubMonthlyMatchesResponse.MatchItem(
 								1002L,
-								LocalDateTime.of(year, month, 24, 19, 0),
+								LocalDateTime.of(year, month, 24, 19, 0).toInstant(ZoneOffset.UTC),
 								new ClubMonthlyMatchesResponse.OpponentClub(
 										3L,
 										"코딩 시티",
