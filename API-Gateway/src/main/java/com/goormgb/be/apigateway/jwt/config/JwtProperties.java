@@ -10,7 +10,8 @@ import lombok.Setter;
 @ConfigurationProperties(prefix = "jwt")
 public class JwtProperties {
 
-	private String secretKey;
+	/** X.509 형식 RSA 공개키 (base64 DER). 검증 전용 — 서명 불가. */
+	private String publicKey;
 	private String issuer;
 	private AccessToken accessToken = new AccessToken();
 

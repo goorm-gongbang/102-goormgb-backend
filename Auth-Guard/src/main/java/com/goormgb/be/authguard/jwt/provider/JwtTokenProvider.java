@@ -1,11 +1,11 @@
 package com.goormgb.be.authguard.jwt.provider;
 
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
-
-import javax.crypto.SecretKey;
 
 import org.springframework.stereotype.Component;
 
@@ -13,12 +13,12 @@ import com.goormgb.be.authguard.jwt.config.JwtProperties;
 import com.goormgb.be.authguard.jwt.enums.TokenType;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.util.RsaKeyUtils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,11 +32,13 @@ public class JwtTokenProvider {
 	private static final String CLAIM_AUTH = "auth";
 
 	private final JwtProperties jwtProperties;
-	private SecretKey secretKey;
+	private RSAPrivateKey privateKey;
+	private RSAPublicKey publicKey;
 
 	@PostConstruct
 	public void init() {
-		this.secretKey = Keys.hmacShaKeyFor(jwtProperties.getSecretKey().getBytes());
+		this.privateKey = RsaKeyUtils.parsePrivateKey(jwtProperties.getPrivateKey());
+		this.publicKey = RsaKeyUtils.parsePublicKey(jwtProperties.getPublicKey());
 	}
 
 	public String createAccessToken(Long userId, String authority) {
@@ -57,7 +59,7 @@ public class JwtTokenProvider {
 				.id(UUID.randomUUID().toString())
 				.claim(CLAIM_TOKEN_TYPE, TokenType.ACCESS.getValue())
 				.claim(CLAIM_AUTH, authority)
-				.signWith(secretKey)
+				.signWith(privateKey, Jwts.SIG.RS256)
 				.compact();
 	}
 
@@ -78,7 +80,7 @@ public class JwtTokenProvider {
 				.expiration(Date.from(expiration))
 				.id(UUID.randomUUID().toString())
 				.claim(CLAIM_TOKEN_TYPE, TokenType.REFRESH.getValue())
-				.signWith(secretKey)
+				.signWith(privateKey, Jwts.SIG.RS256)
 				.compact();
 	}
 
@@ -123,7 +125,7 @@ public class JwtTokenProvider {
 
 	private Claims parseClaimsFromToken(String token) {
 		return Jwts.parser()
-				.verifyWith(secretKey)
+				.verifyWith(publicKey)
 				.build()
 				.parseSignedClaims(token)
 				.getPayload();
