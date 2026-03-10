@@ -5,7 +5,9 @@ import static org.mockito.BDDMockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -95,7 +97,7 @@ class OnboardingPreferenceControllerTest extends WebMvcTestSupport {
 
 		OnboardingPreferenceCreateRequest request = OnboardingPreferenceRequestFixture.createCreateRequest();
 
-		LocalDateTime now = LocalDateTime.of(2026, 2, 22, 12, 0, 0);
+		Instant now = LocalDateTime.of(2026, 2, 22, 12, 0, 0).toInstant(ZoneOffset.UTC);
 		OnboardingPreferenceCreateResponse response = new OnboardingPreferenceCreateResponse(
 				true, now, true, now
 		);

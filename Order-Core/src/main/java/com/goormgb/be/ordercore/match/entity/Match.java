@@ -1,6 +1,6 @@
 package com.goormgb.be.ordercore.match.entity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.ordercore.club.entity.Club;
@@ -30,7 +30,7 @@ import lombok.NoArgsConstructor;
 public class Match extends BaseEntity {
 
 	@Column(name = "match_at", nullable = false)
-	private LocalDateTime matchAt;
+	private Instant matchAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "home_club_id", nullable = false)
@@ -49,7 +49,7 @@ public class Match extends BaseEntity {
 	private SaleStatus saleStatus;
 
 	@Builder
-	public Match(LocalDateTime matchAt, Club homeClub, Club awayClub, Stadium stadium, SaleStatus saleStatus) {
+	public Match(Instant matchAt, Club homeClub, Club awayClub, Stadium stadium, SaleStatus saleStatus) {
 		this.matchAt = matchAt;
 		this.homeClub = homeClub;
 		this.awayClub = awayClub;
@@ -57,7 +57,7 @@ public class Match extends BaseEntity {
 		this.saleStatus = saleStatus;
 	}
 
-	public static Match create(LocalDateTime matchAt, Club homeClub, Club awayClub, Stadium stadium,
+	public static Match create(Instant matchAt, Club homeClub, Club awayClub, Stadium stadium,
 			SaleStatus saleStatus) {
 		return Match.builder()
 				.matchAt(matchAt)

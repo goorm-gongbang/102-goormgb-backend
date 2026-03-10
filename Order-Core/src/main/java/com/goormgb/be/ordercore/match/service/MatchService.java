@@ -1,8 +1,9 @@
 package com.goormgb.be.ordercore.match.service;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -39,8 +40,8 @@ public class MatchService {
 	}
 
 	public MatchListByDateResponse getMatchesByDate(LocalDate date) {
-		LocalDateTime start = date.atStartOfDay();
-		LocalDateTime end = date.plusDays(1).atStartOfDay();
+		Instant start = date.atStartOfDay(ZoneOffset.UTC).toInstant();
+		Instant end = date.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
 
 		List<Match> matches = matchRepository.findAllByMatchAtGreaterThanEqualAndMatchAtLessThanOrderByMatchAtAsc(start,
 				end);
@@ -58,8 +59,8 @@ public class MatchService {
 		Preconditions.validate(year >= 1900 && year <= 2100, ErrorCode.INVALID_MATCH_YEAR);
 
 		YearMonth ym = YearMonth.of(year, month);
-		LocalDateTime start = ym.atDay(1).atStartOfDay();
-		LocalDateTime end = ym.plusMonths(1).atDay(1).atStartOfDay();
+		Instant start = ym.atDay(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+		Instant end = ym.plusMonths(1).atDay(1).atStartOfDay(ZoneOffset.UTC).toInstant();
 
 		List<Match> matches = matchRepository.findMonthlyByClubId(clubId, start, end);
 
