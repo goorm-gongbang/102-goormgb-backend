@@ -6,12 +6,14 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.match.entity.Match;
+import com.goormgb.be.ordercore.match.enums.SaleStatus;
 
 public interface MatchRepository extends JpaRepository<Match, Long> {
 	default Match findByIdOrThrow(Long id, ErrorCode errorCode) {
@@ -34,8 +36,18 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 
 	@EntityGraph(attributePaths = {"homeClub", "awayClub", "stadium"})
 	List<Match> findAllByMatchAtGreaterThanEqualAndMatchAtLessThanOrderByMatchAtAsc(
-			LocalDateTime start,
-			LocalDateTime end
+			Instant start,
+			Instant end
+	);
+
+	List<Match> findBySaleStatus(SaleStatus saleStatus);
+
+	@Modifying
+	@Query("UPDATE Match m SET m.saleStatus = :newStatus WHERE m.matchAt < :now AND m.saleStatus <> :newStatus AND m.saleStatus <> :excludedStatus")
+	int bulkUpdateEndedMatches(
+			@Param("now") Instant now,
+			@Param("newStatus") SaleStatus newStatus,
+			@Param("excludedStatus") SaleStatus excludedStatus
 	);
 
 	@EntityGraph(attributePaths = {"homeClub", "awayClub"})
@@ -48,7 +60,7 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 			""")
 	List<Match> findMonthlyByClubId(
 			@Param("clubId") Long clubId,
-			@Param("start") LocalDateTime start,
-			@Param("end") LocalDateTime end
+			@Param("start") Instant start,
+			@Param("end") Instant end
 	);
 }
