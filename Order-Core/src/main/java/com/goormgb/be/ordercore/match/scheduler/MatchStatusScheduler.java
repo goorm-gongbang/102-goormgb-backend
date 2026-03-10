@@ -59,7 +59,7 @@ public class MatchStatusScheduler {
 int count = matchRepository.bulkUpdateEndedMatches(startOfToday, SaleStatus.ENDED);
 
 		if (count > 0) {
-			log.info("[MatchStatusScheduler] → ENDED 전환 완료: {}건", count);
+log.info("[MatchStatusScheduler] Match status → ENDED 전환 완료: {}건", count);
 		}
 	}
 }
