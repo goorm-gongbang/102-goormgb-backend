@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -89,6 +91,7 @@ class MatchStatusSchedulerTest {
 
 			scheduler.openSales();
 
+			verify(matchRepository).findBySaleStatus(SaleStatus.UPCOMING);
 			verifyNoMoreInteractions(matchRepository);
 		}
 
@@ -118,7 +121,7 @@ class MatchStatusSchedulerTest {
 		@Test
 		@DisplayName("오늘 자정 기준으로 이전 날짜 경기를 ENDED로 벌크 업데이트한다")
 		void callsBulkUpdateWithStartOfToday() {
-			when(matchRepository.bulkUpdateEndedMatches(any(), eq(SaleStatus.ENDED), eq(SaleStatus.ENDED)))
+			when(matchRepository.bulkUpdateEndedMatches(any(), eq(SaleStatus.ENDED)))
 					.thenReturn(2);
 
 			scheduler.closeEndedMatches();
@@ -126,19 +129,20 @@ class MatchStatusSchedulerTest {
 			ArgumentCaptor<Instant> captor = ArgumentCaptor.forClass(Instant.class);
 			verify(matchRepository).bulkUpdateEndedMatches(
 					captor.capture(),
-					eq(SaleStatus.ENDED),
 					eq(SaleStatus.ENDED)
 			);
 
-			// 전달된 시각이 오늘 자정(UTC 00:00:00)인지 확인
-			Instant startOfToday = Instant.now().truncatedTo(ChronoUnit.DAYS);
+			// 전달된 시각이 오늘 KST 자정인지 확인
+			Instant startOfToday = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
+					.truncatedTo(ChronoUnit.DAYS)
+					.toInstant();
 			assertThat(captor.getValue()).isEqualTo(startOfToday);
 		}
 
 		@Test
 		@DisplayName("ENDED로 전환할 경기가 없어도 예외가 발생하지 않는다")
 		void doesNotThrowWhenNoMatchesToEnd() {
-			when(matchRepository.bulkUpdateEndedMatches(any(), any(), any())).thenReturn(0);
+			when(matchRepository.bulkUpdateEndedMatches(any(), any())).thenReturn(0);
 
 			assertThatCode(() -> scheduler.closeEndedMatches()).doesNotThrowAnyException();
 		}

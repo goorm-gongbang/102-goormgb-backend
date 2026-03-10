@@ -43,11 +43,10 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 	List<Match> findBySaleStatus(SaleStatus saleStatus);
 
 	@Modifying
-	@Query("UPDATE Match m SET m.saleStatus = :newStatus WHERE m.matchAt < :now AND m.saleStatus <> :newStatus AND m.saleStatus <> :excludedStatus")
+	@Query("UPDATE Match m SET m.saleStatus = :newStatus WHERE m.matchAt < :now AND m.saleStatus <> :newStatus")
 	int bulkUpdateEndedMatches(
 			@Param("now") Instant now,
-			@Param("newStatus") SaleStatus newStatus,
-			@Param("excludedStatus") SaleStatus excludedStatus
+			@Param("newStatus") SaleStatus newStatus
 	);
 
 	@EntityGraph(attributePaths = {"homeClub", "awayClub"})

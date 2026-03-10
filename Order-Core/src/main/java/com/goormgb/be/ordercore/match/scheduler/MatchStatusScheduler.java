@@ -1,6 +1,8 @@
 package com.goormgb.be.ordercore.match.scheduler;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -28,7 +30,7 @@ public class MatchStatusScheduler {
 	 * 매일 오전 11시: UPCOMING 경기 중 오늘 판매 오픈 대상인 경기를 ON_SALE로 전환한다.
 	 * 판매 오픈 조건: 경기 7일 전 오전 11시 (SalesOpenUtils 기준)
 	 */
-	@Scheduled(cron = "0 0 11 * * *")
+	@Scheduled(cron = "0 0 11 * * *", zone = "Asia/Seoul")
 	@Transactional
 	public void openSales() {
 		Instant now = Instant.now();
@@ -52,14 +54,16 @@ public class MatchStatusScheduler {
 	 * 매일 자정 00:00: 전날까지 경기가 있던 건을 ENDED로 전환한다.
 	 * 예) 3월 10일 경기 → 3월 11일 00:00에 ENDED 처리
 	 */
-	@Scheduled(cron = "0 0 0 * * *")
+	@Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
 	@Transactional
 	public void closeEndedMatches() {
-		Instant startOfToday = Instant.now().truncatedTo(ChronoUnit.DAYS);
-int count = matchRepository.bulkUpdateEndedMatches(startOfToday, SaleStatus.ENDED);
+		Instant startOfToday = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
+				.truncatedTo(ChronoUnit.DAYS)
+				.toInstant();
+		int count = matchRepository.bulkUpdateEndedMatches(startOfToday, SaleStatus.ENDED);
 
 		if (count > 0) {
-log.info("[MatchStatusScheduler] Match status → ENDED 전환 완료: {}건", count);
+			log.info("[MatchStatusScheduler] Match status → ENDED 전환 완료: {}건", count);
 		}
 	}
 }
