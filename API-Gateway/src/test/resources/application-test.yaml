@@ -38,7 +38,8 @@ spring:
       port: 6379
 
 jwt:
-  secret-key: goormgb-test-secret-key-do-not-use-in-production-20260302-must-be-at-least-256-bits
+  # 테스트용 RSA 공개키 (테스트 전용)
+  public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxPNPvwCRTdmz4wmQex48fOWno9fmG9dnZ8E1Ngd8siMuOfp5Gr0oXLP6hIMUyQwDsjPLCkjz6r1uIhgR4f5Hs/Y0XicXTZXos2yUvCRAGSHG4xPkO73c51vyVG8ComPv3mhYbzZkmssUqo09xIelkQky2gsqlrwJSHPhs77gsKiau1c7/Y73Yu10uUYJuMy1ywQ3aCYTF87feKbjWYTPfaMOjG17mOXX+7KuF9XfD6v02UGa8S9OTetHoJFi0YT3StYG+Wvk1IDT1L+0gdeohK8zWhxs2S84pOhqltFs/QxrQZopgSpPfmnviZf8uN/DfY3BDJ5c5rZjcV91OELDDQIDAQAB
   issuer: test-issuer
   access-token:
     audience: test-audience

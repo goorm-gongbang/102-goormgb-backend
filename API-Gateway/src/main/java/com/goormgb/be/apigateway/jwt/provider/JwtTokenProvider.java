@@ -1,16 +1,16 @@
 package com.goormgb.be.apigateway.jwt.provider;
 
-import javax.crypto.SecretKey;
+import java.security.interfaces.RSAPublicKey;
 
 import org.springframework.stereotype.Component;
 
 import com.goormgb.be.apigateway.jwt.config.JwtProperties;
 import com.goormgb.be.apigateway.jwt.enums.TokenType;
+import com.goormgb.be.apigateway.jwt.util.RsaKeyUtils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,11 +24,11 @@ public class JwtTokenProvider {
 	private static final String CLAIM_AUTH = "auth";
 
 	private final JwtProperties jwtProperties;
-	private SecretKey secretKey;
+	private RSAPublicKey publicKey;
 
 	@PostConstruct
 	public void init() {
-		this.secretKey = Keys.hmacShaKeyFor(jwtProperties.getSecretKey().getBytes());
+		this.publicKey = RsaKeyUtils.parsePublicKey(jwtProperties.getPublicKey());
 	}
 
 	/**
@@ -38,7 +38,7 @@ public class JwtTokenProvider {
 	public Claims parseClaims(String token) {
 		try {
 			return Jwts.parser()
-					.verifyWith(secretKey)
+					.verifyWith(publicKey)
 					.build()
 					.parseSignedClaims(token)
 					.getPayload();
