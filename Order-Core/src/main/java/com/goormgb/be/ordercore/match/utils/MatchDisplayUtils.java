@@ -1,6 +1,8 @@
 package com.goormgb.be.ordercore.match.utils;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
@@ -51,7 +53,7 @@ public class MatchDisplayUtils {
 	}
 
 	public String createDateTimeDisplay(Match match) {
-		var matchAt = match.getMatchAt();
+		ZonedDateTime matchAt = match.getMatchAt().atZone(ZoneOffset.UTC);
 
 		String dayOfWeek = matchAt.getDayOfWeek()
 				.getDisplayName(TextStyle.SHORT, Locale.KOREAN);
@@ -68,7 +70,7 @@ public class MatchDisplayUtils {
 	}
 
 	public String createMatchDdayLabel(Match match, LocalDate today) {
-		LocalDate matchDate = match.getMatchAt().toLocalDate();
+		LocalDate matchDate = match.getMatchAt().atZone(ZoneOffset.UTC).toLocalDate();
 
 		long diff = ChronoUnit.DAYS.between(today, matchDate);
 

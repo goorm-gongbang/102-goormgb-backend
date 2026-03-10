@@ -1,7 +1,7 @@
 package com.goormgb.be.ordercore.match.dto.response;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import com.goormgb.be.ordercore.club.entity.Club;
@@ -20,14 +20,14 @@ public record MatchListByDateResponse(
 
 	public record MatchSummary(
 			Long matchId,
-			LocalDateTime matchAt,
+			Instant matchAt,
 			SaleStatus saleStatus,
-			LocalDateTime salesOpenAt,
+			Instant salesOpenAt,
 			ClubDto homeClub,
 			ClubDto awayClub,
 			StadiumDto stadium
 	) {
-		public static MatchSummary of(Match m, LocalDateTime salesOpenAt) {
+		public static MatchSummary of(Match m, Instant salesOpenAt) {
 			return new MatchSummary(
 					m.getId(),
 					m.getMatchAt(),
