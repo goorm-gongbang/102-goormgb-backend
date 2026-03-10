@@ -21,6 +21,9 @@ import com.goormgb.be.ordercore.onboarding.service.OnboardingPreferenceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
@@ -31,7 +34,13 @@ import lombok.RequiredArgsConstructor;
 public class OnboardingPreferenceController {
 	final private OnboardingPreferenceService onboardingPreferenceService;
 
-	@Operation(summary = "온보딩 선호도 조회", description = "온보딩 선호도를 조회합니다.")
+	@Operation(summary = "온보딩 선호도 조회", description = "로그인한 유저의 온보딩 좌석 선호도를 조회합니다.",
+		security = @SecurityRequirement(name = "bearerAuth"))
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "조회 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+		@ApiResponse(responseCode = "404", description = "선호도 정보 없음", content = @Content)
+	})
 	@GetMapping("/preferences")
 	@ResponseStatus(HttpStatus.OK)
 	public ApiResult<OnboardingPreferenceGetResponse> getPreferences(
@@ -42,7 +51,13 @@ public class OnboardingPreferenceController {
 		return ApiResult.ok(preferences);
 	}
 
-	@Operation(summary = "온보딩 선호도 생성", description = "온보딩 선호도를 생성합니다.")
+	@Operation(summary = "온보딩 선호도 생성", description = "온보딩 좌석 선호도를 최초 생성합니다. 선호도 3개를 우선순위(1~3) 순서로 입력해야 합니다.",
+		security = @SecurityRequirement(name = "bearerAuth"))
+	@ApiResponses({
+		@ApiResponse(responseCode = "201", description = "생성 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+		@ApiResponse(responseCode = "409", description = "이미 선호도가 존재함", content = @Content)
+	})
 	@PostMapping("/preferences")
 	@ResponseStatus(HttpStatus.CREATED)
 	public ApiResult<OnboardingPreferenceCreateResponse> createPreferences(
@@ -98,7 +113,13 @@ public class OnboardingPreferenceController {
 		return ApiResult.ok(response);
 	}
 
-	@Operation(summary = "온보딩 선호도 수정", description = "온보딩 선호도를 수정합니다.")
+	@Operation(summary = "온보딩 선호도 수정", description = "기존 온보딩 좌석 선호도를 전체 교체(PUT)합니다.",
+		security = @SecurityRequirement(name = "bearerAuth"))
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "수정 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+		@ApiResponse(responseCode = "404", description = "선호도 정보 없음", content = @Content)
+	})
 	@PutMapping("/preferences")
 	@ResponseStatus(HttpStatus.OK)
 	public ApiResult<Void> updatePreferences(
@@ -153,7 +174,12 @@ public class OnboardingPreferenceController {
 		return ApiResult.ok();
 	}
 
-	@Operation(summary = "온보딩 완료 여부 조회", description = "온보딩 완료 여부를 조회합니다.")
+	@Operation(summary = "온보딩 완료 여부 조회", description = "로그인한 유저의 온보딩 완료 여부 및 완료 시각을 조회합니다.",
+		security = @SecurityRequirement(name = "bearerAuth"))
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "조회 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content)
+	})
 	@GetMapping("/status")
 	public ApiResult<OnboardingStatusGetResponse> getOnboardingStatus(
 		@AuthenticationPrincipal Long userId

@@ -7,12 +7,21 @@ import com.goormgb.be.ordercore.match.dto.MatchGuideDto;
 import com.goormgb.be.ordercore.match.entity.Match;
 import com.goormgb.be.ordercore.match.enums.SaleStatus;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "경기 상세 조회 응답")
 public record MatchDetailGetResponse(
+		@Schema(description = "경기 ID", example = "1")
 		Long matchId,
+		@Schema(description = "경기 시작 시간 (UTC ISO-8601)", type = "string", example = "2026-03-28T05:00:00Z")
 		Instant matchAt,
+		@Schema(description = "판매 상태", example = "ON_SALE")
 		SaleStatus saleStatus,
+		@Schema(description = "홈 구단 정보")
 		ClubDto homeClub,
+		@Schema(description = "원정 구단 정보")
 		ClubDto awayClub,
+		@Schema(description = "경기 안내 정보")
 		MatchGuideDto matchGuide
 ) {
 	public static MatchDetailGetResponse of(Match match, MatchGuideDto matchGuide) {
