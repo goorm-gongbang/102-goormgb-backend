@@ -2,7 +2,9 @@ package com.goormgb.be.ordercore.fixture.onboarding;
 
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.goormgb.be.domain.club.entity.Club;
 import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
+import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
 import com.goormgb.be.domain.onboarding.enums.EnvironmentPref;
 import com.goormgb.be.domain.onboarding.enums.MoodPref;
 import com.goormgb.be.domain.onboarding.enums.ObstructionSensitivity;
@@ -22,10 +24,12 @@ public final class OnboardingPreferenceFixture {
 	private OnboardingPreferenceFixture() {
 	}
 
-	public static OnboardingPreference createFirst(User user) {
+	public static OnboardingPreference createFirst(User user, Club favoriteClub) {
 		return OnboardingPreference.builder()
 			.user(user)
 			.priority(1)
+			.favoriteClub(favoriteClub)
+			.cheerProximityPref(CheerProximityPref.NEAR)
 			.viewpoint(Viewpoint.CENTER)
 			.seatHeight(SeatHeight.LOW)
 			.section(Section.CENTER_SIDE)
@@ -39,10 +43,12 @@ public final class OnboardingPreferenceFixture {
 			.build();
 	}
 
-	public static OnboardingPreference createSecond(User user) {
+	public static OnboardingPreference createSecond(User user, Club favoriteClub) {
 		return OnboardingPreference.builder()
 			.user(user)
 			.priority(2)
+			.favoriteClub(favoriteClub)
+			.cheerProximityPref(CheerProximityPref.ANY)
 			.viewpoint(Viewpoint.INFIELD_1B)
 			.seatHeight(SeatHeight.MID)
 			.section(Section.MIDDLE)
@@ -54,10 +60,12 @@ public final class OnboardingPreferenceFixture {
 			.build();
 	}
 
-	public static OnboardingPreference createThird(User user) {
+	public static OnboardingPreference createThird(User user, Club favoriteClub) {
 		return OnboardingPreference.builder()
 			.user(user)
 			.priority(3)
+			.favoriteClub(favoriteClub)
+			.cheerProximityPref(CheerProximityPref.FAR)
 			.viewpoint(Viewpoint.OUTFIELD_L)
 			.seatHeight(SeatHeight.HIGH)
 			.section(Section.CORNER)
@@ -71,8 +79,8 @@ public final class OnboardingPreferenceFixture {
 			.build();
 	}
 
-	public static OnboardingPreference createWithId(Long id, User user) {
-		OnboardingPreference preference = createFirst(user);
+	public static OnboardingPreference createWithId(Long id, User user, Club favoriteClub) {
+		OnboardingPreference preference = createFirst(user, favoriteClub);
 		ReflectionTestUtils.setField(preference, "id", id);
 		return preference;
 	}

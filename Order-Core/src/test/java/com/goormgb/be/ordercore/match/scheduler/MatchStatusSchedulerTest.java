@@ -19,9 +19,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.goormgb.be.ordercore.match.entity.Match;
-import com.goormgb.be.ordercore.match.enums.SaleStatus;
-import com.goormgb.be.ordercore.match.repository.MatchRepository;
+import com.goormgb.be.domain.match.entity.Match;
+import com.goormgb.be.domain.match.enums.SaleStatus;
+import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.ordercore.match.utils.SalesOpenUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,15 +40,14 @@ class MatchStatusSchedulerTest {
 	}
 
 	// Match 생성 헬퍼
-
 	private Match createMatch(Instant matchAt, SaleStatus status) {
 		Match match = Match.builder()
-				.matchAt(matchAt)
-				.homeClub(null)
-				.awayClub(null)
-				.stadium(null)
-				.saleStatus(status)
-				.build();
+			.matchAt(matchAt)
+			.homeClub(null)
+			.awayClub(null)
+			.stadium(null)
+			.saleStatus(status)
+			.build();
 		return match;
 	}
 
@@ -105,7 +104,7 @@ class MatchStatusSchedulerTest {
 			Match shouldStay = createMatch(futureMatchAt, SaleStatus.UPCOMING);
 
 			when(matchRepository.findBySaleStatus(SaleStatus.UPCOMING))
-					.thenReturn(List.of(shouldOpen, shouldStay));
+				.thenReturn(List.of(shouldOpen, shouldStay));
 
 			scheduler.openSales();
 
@@ -122,20 +121,20 @@ class MatchStatusSchedulerTest {
 		@DisplayName("오늘 자정 기준으로 이전 날짜 경기를 ENDED로 벌크 업데이트한다")
 		void callsBulkUpdateWithStartOfToday() {
 			when(matchRepository.bulkUpdateEndedMatches(any(), eq(SaleStatus.ENDED)))
-					.thenReturn(2);
+				.thenReturn(2);
 
 			scheduler.closeEndedMatches();
 
 			ArgumentCaptor<Instant> captor = ArgumentCaptor.forClass(Instant.class);
 			verify(matchRepository).bulkUpdateEndedMatches(
-					captor.capture(),
-					eq(SaleStatus.ENDED)
+				captor.capture(),
+				eq(SaleStatus.ENDED)
 			);
 
 			// 전달된 시각이 오늘 KST 자정인지 확인
 			Instant startOfToday = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
-					.truncatedTo(ChronoUnit.DAYS)
-					.toInstant();
+				.truncatedTo(ChronoUnit.DAYS)
+				.toInstant();
 			assertThat(captor.getValue()).isEqualTo(startOfToday);
 		}
 
