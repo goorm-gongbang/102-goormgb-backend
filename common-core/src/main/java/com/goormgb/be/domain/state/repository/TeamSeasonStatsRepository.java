@@ -1,12 +1,12 @@
-package com.goormgb.be.ordercore.state.repository;
+package com.goormgb.be.domain.state.repository;
 
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.goormgb.be.domain.state.entity.TeamSeasonStats;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.ordercore.state.entity.TeamSeasonStats;
 
 public interface TeamSeasonStatsRepository extends JpaRepository<TeamSeasonStats, Long> {
 

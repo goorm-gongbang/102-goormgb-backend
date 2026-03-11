@@ -1,4 +1,4 @@
-package com.goormgb.be.ordercore.state.entity;
+package com.goormgb.be.domain.state.entity;
 
 import java.math.BigDecimal;
 
@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "team_season_stats", uniqueConstraints = {
-		@UniqueConstraint(columnNames = {"club_id", "season_year"})
+	@UniqueConstraint(columnNames = {"club_id", "season_year"})
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -58,7 +58,7 @@ public class TeamSeasonStats extends BaseEntity {
 
 	@Builder
 	public TeamSeasonStats(Club club, int seasonYear, int seasonRanking, int wins, int draws, int losses,
-			BigDecimal winRate, BigDecimal battingAverage, BigDecimal era, BigDecimal gamesBehind) {
+		BigDecimal winRate, BigDecimal battingAverage, BigDecimal era, BigDecimal gamesBehind) {
 		this.club = club;
 		this.seasonYear = seasonYear;
 		this.seasonRanking = seasonRanking;

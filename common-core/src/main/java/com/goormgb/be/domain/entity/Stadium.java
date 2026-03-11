@@ -1,4 +1,4 @@
-package com.goormgb.be.ordercore.stadium.entity;
+package com.goormgb.be.domain.entity;
 
 import com.goormgb.be.global.entity.BaseEntity;
 
