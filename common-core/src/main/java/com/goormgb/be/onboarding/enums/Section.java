@@ -1,4 +1,4 @@
-package com.goormgb.be.ordercore.onboarding.enums;
+package com.goormgb.be.onboarding.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,14 +1,14 @@
-package com.goormgb.be.ordercore.onboarding.entity;
+package com.goormgb.be.onboarding.entity;
 
 import com.goormgb.be.global.entity.BaseEntity;
-import com.goormgb.be.ordercore.onboarding.enums.EnvironmentPref;
-import com.goormgb.be.ordercore.onboarding.enums.MoodPref;
-import com.goormgb.be.ordercore.onboarding.enums.ObstructionSensitivity;
-import com.goormgb.be.ordercore.onboarding.enums.PriceMode;
-import com.goormgb.be.ordercore.onboarding.enums.SeatHeight;
-import com.goormgb.be.ordercore.onboarding.enums.SeatPositionPref;
-import com.goormgb.be.ordercore.onboarding.enums.Section;
-import com.goormgb.be.ordercore.onboarding.enums.Viewpoint;
+import com.goormgb.be.onboarding.enums.EnvironmentPref;
+import com.goormgb.be.onboarding.enums.MoodPref;
+import com.goormgb.be.onboarding.enums.ObstructionSensitivity;
+import com.goormgb.be.onboarding.enums.PriceMode;
+import com.goormgb.be.onboarding.enums.SeatHeight;
+import com.goormgb.be.onboarding.enums.SeatPositionPref;
+import com.goormgb.be.onboarding.enums.Section;
+import com.goormgb.be.onboarding.enums.Viewpoint;
 import com.goormgb.be.user.entity.User;
 
 import jakarta.persistence.Column;
@@ -28,15 +28,15 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "onboarding_preferences", uniqueConstraints = {
-		@UniqueConstraint(columnNames = {"user_id", "priority"}),
-		@UniqueConstraint(columnNames = {"user_id", "viewpoint"}),
-		@UniqueConstraint(columnNames = {"user_id", "seat_height"}),
-		@UniqueConstraint(columnNames = {"user_id", "section"})
+	@UniqueConstraint(columnNames = {"user_id", "priority"}),
+	@UniqueConstraint(columnNames = {"user_id", "viewpoint"}),
+	@UniqueConstraint(columnNames = {"user_id", "seat_height"}),
+	@UniqueConstraint(columnNames = {"user_id", "section"})
 }, indexes = {
-		@Index(name = "idx_onboarding_preferences_user_id", columnList = "user_id"),
-		@Index(name = "idx_onboarding_preferences_price_mode", columnList = "price_mode"),
-		@Index(name = "idx_onboarding_preferences_price_min", columnList = "price_min"),
-		@Index(name = "idx_onboarding_preferences_price_max", columnList = "price_max")
+	@Index(name = "idx_onboarding_preferences_user_id", columnList = "user_id"),
+	@Index(name = "idx_onboarding_preferences_price_mode", columnList = "price_mode"),
+	@Index(name = "idx_onboarding_preferences_price_min", columnList = "price_min"),
+	@Index(name = "idx_onboarding_preferences_price_max", columnList = "price_max")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -92,46 +92,46 @@ public class OnboardingPreference extends BaseEntity {
 
 	@Builder
 	public OnboardingPreference(
-			User user,
-			Integer priority,
-			Viewpoint viewpoint,
-			SeatHeight seatHeight,
-			Section section,
-			SeatPositionPref seatPositionPref,
-			EnvironmentPref environmentPref,
-			MoodPref moodPref,
-			ObstructionSensitivity obstructionSensitivity,
-			PriceMode priceMode,
-			Integer priceMin,
-			Integer priceMax
+		User user,
+		Integer priority,
+		Viewpoint viewpoint,
+		SeatHeight seatHeight,
+		Section section,
+		SeatPositionPref seatPositionPref,
+		EnvironmentPref environmentPref,
+		MoodPref moodPref,
+		ObstructionSensitivity obstructionSensitivity,
+		PriceMode priceMode,
+		Integer priceMin,
+		Integer priceMax
 	) {
 		this.user = user;
 		this.priority = priority;
 		update(
-				viewpoint,
-				seatHeight,
-				section,
-				seatPositionPref,
-				environmentPref,
-				moodPref,
-				obstructionSensitivity,
-				priceMode,
-				priceMin,
-				priceMax
+			viewpoint,
+			seatHeight,
+			section,
+			seatPositionPref,
+			environmentPref,
+			moodPref,
+			obstructionSensitivity,
+			priceMode,
+			priceMin,
+			priceMax
 		);
 	}
 
 	public void update(
-			Viewpoint viewpoint,
-			SeatHeight seatHeight,
-			Section section,
-			SeatPositionPref seatPositionPref,
-			EnvironmentPref environmentPref,
-			MoodPref moodPref,
-			ObstructionSensitivity obstructionSensitivity,
-			PriceMode priceMode,
-			Integer priceMin,
-			Integer priceMax
+		Viewpoint viewpoint,
+		SeatHeight seatHeight,
+		Section section,
+		SeatPositionPref seatPositionPref,
+		EnvironmentPref environmentPref,
+		MoodPref moodPref,
+		ObstructionSensitivity obstructionSensitivity,
+		PriceMode priceMode,
+		Integer priceMin,
+		Integer priceMax
 	) {
 		this.viewpoint = viewpoint;
 		this.seatHeight = seatHeight;
@@ -140,7 +140,7 @@ public class OnboardingPreference extends BaseEntity {
 		this.environmentPref = environmentPref != null ? environmentPref : EnvironmentPref.ANY;
 		this.moodPref = moodPref != null ? moodPref : MoodPref.ANY;
 		this.obstructionSensitivity =
-				obstructionSensitivity != null ? obstructionSensitivity : ObstructionSensitivity.NORMAL;
+			obstructionSensitivity != null ? obstructionSensitivity : ObstructionSensitivity.NORMAL;
 		this.priceMode = priceMode != null ? priceMode : PriceMode.ANY;
 		this.priceMin = priceMin;
 		this.priceMax = priceMax;
