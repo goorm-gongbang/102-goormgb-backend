@@ -1,7 +1,7 @@
-package com.goormgb.be.ordercore.club.entity;
+package com.goormgb.be.domain.club.entity;
 
 import com.goormgb.be.global.entity.BaseEntity;
-import com.goormgb.be.ordercore.stadium.entity.Stadium;
+import com.goormgb.be.domain.entity.Stadium;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,7 +41,7 @@ public class Club extends BaseEntity {
 
 	@Builder
 	public Club(String koName, String enName, String logoImg, String clubColor, Stadium stadium,
-			String homepageRedirectUrl) {
+		String homepageRedirectUrl) {
 		this.koName = koName;
 		this.enName = enName;
 		this.logoImg = logoImg;

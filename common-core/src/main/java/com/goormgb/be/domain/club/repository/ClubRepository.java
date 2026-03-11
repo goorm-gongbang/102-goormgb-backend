@@ -1,4 +1,4 @@
-package com.goormgb.be.ordercore.club.repository;
+package com.goormgb.be.domain.club.repository;
 
 import java.util.Optional;
 
