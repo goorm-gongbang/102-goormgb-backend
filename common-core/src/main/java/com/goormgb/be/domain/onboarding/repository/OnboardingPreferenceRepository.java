@@ -1,4 +1,4 @@
-package com.goormgb.be.onboarding.repository;
+package com.goormgb.be.domain.onboarding.repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -7,8 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.onboarding.entity.OnboardingPreference;
-import com.goormgb.be.onboarding.enums.Viewpoint;
+import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
+import com.goormgb.be.domain.onboarding.enums.Viewpoint;
 
 public interface OnboardingPreferenceRepository extends JpaRepository<OnboardingPreference, Long> {
 	List<OnboardingPreference> findAllByUserId(Long userId);

@@ -1,14 +1,16 @@
-package com.goormgb.be.onboarding.entity;
+package com.goormgb.be.domain.onboarding.entity;
 
+import com.goormgb.be.domain.club.entity.Club;
 import com.goormgb.be.global.entity.BaseEntity;
-import com.goormgb.be.onboarding.enums.EnvironmentPref;
-import com.goormgb.be.onboarding.enums.MoodPref;
-import com.goormgb.be.onboarding.enums.ObstructionSensitivity;
-import com.goormgb.be.onboarding.enums.PriceMode;
-import com.goormgb.be.onboarding.enums.SeatHeight;
-import com.goormgb.be.onboarding.enums.SeatPositionPref;
-import com.goormgb.be.onboarding.enums.Section;
-import com.goormgb.be.onboarding.enums.Viewpoint;
+import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
+import com.goormgb.be.domain.onboarding.enums.EnvironmentPref;
+import com.goormgb.be.domain.onboarding.enums.MoodPref;
+import com.goormgb.be.domain.onboarding.enums.ObstructionSensitivity;
+import com.goormgb.be.domain.onboarding.enums.PriceMode;
+import com.goormgb.be.domain.onboarding.enums.SeatHeight;
+import com.goormgb.be.domain.onboarding.enums.SeatPositionPref;
+import com.goormgb.be.domain.onboarding.enums.Section;
+import com.goormgb.be.domain.onboarding.enums.Viewpoint;
 import com.goormgb.be.user.entity.User;
 
 import jakarta.persistence.Column;
@@ -27,17 +29,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "onboarding_preferences", uniqueConstraints = {
-	@UniqueConstraint(columnNames = {"user_id", "priority"}),
-	@UniqueConstraint(columnNames = {"user_id", "viewpoint"}),
-	@UniqueConstraint(columnNames = {"user_id", "seat_height"}),
-	@UniqueConstraint(columnNames = {"user_id", "section"})
-}, indexes = {
-	@Index(name = "idx_onboarding_preferences_user_id", columnList = "user_id"),
-	@Index(name = "idx_onboarding_preferences_price_mode", columnList = "price_mode"),
-	@Index(name = "idx_onboarding_preferences_price_min", columnList = "price_min"),
-	@Index(name = "idx_onboarding_preferences_price_max", columnList = "price_max")
-})
+@Table(
+	name = "onboarding_preferences",
+	uniqueConstraints = {
+		@UniqueConstraint(columnNames = {"user_id", "priority"})
+	},
+	indexes = {
+		@Index(name = "idx_onboarding_preferences_user_id", columnList = "user_id"),
+		@Index(name = "idx_onboarding_preferences_favorite_club_id", columnList = "favorite_club_id")
+	}
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OnboardingPreference extends BaseEntity {
@@ -49,7 +50,14 @@ public class OnboardingPreference extends BaseEntity {
 	@Column(name = "priority", nullable = false)
 	private Integer priority;
 
-	// 필수 항목
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "favorite_club_id", nullable = false)
+	private Club favoriteClub;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "cheer_proximity_pref", nullable = false, length = 20)
+	private CheerProximityPref cheerProximityPref = CheerProximityPref.ANY;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "viewpoint", nullable = false, length = 30)
 	private Viewpoint viewpoint;
@@ -62,7 +70,6 @@ public class OnboardingPreference extends BaseEntity {
 	@Column(name = "section", nullable = false, length = 20)
 	private Section section;
 
-	// 선택 항목 (기본값 ANY)
 	@Enumerated(EnumType.STRING)
 	@Column(name = "seat_position_pref", nullable = false, length = 20)
 	private SeatPositionPref seatPositionPref = SeatPositionPref.ANY;
@@ -79,7 +86,6 @@ public class OnboardingPreference extends BaseEntity {
 	@Column(name = "obstruction_sensitivity", nullable = false, length = 30)
 	private ObstructionSensitivity obstructionSensitivity = ObstructionSensitivity.NORMAL;
 
-	// 가격
 	@Enumerated(EnumType.STRING)
 	@Column(name = "price_mode", nullable = false, length = 20)
 	private PriceMode priceMode = PriceMode.ANY;
@@ -94,6 +100,8 @@ public class OnboardingPreference extends BaseEntity {
 	public OnboardingPreference(
 		User user,
 		Integer priority,
+		Club favoriteClub,
+		CheerProximityPref cheerProximityPref,
 		Viewpoint viewpoint,
 		SeatHeight seatHeight,
 		Section section,
@@ -107,7 +115,9 @@ public class OnboardingPreference extends BaseEntity {
 	) {
 		this.user = user;
 		this.priority = priority;
+		this.favoriteClub = favoriteClub;
 		update(
+			cheerProximityPref,
 			viewpoint,
 			seatHeight,
 			section,
@@ -122,6 +132,7 @@ public class OnboardingPreference extends BaseEntity {
 	}
 
 	public void update(
+		CheerProximityPref cheerProximityPref,
 		Viewpoint viewpoint,
 		SeatHeight seatHeight,
 		Section section,
@@ -133,6 +144,8 @@ public class OnboardingPreference extends BaseEntity {
 		Integer priceMin,
 		Integer priceMax
 	) {
+		this.cheerProximityPref =
+			cheerProximityPref != null ? cheerProximityPref : CheerProximityPref.ANY;
 		this.viewpoint = viewpoint;
 		this.seatHeight = seatHeight;
 		this.section = section;
@@ -144,5 +157,9 @@ public class OnboardingPreference extends BaseEntity {
 		this.priceMode = priceMode != null ? priceMode : PriceMode.ANY;
 		this.priceMin = priceMin;
 		this.priceMax = priceMax;
+	}
+
+	public void changeFavoriteClub(Club favoriteClub) {
+		this.favoriteClub = favoriteClub;
 	}
 }

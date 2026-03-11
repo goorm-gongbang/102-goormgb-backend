@@ -1,4 +1,4 @@
-package com.goormgb.be.onboarding.enums;
+package com.goormgb.be.domain.onboarding.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

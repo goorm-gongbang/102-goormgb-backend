@@ -1,4 +1,4 @@
-package com.goormgb.be.ordercore.match.enums;
+package com.goormgb.be.domain.match.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -2,15 +2,15 @@ package com.goormgb.be.ordercore.fixture.onboarding;
 
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.goormgb.be.onboarding.entity.OnboardingPreference;
-import com.goormgb.be.onboarding.enums.EnvironmentPref;
-import com.goormgb.be.onboarding.enums.MoodPref;
-import com.goormgb.be.onboarding.enums.ObstructionSensitivity;
-import com.goormgb.be.onboarding.enums.PriceMode;
-import com.goormgb.be.onboarding.enums.SeatHeight;
-import com.goormgb.be.onboarding.enums.SeatPositionPref;
-import com.goormgb.be.onboarding.enums.Section;
-import com.goormgb.be.onboarding.enums.Viewpoint;
+import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
+import com.goormgb.be.domain.onboarding.enums.EnvironmentPref;
+import com.goormgb.be.domain.onboarding.enums.MoodPref;
+import com.goormgb.be.domain.onboarding.enums.ObstructionSensitivity;
+import com.goormgb.be.domain.onboarding.enums.PriceMode;
+import com.goormgb.be.domain.onboarding.enums.SeatHeight;
+import com.goormgb.be.domain.onboarding.enums.SeatPositionPref;
+import com.goormgb.be.domain.onboarding.enums.Section;
+import com.goormgb.be.domain.onboarding.enums.Viewpoint;
 import com.goormgb.be.user.entity.User;
 
 public final class OnboardingPreferenceFixture {

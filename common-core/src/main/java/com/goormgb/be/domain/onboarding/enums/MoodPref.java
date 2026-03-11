@@ -1,13 +1,13 @@
-package com.goormgb.be.onboarding.enums;
+package com.goormgb.be.domain.onboarding.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum SeatPositionPref {
-	AISLE("통로석 선호"),
-	MIDDLE("중앙석 선호"),
+public enum MoodPref {
+	CHEERFUL("열정적인 응원"),
+	QUIET("조용한 관람"),
 	ANY("무관");
 
 	private final String description;

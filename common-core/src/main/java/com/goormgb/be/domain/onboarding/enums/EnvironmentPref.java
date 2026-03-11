@@ -1,14 +1,13 @@
-package com.goormgb.be.onboarding.enums;
+package com.goormgb.be.domain.onboarding.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum Section {
-	CENTER_SIDE("중앙 쪽"),
-	MIDDLE("중간"),
-	CORNER("코너(파울라인)"),
+public enum EnvironmentPref {
+	SHADE("그늘 선호"),
+	SUN_OK("햇빛 무관"),
 	ANY("무관");
 
 	private final String description;
