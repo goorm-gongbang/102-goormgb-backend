@@ -4,7 +4,7 @@ import java.time.Instant;
 
 import com.goormgb.be.domain.club.entity.Club;
 import com.goormgb.be.domain.match.enums.SaleStatus;
-import com.goormgb.be.domain.statium.entity.Stadium;
+import com.goormgb.be.domain.stadium.entity.Stadium;
 import com.goormgb.be.global.entity.BaseEntity;
 
 import jakarta.persistence.Column;
