@@ -15,8 +15,6 @@ spring:
               uri: ${AUTH_GUARD_URL}
               predicates:
                 - Path=/auth/**
-              filters:
-                - StripPrefix=1
             - id: queue
               uri: ${QUEUE_URL}
               predicates:
