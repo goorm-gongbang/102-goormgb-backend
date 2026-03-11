@@ -1,11 +1,11 @@
-package com.goormgb.be.ordercore.match.entity;
+package com.goormgb.be.domain.match.entity;
 
 import java.time.Instant;
 
+import com.goormgb.be.domain.club.entity.Club;
+import com.goormgb.be.domain.entity.Stadium;
+import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.global.entity.BaseEntity;
-import com.goormgb.be.ordercore.club.entity.Club;
-import com.goormgb.be.ordercore.match.enums.SaleStatus;
-import com.goormgb.be.ordercore.stadium.entity.Stadium;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "matches", uniqueConstraints = {
-		@UniqueConstraint(columnNames = {"stadium_id", "match_at"})
+	@UniqueConstraint(columnNames = {"stadium_id", "match_at"})
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -58,13 +58,13 @@ public class Match extends BaseEntity {
 	}
 
 	public static Match create(Instant matchAt, Club homeClub, Club awayClub, Stadium stadium,
-			SaleStatus saleStatus) {
+		SaleStatus saleStatus) {
 		return Match.builder()
-				.matchAt(matchAt)
-				.homeClub(homeClub)
-				.awayClub(awayClub)
-				.stadium(stadium)
-				.saleStatus(saleStatus)
-				.build();
+			.matchAt(matchAt)
+			.homeClub(homeClub)
+			.awayClub(awayClub)
+			.stadium(stadium)
+			.saleStatus(saleStatus)
+			.build();
 	}
 }
