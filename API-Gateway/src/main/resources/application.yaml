@@ -8,25 +8,15 @@ spring:
     gateway:
       server:
         webflux:
-          globalcors:
-            corsConfigurations:
-              '[/**]':
-                allowedOriginPatterns:
-                  - "${ALLOWED_ORIGINS}"
-                allowedMethods:
-                  - GET
-                  - POST
-                  - PUT
-                  - DELETE
-                  - OPTIONS
-                allowedHeaders:
-                  - "*"
-                allowCredentials: true
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
           routes:
             - id: auth-guard
               uri: ${AUTH_GUARD_URL}
               predicates:
                 - Path=/auth/**
+              filters:
+                - StripPrefix=1
             - id: queue
               uri: ${QUEUE_URL}
               predicates:
