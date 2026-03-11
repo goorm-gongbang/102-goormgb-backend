@@ -1,10 +1,14 @@
 package com.goormgb.be.domain.onboarding.entity;
 
 import com.goormgb.be.global.entity.BaseEntity;
+import com.goormgb.be.user.entity.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -27,15 +31,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OnboardingPreferredBlock extends BaseEntity {
 
-	@Column(name = "user_id", nullable = false)
-	private Long userId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "user_id", nullable = false)
+	private User user;
 
 	@Column(name = "block_id", nullable = false)
 	private Long blockId;
 
 	@Builder
-	public OnboardingPreferredBlock(Long userId, Long blockId) {
-		this.userId = userId;
+	public OnboardingPreferredBlock(User user, Long blockId) {
+		this.user = user;
 		this.blockId = blockId;
 	}
 }
