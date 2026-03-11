@@ -1,4 +1,4 @@
-package com.goormgb.be.domain.entity;
+package com.goormgb.be.domain.statium.entity;
 
 import com.goormgb.be.global.entity.BaseEntity;
 

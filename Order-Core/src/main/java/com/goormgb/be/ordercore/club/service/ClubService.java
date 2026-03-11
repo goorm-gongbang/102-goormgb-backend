@@ -5,12 +5,12 @@ import java.time.LocalDate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.goormgb.be.domain.club.repository.ClubRepository;
 import com.goormgb.be.domain.state.repository.TeamSeasonStatsRepository;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.ordercore.club.dto.response.ClubDetailGetResponse;
 import com.goormgb.be.ordercore.club.dto.response.ClubGetResponse;
-import com.goormgb.be.ordercore.club.repository.ClubRepository;
 import com.goormgb.be.ordercore.match.dto.response.ClubMonthlyMatchesResponse;
 import com.goormgb.be.ordercore.match.service.MatchService;
 

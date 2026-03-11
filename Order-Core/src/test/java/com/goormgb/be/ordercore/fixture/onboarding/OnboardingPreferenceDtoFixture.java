@@ -1,5 +1,6 @@
 package com.goormgb.be.ordercore.fixture.onboarding;
 
+import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
 import com.goormgb.be.domain.onboarding.enums.EnvironmentPref;
 import com.goormgb.be.domain.onboarding.enums.MoodPref;
 import com.goormgb.be.domain.onboarding.enums.ObstructionSensitivity;
@@ -18,6 +19,8 @@ public final class OnboardingPreferenceDtoFixture {
 	public static OnboardingPreferenceDto createFirst() {
 		return new OnboardingPreferenceDto(
 			1,
+			1L,
+			CheerProximityPref.NEAR,
 			Viewpoint.CENTER,
 			SeatHeight.LOW,
 			Section.CENTER_SIDE,
@@ -34,6 +37,8 @@ public final class OnboardingPreferenceDtoFixture {
 	public static OnboardingPreferenceDto createSecond() {
 		return new OnboardingPreferenceDto(
 			2,
+			1L,
+			CheerProximityPref.ANY,
 			Viewpoint.INFIELD_1B,
 			SeatHeight.MID,
 			Section.MIDDLE,
@@ -50,6 +55,8 @@ public final class OnboardingPreferenceDtoFixture {
 	public static OnboardingPreferenceDto createThird() {
 		return new OnboardingPreferenceDto(
 			3,
+			1L,
+			CheerProximityPref.FAR,
 			Viewpoint.OUTFIELD_L,
 			SeatHeight.HIGH,
 			Section.CORNER,

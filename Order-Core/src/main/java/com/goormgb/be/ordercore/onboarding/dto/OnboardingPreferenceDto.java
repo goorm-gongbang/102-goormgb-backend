@@ -1,6 +1,7 @@
 package com.goormgb.be.ordercore.onboarding.dto;
 
 import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
+import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
 import com.goormgb.be.domain.onboarding.enums.EnvironmentPref;
 import com.goormgb.be.domain.onboarding.enums.MoodPref;
 import com.goormgb.be.domain.onboarding.enums.ObstructionSensitivity;
@@ -12,6 +13,8 @@ import com.goormgb.be.domain.onboarding.enums.Viewpoint;
 
 public record OnboardingPreferenceDto(
 	Integer priority,
+	Long favoriteClubId,
+	CheerProximityPref cheerProximityPref,
 	Viewpoint viewpoint,
 	SeatHeight seatHeight,
 	Section section,
@@ -23,9 +26,12 @@ public record OnboardingPreferenceDto(
 	Integer priceMin,
 	Integer priceMax
 ) {
+
 	public static OnboardingPreferenceDto from(OnboardingPreference entity) {
 		return new OnboardingPreferenceDto(
 			entity.getPriority(),
+			entity.getFavoriteClub().getId(),
+			entity.getCheerProximityPref(),
 			entity.getViewpoint(),
 			entity.getSeatHeight(),
 			entity.getSection(),

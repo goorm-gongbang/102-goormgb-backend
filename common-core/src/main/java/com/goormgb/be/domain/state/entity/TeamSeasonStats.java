@@ -2,8 +2,8 @@ package com.goormgb.be.domain.state.entity;
 
 import java.math.BigDecimal;
 
+import com.goormgb.be.domain.club.entity.Club;
 import com.goormgb.be.global.entity.BaseEntity;
-import com.goormgb.be.ordercore.club.entity.Club;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

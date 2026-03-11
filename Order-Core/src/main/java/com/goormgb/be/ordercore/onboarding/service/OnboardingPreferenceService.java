@@ -8,14 +8,14 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.goormgb.be.global.exception.CustomException;
-import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
 import com.goormgb.be.domain.onboarding.enums.SeatHeight;
 import com.goormgb.be.domain.onboarding.enums.Section;
 import com.goormgb.be.domain.onboarding.enums.Viewpoint;
 import com.goormgb.be.domain.onboarding.repository.OnboardingPreferenceRepository;
+import com.goormgb.be.global.exception.CustomException;
+import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.ordercore.onboarding.dto.OnboardingPreferenceDto;
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceCreateRequest;
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceUpdateRequest;
@@ -105,6 +105,7 @@ public class OnboardingPreferenceService {
 				.orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND_FOR_UPDATE));
 
 			preferenceToUpdate.update(
+				pref.cheerProximityPref(),
 				pref.viewpoint(),
 				pref.seatHeight(),
 				pref.section(),

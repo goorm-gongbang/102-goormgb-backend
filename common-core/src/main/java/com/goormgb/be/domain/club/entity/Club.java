@@ -1,7 +1,7 @@
 package com.goormgb.be.domain.club.entity;
 
+import com.goormgb.be.domain.statium.entity.Stadium;
 import com.goormgb.be.global.entity.BaseEntity;
-import com.goormgb.be.domain.entity.Stadium;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
