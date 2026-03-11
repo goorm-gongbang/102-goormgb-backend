@@ -1,4 +1,4 @@
-package com.goormgb.be.ordercore.match.repository;
+package com.goormgb.be.domain.match.repository;
 
 import java.time.Instant;
 import java.util.List;
@@ -10,10 +10,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.goormgb.be.domain.match.entity.Match;
+import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.ordercore.match.entity.Match;
-import com.goormgb.be.ordercore.match.enums.SaleStatus;
 
 public interface MatchRepository extends JpaRepository<Match, Long> {
 	default Match findByIdOrThrow(Long id, ErrorCode errorCode) {
@@ -21,46 +21,45 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 	}
 
 	@Query("""
-			    select m from Match m
-			    join fetch m.homeClub
-			    join fetch m.awayClub
-			    join fetch m.stadium
-			    where m.id = :matchId
-			""")
+		    select m from Match m
+		    join fetch m.homeClub
+		    join fetch m.awayClub
+		    join fetch m.stadium
+		    where m.id = :matchId
+		""")
 	Optional<Match> findDetailById(@Param("matchId") Long matchId);
 
 	default Match findDetailByIdOrThrow(Long id) {
 		return findDetailById(id)
-				.orElseThrow(() -> new CustomException(ErrorCode.MATCH_NOT_FOUND));
+			.orElseThrow(() -> new CustomException(ErrorCode.MATCH_NOT_FOUND));
 	}
 
 	@EntityGraph(attributePaths = {"homeClub", "awayClub", "stadium"})
 	List<Match> findAllByMatchAtGreaterThanEqualAndMatchAtLessThanOrderByMatchAtAsc(
-			Instant start,
-			Instant end
+		Instant start,
+		Instant end
 	);
 
 	List<Match> findBySaleStatus(SaleStatus saleStatus);
 
 	@Modifying
-	@Query("UPDATE Match m SET m.saleStatus = :newStatus WHERE m.matchAt < :now AND m.saleStatus <> :newStatus AND m.saleStatus <> :excludedStatus")
+	@Query("UPDATE Match m SET m.saleStatus = :newStatus WHERE m.matchAt < :now AND m.saleStatus <> :newStatus")
 	int bulkUpdateEndedMatches(
-			@Param("now") Instant now,
-			@Param("newStatus") SaleStatus newStatus,
-			@Param("excludedStatus") SaleStatus excludedStatus
+		@Param("now") Instant now,
+		@Param("newStatus") SaleStatus newStatus
 	);
 
 	@EntityGraph(attributePaths = {"homeClub", "awayClub"})
 	@Query("""
-			    select m from Match m
-			    where (m.homeClub.id = :clubId or m.awayClub.id = :clubId)
-			      and m.matchAt >= :start
-			      and m.matchAt < :end
-			    order by m.matchAt asc
-			""")
+		    select m from Match m
+		    where (m.homeClub.id = :clubId or m.awayClub.id = :clubId)
+		      and m.matchAt >= :start
+		      and m.matchAt < :end
+		    order by m.matchAt asc
+		""")
 	List<Match> findMonthlyByClubId(
-			@Param("clubId") Long clubId,
-			@Param("start") Instant start,
-			@Param("end") Instant end
+		@Param("clubId") Long clubId,
+		@Param("start") Instant start,
+		@Param("end") Instant end
 	);
 }
