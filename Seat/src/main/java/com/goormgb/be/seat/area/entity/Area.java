@@ -1,6 +1,6 @@
 package com.goormgb.be.seat.area.entity;
 
-import com.goormgb.be.domain.statium.entity.Stadium;
+import com.goormgb.be.domain.stadium.entity.Stadium;
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.seat.area.enums.AreaCode;
 

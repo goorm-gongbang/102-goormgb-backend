@@ -3,8 +3,8 @@ package com.goormgb.be.ordercore.club.dto.response;
 import java.math.BigDecimal;
 
 import com.goormgb.be.domain.club.entity.Club;
+import com.goormgb.be.domain.stadium.entity.Stadium;
 import com.goormgb.be.domain.state.entity.TeamSeasonStats;
-import com.goormgb.be.domain.statium.entity.Stadium;
 
 public record ClubDetailGetResponse(
 	Long clubId,
