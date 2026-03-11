@@ -10,29 +10,30 @@ import java.util.Locale;
 
 import org.springframework.stereotype.Component;
 
+import com.goormgb.be.domain.match.entity.Match;
+import com.goormgb.be.domain.match.enums.PurchaseStatus;
+import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.ordercore.match.dto.MatchGuideDto;
-import com.goormgb.be.ordercore.match.entity.Match;
-import com.goormgb.be.ordercore.match.enums.PurchaseStatus;
-import com.goormgb.be.ordercore.match.enums.SaleStatus;
 
 @Component
 public class MatchDisplayUtils {
 	final String DEFAULT_AGE_LIMIT = "전체관람가";
+
 	private static final DateTimeFormatter DATE_FORMATTER =
-			DateTimeFormatter.ofPattern("yyyy년 MM월 dd일", Locale.KOREAN);
+		DateTimeFormatter.ofPattern("yyyy년 MM월 dd일", Locale.KOREAN);
 
 	private static final DateTimeFormatter TIME_FORMATTER =
-			DateTimeFormatter.ofPattern("HH:mm");
+		DateTimeFormatter.ofPattern("HH:mm");
 
 	public MatchGuideDto toGuide(Match match) {
 		return new MatchGuideDto(
-				createTeamsDisplay(match),
-				createAgeLimit(),
-				createPlaceDisplay(match),
-				createAddressDisplay(match),
-				createDateTimeDisplay(match),
-				createPurchaseStatus(match),
-				createMatchDdayLabel(match, LocalDate.now())
+			createTeamsDisplay(match),
+			createAgeLimit(),
+			createPlaceDisplay(match),
+			createAddressDisplay(match),
+			createDateTimeDisplay(match),
+			createPurchaseStatus(match),
+			createMatchDdayLabel(match, LocalDate.now())
 		);
 	}
 
@@ -56,17 +57,17 @@ public class MatchDisplayUtils {
 		ZonedDateTime matchAt = match.getMatchAt().atZone(ZoneId.of("Asia/Seoul"));
 
 		String dayOfWeek = matchAt.getDayOfWeek()
-				.getDisplayName(TextStyle.SHORT, Locale.KOREAN);
+			.getDisplayName(TextStyle.SHORT, Locale.KOREAN);
 
 		return matchAt.format(DATE_FORMATTER)
-				+ " (" + dayOfWeek + ") "
-				+ matchAt.format(TIME_FORMATTER);
+			+ " (" + dayOfWeek + ") "
+			+ matchAt.format(TIME_FORMATTER);
 	}
 
 	public PurchaseStatus createPurchaseStatus(Match match) {
 		return match.getSaleStatus() == SaleStatus.ON_SALE
-				? PurchaseStatus.PURCHASABLE
-				: PurchaseStatus.NOT_PURCHASABLE;
+			? PurchaseStatus.PURCHASABLE
+			: PurchaseStatus.NOT_PURCHASABLE;
 	}
 
 	public String createMatchDdayLabel(Match match, LocalDate today) {

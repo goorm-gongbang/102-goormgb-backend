@@ -10,9 +10,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.goormgb.be.ordercore.match.entity.Match;
-import com.goormgb.be.ordercore.match.enums.SaleStatus;
-import com.goormgb.be.ordercore.match.repository.MatchRepository;
+import com.goormgb.be.domain.match.entity.Match;
+import com.goormgb.be.domain.match.enums.SaleStatus;
+import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.ordercore.match.utils.SalesOpenUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -58,8 +58,8 @@ public class MatchStatusScheduler {
 	@Transactional
 	public void closeEndedMatches() {
 		Instant startOfToday = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
-				.truncatedTo(ChronoUnit.DAYS)
-				.toInstant();
+			.truncatedTo(ChronoUnit.DAYS)
+			.toInstant();
 		int count = matchRepository.bulkUpdateEndedMatches(startOfToday, SaleStatus.ENDED);
 
 		if (count > 0) {

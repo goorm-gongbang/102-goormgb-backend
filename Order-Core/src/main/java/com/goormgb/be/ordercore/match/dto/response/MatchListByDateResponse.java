@@ -4,10 +4,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.goormgb.be.ordercore.club.entity.Club;
-import com.goormgb.be.ordercore.match.entity.Match;
-import com.goormgb.be.ordercore.match.enums.SaleStatus;
-import com.goormgb.be.ordercore.stadium.entity.Stadium;
+import com.goormgb.be.domain.club.entity.Club;
+import com.goormgb.be.domain.match.entity.Match;
+import com.goormgb.be.domain.match.enums.SaleStatus;
+import com.goormgb.be.domain.statium.entity.Stadium;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -43,22 +43,22 @@ public record MatchListByDateResponse(
 	) {
 		public static MatchSummary of(Match m, Instant salesOpenAt) {
 			return new MatchSummary(
-					m.getId(),
-					m.getMatchAt(),
-					m.getSaleStatus(),
-					salesOpenAt,
-					ClubDto.from(m.getHomeClub()),
-					ClubDto.from(m.getAwayClub()),
-					StadiumDto.from(m.getStadium())
+				m.getId(),
+				m.getMatchAt(),
+				m.getSaleStatus(),
+				salesOpenAt,
+				ClubDto.from(m.getHomeClub()),
+				ClubDto.from(m.getAwayClub()),
+				StadiumDto.from(m.getStadium())
 			);
 		}
 	}
 
 	public record ClubDto(
-			Long clubId,
-			String koName,
-			String enName,
-			String logoImg
+		Long clubId,
+		String koName,
+		String enName,
+		String logoImg
 	) {
 		public static ClubDto from(Club c) {
 			return new ClubDto(c.getId(), c.getKoName(), c.getEnName(), c.getLogoImg());
@@ -66,9 +66,9 @@ public record MatchListByDateResponse(
 	}
 
 	public record StadiumDto(
-			Long stadiumId,
-			String koName,
-			String enName
+		Long stadiumId,
+		String koName,
+		String enName
 	) {
 		public static StadiumDto from(Stadium s) {
 			return new StadiumDto(s.getId(), s.getKoName(), s.getEnName());

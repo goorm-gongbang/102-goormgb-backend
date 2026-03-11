@@ -5,7 +5,7 @@ import java.time.ZoneId;
 
 import org.springframework.stereotype.Component;
 
-import com.goormgb.be.ordercore.match.entity.Match;
+import com.goormgb.be.domain.match.entity.Match;
 
 @Component
 public class SalesOpenUtils {
@@ -16,12 +16,12 @@ public class SalesOpenUtils {
 
 	public Instant calculateSalesOpenAt(Match match) {
 		return match.getMatchAt()
-				.atZone(KST)
-				.minusDays(SALES_OPEN_DAYS_BEFORE_MATCH)
-				.withHour(SALES_OPEN_HOUR)
-				.withMinute(SALES_OPEN_MINUTE)
-				.withSecond(0)
-				.withNano(0)
-				.toInstant();
+			.atZone(KST)
+			.minusDays(SALES_OPEN_DAYS_BEFORE_MATCH)
+			.withHour(SALES_OPEN_HOUR)
+			.withMinute(SALES_OPEN_MINUTE)
+			.withSecond(0)
+			.withNano(0)
+			.toInstant();
 	}
 }

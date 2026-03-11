@@ -1,6 +1,6 @@
 package com.goormgb.be.ordercore.match.dto;
 
-import com.goormgb.be.ordercore.match.enums.PurchaseStatus;
+import com.goormgb.be.domain.match.enums.PurchaseStatus;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

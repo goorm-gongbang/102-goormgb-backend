@@ -2,10 +2,10 @@ package com.goormgb.be.ordercore.match.dto.response;
 
 import java.time.Instant;
 
-import com.goormgb.be.ordercore.club.entity.Club;
+import com.goormgb.be.domain.club.entity.Club;
+import com.goormgb.be.domain.match.entity.Match;
+import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.ordercore.match.dto.MatchGuideDto;
-import com.goormgb.be.ordercore.match.entity.Match;
-import com.goormgb.be.ordercore.match.enums.SaleStatus;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
