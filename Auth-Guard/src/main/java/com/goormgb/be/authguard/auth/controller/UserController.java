@@ -24,7 +24,7 @@ public class UserController {
 	private final UserService userService;
 
 	@Operation(summary = "내 정보 조회", description = "현재 로그인한 유저의 기본 정보(ID, 이메일, 닉네임, 상태)를 조회합니다.",
-		security = @SecurityRequirement(name = "bearerAuth"))
+		security = @SecurityRequirement(name = "BearerAuth"))
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", description = "조회 성공"),
 		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content)

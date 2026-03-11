@@ -55,7 +55,7 @@ public class AuthController {
 	}
 
 	@Operation(summary = "로그아웃", description = "Access Token을 블랙리스트에 등록하고 Refresh Token 쿠키를 삭제합니다.",
-		security = @SecurityRequirement(name = "bearerAuth"))
+		security = @SecurityRequirement(name = "BearerAuth"))
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", description = "로그아웃 성공"),
 		@ApiResponse(responseCode = "401", description = "인증 필요 또는 Refresh Token 없음", content = @Content)
@@ -78,7 +78,7 @@ public class AuthController {
 	}
 
 	@Operation(summary = "회원 탈퇴 신청", description = "회원 탈퇴를 신청합니다. 즉시 서비스 이용이 중단되고, 30일의 유예 기간 이후 계정이 최종 삭제됩니다.",
-		security = @SecurityRequirement(name = "bearerAuth"))
+		security = @SecurityRequirement(name = "BearerAuth"))
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", description = "탈퇴 신청 성공"),
 		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content)

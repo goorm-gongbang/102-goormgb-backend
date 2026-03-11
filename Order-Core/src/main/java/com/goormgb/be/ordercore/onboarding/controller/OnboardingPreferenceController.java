@@ -35,7 +35,7 @@ public class OnboardingPreferenceController {
 	final private OnboardingPreferenceService onboardingPreferenceService;
 
 	@Operation(summary = "온보딩 선호도 조회", description = "로그인한 유저의 온보딩 좌석 선호도를 조회합니다.",
-		security = @SecurityRequirement(name = "bearerAuth"))
+		security = @SecurityRequirement(name = "BearerAuth"))
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", description = "조회 성공"),
 		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
@@ -52,7 +52,7 @@ public class OnboardingPreferenceController {
 	}
 
 	@Operation(summary = "온보딩 선호도 생성", description = "온보딩 좌석 선호도를 최초 생성합니다. 선호도 3개를 우선순위(1~3) 순서로 입력해야 합니다.",
-		security = @SecurityRequirement(name = "bearerAuth"))
+		security = @SecurityRequirement(name = "BearerAuth"))
 	@ApiResponses({
 		@ApiResponse(responseCode = "201", description = "생성 성공"),
 		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
@@ -114,7 +114,7 @@ public class OnboardingPreferenceController {
 	}
 
 	@Operation(summary = "온보딩 선호도 수정", description = "기존 온보딩 좌석 선호도를 전체 교체(PUT)합니다.",
-		security = @SecurityRequirement(name = "bearerAuth"))
+		security = @SecurityRequirement(name = "BearerAuth"))
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", description = "수정 성공"),
 		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
@@ -175,7 +175,7 @@ public class OnboardingPreferenceController {
 	}
 
 	@Operation(summary = "온보딩 완료 여부 조회", description = "로그인한 유저의 온보딩 완료 여부 및 완료 시각을 조회합니다.",
-		security = @SecurityRequirement(name = "bearerAuth"))
+		security = @SecurityRequirement(name = "BearerAuth"))
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", description = "조회 성공"),
 		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content)
