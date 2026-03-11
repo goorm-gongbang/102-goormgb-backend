@@ -67,4 +67,8 @@ public class Match extends BaseEntity {
 				.saleStatus(saleStatus)
 				.build();
 	}
+
+	public void updateSaleStatus(SaleStatus newStatus) {
+		this.saleStatus = newStatus;
+	}
 }
