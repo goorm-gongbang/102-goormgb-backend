@@ -2,6 +2,7 @@ package com.goormgb.be.seat.block.entity;
 
 import com.goormgb.be.domain.onboarding.enums.Viewpoint;
 import com.goormgb.be.global.entity.BaseEntity;
+import com.goormgb.be.seat.area.entity.Area;
 import com.goormgb.be.seat.section.entity.Section;
 
 import jakarta.persistence.Column;
@@ -30,6 +31,7 @@ import lombok.NoArgsConstructor;
 	},
 	indexes = {
 		@Index(name = "idx_block_section_id", columnList = "section_id"),
+		@Index(name = "idx_block_area_id", columnList = "area_id"),
 		@Index(name = "idx_block_viewpoint", columnList = "viewpoint"),
 		@Index(name = "idx_block_home_cheer_rank", columnList = "home_cheer_rank"),
 		@Index(name = "idx_block_away_cheer_rank", columnList = "away_cheer_rank")
@@ -38,6 +40,10 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Block extends BaseEntity {
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "area_id", nullable = false)
+	private Area area;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "section_id", nullable = false)
@@ -58,12 +64,14 @@ public class Block extends BaseEntity {
 
 	@Builder
 	public Block(
+		Area area,
 		Section section,
 		String blockCode,
 		Viewpoint viewpoint,
 		Integer homeCheerRank,
 		Integer awayCheerRank
 	) {
+		this.area = area;
 		this.section = section;
 		this.blockCode = blockCode;
 		this.viewpoint = viewpoint;
