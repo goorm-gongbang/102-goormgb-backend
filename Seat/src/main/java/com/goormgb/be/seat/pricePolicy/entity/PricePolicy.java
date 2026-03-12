@@ -8,14 +8,30 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "price_policies")
+@Table(
+	name = "price_policies",
+	uniqueConstraints = {
+		@UniqueConstraint(
+			name = "uk_price_policies_stadium_id_section_id_day_type_ticket_type",
+			columnNames = {"stadium_id", "section_id", "day_type", "ticket_type"}
+		)
+	},
+	indexes = {
+		@Index(
+			name = "idx_price_policies_section_id",
+			columnList = "section_id"
+		)
+	}
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PricePolicy extends BaseEntity {
