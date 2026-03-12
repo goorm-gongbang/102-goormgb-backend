@@ -13,14 +13,17 @@ jobs:
       # 제목에 없으면 PR 본문에서 한 번 더 찾음
       - name: Extract Jira key
         id: jira
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          TITLE="${{ github.event.pull_request.title }}"
-          BODY="${{ github.event.pull_request.body }}"
+          TITLE="$PR_TITLE"
+          BODY="$PR_BODY"
 
-          KEY=$(echo "$TITLE" | grep -oE 'GRGB-[0-9]+' | head -n 1 || true)
+          KEY=$(printf '%s\n' "$TITLE" | grep -oE 'GRGB-[0-9]+' | head -n 1 || true)
 
           if [ -z "$KEY" ]; then
-            KEY=$(echo "$BODY" | grep -oE 'GRGB-[0-9]+' | head -n 1 || true)
+            KEY=$(printf '%s\n' "$BODY" | grep -oE 'GRGB-[0-9]+' | head -n 1 || true)
           fi
 
           echo "key=$KEY" >> "$GITHUB_OUTPUT"
@@ -47,14 +50,14 @@ jobs:
           # 리뷰 중(In Review) transition id = 31
           REVIEW_ID="31"
 
-          curl -s -X POST \
+          curl --fail -s -X POST \
             -H "Authorization: Basic $AUTH" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
             "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/transitions" \
             -d "{\"transition\":{\"id\":\"$REVIEW_ID\"}}"
 
-          curl -s -X POST \
+          curl --fail -s -X POST \
             -H "Authorization: Basic $AUTH" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
@@ -75,7 +78,7 @@ jobs:
           # 완료 (Done) transition id = 41
           DONE_ID="41"
 
-          curl -s -X POST \
+          curl --fail -s -X POST \
             -H "Authorization: Basic $AUTH" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
