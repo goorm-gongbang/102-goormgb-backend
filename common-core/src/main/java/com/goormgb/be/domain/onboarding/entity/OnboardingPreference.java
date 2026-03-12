@@ -1,5 +1,7 @@
 package com.goormgb.be.domain.onboarding.entity;
 
+import java.util.Objects;
+
 import com.goormgb.be.domain.club.entity.Club;
 import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
 import com.goormgb.be.domain.onboarding.enums.EnvironmentPref;
@@ -112,16 +114,8 @@ public class OnboardingPreference extends BaseEntity {
 	) {
 		this.user = user;
 		this.favoriteClub = favoriteClub;
-		this.cheerProximityPref = cheerProximityPref != null ? cheerProximityPref : CheerProximityPref.ANY;
-		this.seatHeight = seatHeight != null ? seatHeight : SeatHeight.ANY;
-		this.section = section != null ? section : Section.ANY;
-		this.seatPositionPref = seatPositionPref != null ? seatPositionPref : SeatPositionPref.ANY;
-		this.environmentPref = environmentPref != null ? environmentPref : EnvironmentPref.ANY;
-		this.moodPref = moodPref != null ? moodPref : MoodPref.ANY;
-		this.obstructionSensitivity = obstructionSensitivity != null ? obstructionSensitivity : ObstructionSensitivity.NORMAL;
-		this.priceMode = priceMode != null ? priceMode : PriceMode.ANY;
-		this.priceMin = priceMin;
-		this.priceMax = priceMax;
+		applyOptionalFields(cheerProximityPref, seatHeight, section, seatPositionPref,
+			environmentPref, moodPref, obstructionSensitivity, priceMode, priceMin, priceMax);
 	}
 
 	public void update(
@@ -138,14 +132,30 @@ public class OnboardingPreference extends BaseEntity {
 			Integer priceMax
 	) {
 		this.favoriteClub = favoriteClub;
-		this.cheerProximityPref = cheerProximityPref != null ? cheerProximityPref : CheerProximityPref.ANY;
-		this.seatHeight = seatHeight != null ? seatHeight : SeatHeight.ANY;
-		this.section = section != null ? section : Section.ANY;
-		this.seatPositionPref = seatPositionPref != null ? seatPositionPref : SeatPositionPref.ANY;
-		this.environmentPref = environmentPref != null ? environmentPref : EnvironmentPref.ANY;
-		this.moodPref = moodPref != null ? moodPref : MoodPref.ANY;
-		this.obstructionSensitivity = obstructionSensitivity != null ? obstructionSensitivity : ObstructionSensitivity.NORMAL;
-		this.priceMode = priceMode != null ? priceMode : PriceMode.ANY;
+		applyOptionalFields(cheerProximityPref, seatHeight, section, seatPositionPref,
+			environmentPref, moodPref, obstructionSensitivity, priceMode, priceMin, priceMax);
+	}
+
+	private void applyOptionalFields(
+			CheerProximityPref cheerProximityPref,
+			SeatHeight seatHeight,
+			Section section,
+			SeatPositionPref seatPositionPref,
+			EnvironmentPref environmentPref,
+			MoodPref moodPref,
+			ObstructionSensitivity obstructionSensitivity,
+			PriceMode priceMode,
+			Integer priceMin,
+			Integer priceMax
+	) {
+		this.cheerProximityPref = Objects.requireNonNullElse(cheerProximityPref, CheerProximityPref.ANY);
+		this.seatHeight = Objects.requireNonNullElse(seatHeight, SeatHeight.ANY);
+		this.section = Objects.requireNonNullElse(section, Section.ANY);
+		this.seatPositionPref = Objects.requireNonNullElse(seatPositionPref, SeatPositionPref.ANY);
+		this.environmentPref = Objects.requireNonNullElse(environmentPref, EnvironmentPref.ANY);
+		this.moodPref = Objects.requireNonNullElse(moodPref, MoodPref.ANY);
+		this.obstructionSensitivity = Objects.requireNonNullElse(obstructionSensitivity, ObstructionSensitivity.NORMAL);
+		this.priceMode = Objects.requireNonNullElse(priceMode, PriceMode.ANY);
 		this.priceMin = priceMin;
 		this.priceMax = priceMax;
 	}
