@@ -90,6 +90,7 @@ class JwtAuthenticationFilterTest {
 				"/auth/v3/api-docs",
 				"/queue/v3/api-docs",
 				"/seat/v3/api-docs",
+				"/seat/blocks",
 				"/order/v3/api-docs",
 				"/recommendation/v3/api-docs",
 				"/actuator",
