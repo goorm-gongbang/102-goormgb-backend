@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.config.MeterFilter;
 
 @Configuration
 public class MetricsCommonConfig {
@@ -15,6 +16,14 @@ public class MetricsCommonConfig {
 		return registry -> registry.config().commonTags(
 				"service", environment.getProperty("spring.application.name", "unknown"),
 				"env", environment.getProperty("spring.profiles.active", "local")
+		);
+	}
+
+	@Bean
+	public MeterFilter httpRouteCardinalityLimiter() {
+		return MeterFilter.maximumAllowableTags(
+				"spring.cloud.gateway.requests", "route", 100,
+				MeterFilter.deny()
 		);
 	}
 }
