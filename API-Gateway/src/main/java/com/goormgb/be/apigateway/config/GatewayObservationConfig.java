@@ -11,6 +11,7 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
+import io.micrometer.core.instrument.config.MeterFilter;
 
 @Configuration
 public class GatewayObservationConfig {
@@ -38,8 +39,16 @@ public class GatewayObservationConfig {
 		};
 	}
 
+	@Bean
+	MeterFilter gatewayRouteCardinalityLimiter() {
+		return MeterFilter.maximumAllowableTags(
+				"spring.cloud.gateway.requests", "route", 100,
+				MeterFilter.deny()
+		);
+	}
+
 	static String normalizePath(String path) {
-		if (path == null || path.isEmpty()) {
+		if (path == null || path.isBlank()) {
 			return UNKNOWN;
 		}
 		String normalized = UUID_SEGMENT.matcher(path).replaceAll("{uuid}");
