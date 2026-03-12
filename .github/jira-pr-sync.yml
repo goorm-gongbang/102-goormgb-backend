@@ -1,0 +1,93 @@
+name: Jira PR Sync
+
+on:
+  pull_request:
+    types: [opened, reopened, edited, ready_for_review, closed]
+
+jobs:
+  jira-sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      # PR 제목 → 없으면 PR 본문에서 Jira 키 찾기
+      - name: Extract Jira key
+        id: jira
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          BODY="${{ github.event.pull_request.body }}"
+
+          KEY=$(echo "$TITLE" | grep -oE 'GRGB-[0-9]+' | head -n 1 || true)
+
+          if [ -z "$KEY" ]; then
+            KEY=$(echo "$BODY" | grep -oE 'GRGB-[0-9]+' | head -n 1 || true)
+          fi
+
+          echo "key=$KEY" >> "$GITHUB_OUTPUT"
+          echo "Extracted Jira key: $KEY"
+
+      # Jira 키 없으면 종료
+      - name: Stop if no Jira key
+        if: steps.jira.outputs.key == ''
+        run: exit 0
+
+      # PR 생성/수정 시 → 리뷰 중(In Review) 상태로 변경
+      - name: Move to In Review and comment PR link
+        if: github.event.action != 'closed'
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          ISSUE_KEY: ${{ steps.jira.outputs.key }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          AUTH=$(printf "%s:%s" "$JIRA_EMAIL" "$JIRA_API_TOKEN" | base64)
+
+          TRANSITIONS=$(curl -s \
+            -H "Authorization: Basic $AUTH" \
+            -H "Accept: application/json" \
+            "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/transitions")
+
+          REVIEW_ID=$(echo "$TRANSITIONS" | jq -r '.transitions[] | select(.name=="리뷰 중(In Review)") | .id' | head -n 1)
+
+          if [ -n "$REVIEW_ID" ] && [ "$REVIEW_ID" != "null" ]; then
+            curl -s -X POST \
+              -H "Authorization: Basic $AUTH" \
+              -H "Accept: application/json" \
+              -H "Content-Type: application/json" \
+              "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/transitions" \
+              -d "{\"transition\":{\"id\":\"$REVIEW_ID\"}}"
+          fi
+
+          curl -s -X POST \
+            -H "Authorization: Basic $AUTH" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/comment" \
+            -d "{\"body\":{\"type\":\"doc\",\"version\":1,\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"PR 링크: $PR_URL\"}]}]}}"
+
+      # PR merge 시 → 완료 (Done)
+      - name: Move to Done on merge
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          ISSUE_KEY: ${{ steps.jira.outputs.key }}
+        run: |
+          AUTH=$(printf "%s:%s" "$JIRA_EMAIL" "$JIRA_API_TOKEN" | base64)
+
+          TRANSITIONS=$(curl -s \
+            -H "Authorization: Basic $AUTH" \
+            -H "Accept: application/json" \
+            "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/transitions")
+
+          DONE_ID=$(echo "$TRANSITIONS" | jq -r '.transitions[] | select(.name=="완료 (Done)") | .id' | head -n 1)
+
+          if [ -n "$DONE_ID" ] && [ "$DONE_ID" != "null" ]; then
+            curl -s -X POST \
+              -H "Authorization: Basic $AUTH" \
+              -H "Accept: application/json" \
+              -H "Content-Type: application/json" \
+              "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/transitions" \
+              -d "{\"transition\":{\"id\":\"$DONE_ID\"}}"
+          fi
