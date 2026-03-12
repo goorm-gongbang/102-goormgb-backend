@@ -9,6 +9,7 @@ out/
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
+.gradle-user-home/
 
 ### Spring ###
 application-local.properties
