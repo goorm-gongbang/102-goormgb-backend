@@ -42,7 +42,6 @@ public final class BlockFixture {
 			.area(area)
 			.code(SectionCode.PREMIUM)
 			.name("테라존(중앙 프리미엄석)")
-			.colorHex("#D4AF37")
 			.build();
 	}
 
@@ -51,7 +50,6 @@ public final class BlockFixture {
 			.area(area)
 			.code(SectionCode.ORANGE)
 			.name("오렌지석")
-			.colorHex("#F97316")
 			.build();
 	}
 
@@ -60,7 +58,6 @@ public final class BlockFixture {
 			.area(area)
 			.code(SectionCode.GREEN)
 			.name("그린석(외야석)")
-			.colorHex("#22C55E")
 			.build();
 	}
 
@@ -116,6 +113,6 @@ public final class BlockFixture {
 	}
 
 	public static BlockItemDto cpBlockItemDto() {
-		return new BlockItemDto(null, "CP", "테라존(중앙 프리미엄석)", "#D4AF37", "중앙", Viewpoint.CENTER);
+		return new BlockItemDto(null, "CP", "테라존(중앙 프리미엄석)", "중앙", Viewpoint.CENTER);
 	}
 }

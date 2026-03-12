@@ -7,7 +7,6 @@ public record BlockItemDto(
 	Long blockId,
 	String blockCode,
 	String sectionName,
-	String sectionColor,
 	String areaName,
 	Viewpoint viewpoint
 ) {
@@ -17,7 +16,6 @@ public record BlockItemDto(
 			block.getId(),
 			block.getBlockCode(),
 			block.getSection().getName(),
-			block.getSection().getColorHex(),
 			block.getArea().getName(),
 			block.getViewpoint()
 		);

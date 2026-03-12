@@ -50,26 +50,26 @@ public class SeatDataInitializer implements CommandLineRunner {
 
 		// ── 2. Sections ──
 		// 1루(홈) 섹션
-		Section homePurple = saveSection(home, SectionCode.PURPLE, "퍼플석(테이블석)", "#8B5CF6");
-		Section homeExciting = saveSection(home, SectionCode.EXCITING, "익사이팅존", "#F59E0B");
-		Section homeBlue = saveSection(home, SectionCode.BLUE, "블루석", "#3B82F6");
-		Section homeOrange = saveSection(home, SectionCode.ORANGE, "오렌지석", "#F97316");
-		Section homeRed = saveSection(home, SectionCode.RED, "레드석", "#EF4444");
-		Section homeNavy = saveSection(home, SectionCode.NAVY, "네이비석", "#1E3A5F");
+		Section homePurple = saveSection(home, SectionCode.PURPLE, "퍼플석(테이블석)");
+		Section homeExciting = saveSection(home, SectionCode.EXCITING, "익사이팅존");
+		Section homeBlue = saveSection(home, SectionCode.BLUE, "블루석");
+		Section homeOrange = saveSection(home, SectionCode.ORANGE, "오렌지석");
+		Section homeRed = saveSection(home, SectionCode.RED, "레드석");
+		Section homeNavy = saveSection(home, SectionCode.NAVY, "네이비석");
 
 		// 3루(어웨이) 섹션
-		Section awayPurple = saveSection(away, SectionCode.PURPLE, "퍼플석(테이블석)", "#8B5CF6");
-		Section awayExciting = saveSection(away, SectionCode.EXCITING, "익사이팅존", "#F59E0B");
-		Section awayBlue = saveSection(away, SectionCode.BLUE, "블루석", "#3B82F6");
-		Section awayOrange = saveSection(away, SectionCode.ORANGE, "오렌지석", "#F97316");
-		Section awayRed = saveSection(away, SectionCode.RED, "레드석", "#EF4444");
-		Section awayNavy = saveSection(away, SectionCode.NAVY, "네이비석", "#1E3A5F");
+		Section awayPurple = saveSection(away, SectionCode.PURPLE, "퍼플석(테이블석)");
+		Section awayExciting = saveSection(away, SectionCode.EXCITING, "익사이팅존");
+		Section awayBlue = saveSection(away, SectionCode.BLUE, "블루석");
+		Section awayOrange = saveSection(away, SectionCode.ORANGE, "오렌지석");
+		Section awayRed = saveSection(away, SectionCode.RED, "레드석");
+		Section awayNavy = saveSection(away, SectionCode.NAVY, "네이비석");
 
 		// 외야 섹션
-		Section green = saveSection(outfield, SectionCode.GREEN, "그린석(외야석)", "#22C55E");
+		Section green = saveSection(outfield, SectionCode.GREEN, "그린석(외야석)");
 
 		// 중앙 섹션
-		Section premium = saveSection(center, SectionCode.PREMIUM, "테라존(중앙 프리미엄석)", "#D4AF37");
+		Section premium = saveSection(center, SectionCode.PREMIUM, "테라존(중앙 프리미엄석)");
 
 		// ── 3. Blocks ──
 
@@ -194,12 +194,11 @@ public class SeatDataInitializer implements CommandLineRunner {
 				.build());
 	}
 
-	private Section saveSection(Area area, SectionCode code, String name, String colorHex) {
+	private Section saveSection(Area area, SectionCode code, String name) {
 		return sectionRepository.save(Section.builder()
 				.area(area)
 				.code(code)
 				.name(name)
-				.colorHex(colorHex)
 				.build());
 	}
 

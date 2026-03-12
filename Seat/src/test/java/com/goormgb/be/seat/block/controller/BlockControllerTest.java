@@ -36,7 +36,6 @@ class BlockControllerTest extends WebMvcTestSupport {
 			.andExpect(jsonPath("$.data.blocks.length()").value(3))
 			.andExpect(jsonPath("$.data.blocks[0].blockCode").value("CP"))
 			.andExpect(jsonPath("$.data.blocks[0].sectionName").value("테라존(중앙 프리미엄석)"))
-			.andExpect(jsonPath("$.data.blocks[0].sectionColor").value("#D4AF37"))
 			.andExpect(jsonPath("$.data.blocks[0].areaName").value("중앙"))
 			.andExpect(jsonPath("$.data.blocks[0].viewpoint").value("CENTER"));
 	}
