@@ -1,8 +1,6 @@
 package com.goormgb.be.ordercore.fixture.onboarding;
 
-import java.util.List;
-
-import com.goormgb.be.ordercore.onboarding.dto.OnboardingPreferenceDto;
+import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceCreateRequest;
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceUpdateRequest;
 
@@ -12,32 +10,31 @@ public final class OnboardingPreferenceRequestFixture {
 	}
 
 	public static OnboardingPreferenceCreateRequest createCreateRequest() {
-		List<OnboardingPreferenceDto> preferences = List.of(
-				OnboardingPreferenceDtoFixture.createFirst(),
-				OnboardingPreferenceDtoFixture.createSecond(),
-				OnboardingPreferenceDtoFixture.createThird()
-		);
 		return new OnboardingPreferenceCreateRequest(
-				new OnboardingPreferenceCreateRequest.MarketingConsent(true),
-				preferences
+			new OnboardingPreferenceCreateRequest.MarketingConsent(true),
+			1L,
+			CheerProximityPref.NEAR,
+			OnboardingPreferenceDtoFixture.createPreferredBlockIds(),
+			OnboardingPreferenceDtoFixture.createThreePreferences()
 		);
 	}
 
 	public static OnboardingPreferenceCreateRequest createCreateRequestWithoutMarketing() {
-		List<OnboardingPreferenceDto> preferences = List.of(
-				OnboardingPreferenceDtoFixture.createFirst()
-		);
 		return new OnboardingPreferenceCreateRequest(
-				new OnboardingPreferenceCreateRequest.MarketingConsent(false),
-				preferences
+			new OnboardingPreferenceCreateRequest.MarketingConsent(false),
+			1L,
+			CheerProximityPref.NEAR,
+			OnboardingPreferenceDtoFixture.createPreferredBlockIds(),
+			OnboardingPreferenceDtoFixture.createTwoPreferences()
 		);
 	}
 
 	public static OnboardingPreferenceUpdateRequest createUpdateRequest() {
-		List<OnboardingPreferenceDto> preferences = List.of(
-				OnboardingPreferenceDtoFixture.createFirst(),
-				OnboardingPreferenceDtoFixture.createSecond()
+		return new OnboardingPreferenceUpdateRequest(
+			2L,
+			CheerProximityPref.FAR,
+			OnboardingPreferenceDtoFixture.createPreferredBlockIds(),
+			OnboardingPreferenceDtoFixture.createTwoPreferences()
 		);
-		return new OnboardingPreferenceUpdateRequest(preferences);
 	}
 }
