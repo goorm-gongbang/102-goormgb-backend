@@ -37,7 +37,7 @@ jobs:
       # PR이 열리거나 수정되면 Jira 상태를 "리뷰 중(In Review)" 으로 전환하고
       # Jira 티켓에 PR 링크 댓글 추가
       - name: Move to In Review and comment PR link
-        if: github.event.action != 'closed'
+        if: github.event.action != 'closed' && steps.jira.outputs.key != ''
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
@@ -50,14 +50,14 @@ jobs:
           # 리뷰 중(In Review) transition id = 31
           REVIEW_ID="31"
 
-          curl --fail -s -X POST \
+          curl --fail -L -s -X POST \
             -H "Authorization: Basic $AUTH" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
             "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/transitions" \
             -d "{\"transition\":{\"id\":\"$REVIEW_ID\"}}"
 
-          curl --fail -s -X POST \
+          curl --fail -L -s -X POST \
             -H "Authorization: Basic $AUTH" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
@@ -66,7 +66,7 @@ jobs:
 
       # PR이 merge 되어 closed 되면 Jira 상태를 "완료 (Done)" 로 전환
       - name: Move to Done on merge
-        if: github.event.action == 'closed' && github.event.pull_request.merged == true
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true && steps.jira.outputs.key != ''
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
@@ -78,7 +78,7 @@ jobs:
           # 완료 (Done) transition id = 41
           DONE_ID="41"
 
-          curl --fail -s -X POST \
+          curl --fail -L -s -X POST \
             -H "Authorization: Basic $AUTH" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
