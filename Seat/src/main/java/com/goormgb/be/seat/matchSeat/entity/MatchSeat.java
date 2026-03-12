@@ -46,8 +46,8 @@ import lombok.NoArgsConstructor;
 
 		// 예매 가능 좌석 조회
 		@Index(
-			name = "idx_match_seats_match_id_block_id_sale_status",
-			columnList = "match_id, block_id, sale_status"
+			name = "idx_match_seats_match_id_block_id_sale_status_row_no_seat_no",
+			columnList = "match_id, block_id, sale_status, row_no, seat_no"
 		),
 
 		// 추천 좌석 조회
