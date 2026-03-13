@@ -11,6 +11,9 @@ import com.goormgb.be.seat.area.enums.AreaCode;
 import com.goormgb.be.seat.area.repository.AreaRepository;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
+import com.goormgb.be.seat.seat.entity.Seat;
+import com.goormgb.be.seat.seat.enums.SeatZone;
+import com.goormgb.be.seat.seat.repository.SeatRepository;
 import com.goormgb.be.seat.section.entity.Section;
 import com.goormgb.be.seat.section.enums.SectionCode;
 import com.goormgb.be.seat.section.repository.SectionRepository;
@@ -31,6 +34,7 @@ public class SeatDataInitializer implements CommandLineRunner {
 	private final AreaRepository areaRepository;
 	private final SectionRepository sectionRepository;
 	private final BlockRepository blockRepository;
+	private final SeatRepository seatRepository;
 
 	@Override
 	@Transactional
@@ -84,104 +88,104 @@ public class SeatDataInitializer implements CommandLineRunner {
 		int rank = 1;
 		for (int i = 205; i <= 208; i++) {
 			saveBlock(home, homeOrange, String.valueOf(i),
-					Viewpoint.INFIELD_1B, rank++, 80 + (i - 205));
+				Viewpoint.INFIELD_1B, rank++, 80 + (i - 205));
 		}
 
 		// ─── 3루(어웨이) 오렌지석 (응원석) 219~222 ───
 		rank = 1;
 		for (int i = 219; i <= 222; i++) {
 			saveBlock(away, awayOrange, String.valueOf(i),
-					Viewpoint.INFIELD_3B, 80 + (i - 219), rank++);
+				Viewpoint.INFIELD_3B, 80 + (i - 219), rank++);
 		}
 
 		// ─── 1루(홈) 퍼플석 (테이블석) 110~113 ───
 		for (int i = 110; i <= 113; i++) {
 			saveBlock(home, homePurple, String.valueOf(i),
-					Viewpoint.INFIELD_1B, 10 + (i - 110), 60 + (i - 110));
+				Viewpoint.INFIELD_1B, 10 + (i - 110), 60 + (i - 110));
 		}
 
 		// ─── 3루(어웨이) 퍼플석 (테이블석) 212~215 ───
 		for (int i = 212; i <= 215; i++) {
 			saveBlock(away, awayPurple, String.valueOf(i),
-					Viewpoint.INFIELD_3B, 60 + (i - 212), 10 + (i - 212));
+				Viewpoint.INFIELD_3B, 60 + (i - 212), 10 + (i - 212));
 		}
 
 		// ─── 1루(홈) 블루석 114~116 ───
 		for (int i = 114; i <= 116; i++) {
 			saveBlock(home, homeBlue, String.valueOf(i),
-					Viewpoint.INFIELD_1B, 14 + (i - 114), 55 + (i - 114));
+				Viewpoint.INFIELD_1B, 14 + (i - 114), 55 + (i - 114));
 		}
 
 		// ─── 1루(홈) 블루석 216~218 (2층) ───
 		for (int i = 216; i <= 218; i++) {
 			saveBlock(home, homeBlue, String.valueOf(i),
-					Viewpoint.INFIELD_1B, 5 + (i - 216), 70 + (i - 216));
+				Viewpoint.INFIELD_1B, 5 + (i - 216), 70 + (i - 216));
 		}
 
 		// ─── 3루(어웨이) 블루석 107~109 ───
 		for (int i = 107; i <= 109; i++) {
 			saveBlock(away, awayBlue, String.valueOf(i),
-					Viewpoint.INFIELD_3B, 55 + (i - 107), 14 + (i - 107));
+				Viewpoint.INFIELD_3B, 55 + (i - 107), 14 + (i - 107));
 		}
 
 		// ─── 3루(어웨이) 블루석 209~211 (2층) ───
 		for (int i = 209; i <= 211; i++) {
 			saveBlock(away, awayBlue, String.valueOf(i),
-					Viewpoint.INFIELD_3B, 70 + (i - 209), 5 + (i - 209));
+				Viewpoint.INFIELD_3B, 70 + (i - 209), 5 + (i - 209));
 		}
 
 		// ─── 1루(홈) 레드석 117~122 ───
 		for (int i = 117; i <= 122; i++) {
 			saveBlock(home, homeRed, String.valueOf(i),
-					Viewpoint.INFIELD_1B, 17 + (i - 117), 45 + (i - 117));
+				Viewpoint.INFIELD_1B, 17 + (i - 117), 45 + (i - 117));
 		}
 
 		// ─── 1루(홈) 레드석 223~226 (2층) ───
 		for (int i = 223; i <= 226; i++) {
 			saveBlock(home, homeRed, String.valueOf(i),
-					Viewpoint.INFIELD_1B, 8 + (i - 223), 65 + (i - 223));
+				Viewpoint.INFIELD_1B, 8 + (i - 223), 65 + (i - 223));
 		}
 
 		// ─── 3루(어웨이) 레드석 101~106 ───
 		for (int i = 101; i <= 106; i++) {
 			saveBlock(away, awayRed, String.valueOf(i),
-					Viewpoint.INFIELD_3B, 45 + (i - 101), 17 + (i - 101));
+				Viewpoint.INFIELD_3B, 45 + (i - 101), 17 + (i - 101));
 		}
 
 		// ─── 3루(어웨이) 레드석 201~204 (2층) ───
 		for (int i = 201; i <= 204; i++) {
 			saveBlock(away, awayRed, String.valueOf(i),
-					Viewpoint.INFIELD_3B, 65 + (i - 201), 8 + (i - 201));
+				Viewpoint.INFIELD_3B, 65 + (i - 201), 8 + (i - 201));
 		}
 
 		// ─── 1루(홈) 네이비석 301~317 ───
 		for (int i = 301; i <= 317; i++) {
 			saveBlock(home, homeNavy, String.valueOf(i),
-					Viewpoint.INFIELD_1B, 23 + (i - 301), 35 + (i - 301));
+				Viewpoint.INFIELD_1B, 23 + (i - 301), 35 + (i - 301));
 		}
 
 		// ─── 3루(어웨이) 네이비석 318~334 ───
 		for (int i = 318; i <= 334; i++) {
 			saveBlock(away, awayNavy, String.valueOf(i),
-					Viewpoint.INFIELD_3B, 35 + (i - 318), 23 + (i - 318));
+				Viewpoint.INFIELD_3B, 35 + (i - 318), 23 + (i - 318));
 		}
 
 		// ─── 외야 그린석 401~407 (1루 방향 → OUTFIELD_R) ───
 		for (int i = 401; i <= 407; i++) {
 			saveBlock(outfield, green, String.valueOf(i),
-					Viewpoint.OUTFIELD_R, 60 + (i - 401), 90 + (i - 401));
+				Viewpoint.OUTFIELD_R, 60 + (i - 401), 90 + (i - 401));
 		}
 
 		// ─── 외야 그린석 408~415 (중앙 → OUTFIELD_C) ───
 		for (int i = 408; i <= 415; i++) {
 			saveBlock(outfield, green, String.valueOf(i),
-					Viewpoint.OUTFIELD_C, 70 + (i - 408), 70 + (i - 408));
+				Viewpoint.OUTFIELD_C, 70 + (i - 408), 70 + (i - 408));
 		}
 
 		// ─── 외야 그린석 416~422 (3루 방향 → OUTFIELD_L) ───
 		for (int i = 416; i <= 422; i++) {
 			saveBlock(outfield, green, String.valueOf(i),
-					Viewpoint.OUTFIELD_L, 90 + (i - 416), 60 + (i - 416));
+				Viewpoint.OUTFIELD_L, 90 + (i - 416), 60 + (i - 416));
 		}
 
 		log.info("[SeatDataInitializer] 시드 데이터 삽입 완료 - 블럭 {}개", blockRepository.count());
@@ -189,28 +193,72 @@ public class SeatDataInitializer implements CommandLineRunner {
 
 	private Area saveArea(AreaCode code, String name) {
 		return areaRepository.save(Area.builder()
-				.code(code)
-				.name(name)
-				.build());
+			.code(code)
+			.name(name)
+			.build());
 	}
 
 	private Section saveSection(Area area, SectionCode code, String name) {
 		return sectionRepository.save(Section.builder()
-				.area(area)
-				.code(code)
-				.name(name)
-				.build());
+			.area(area)
+			.code(code)
+			.name(name)
+			.build());
 	}
 
 	private void saveBlock(Area area, Section section,
-			String blockCode, Viewpoint viewpoint, Integer homeCheerRank, Integer awayCheerRank) {
-		blockRepository.save(Block.builder()
-				.area(area)
-				.section(section)
-				.blockCode(blockCode)
-				.viewpoint(viewpoint)
-				.homeCheerRank(homeCheerRank)
-				.awayCheerRank(awayCheerRank)
-				.build());
+		String blockCode, Viewpoint viewpoint, Integer homeCheerRank, Integer awayCheerRank) {
+		Block block = blockRepository.save(Block.builder()
+			.area(area)
+			.section(section)
+			.blockCode(blockCode)
+			.viewpoint(viewpoint)
+			.homeCheerRank(homeCheerRank)
+			.awayCheerRank(awayCheerRank)
+			.build());
+
+		saveSeats(block);
+	}
+
+	private void saveSeats(Block block) {
+		for (RowPattern pattern : SeatLayoutPatterns.STANDARD) {
+			saveRow(
+				block,
+				pattern.rowNo(),
+				pattern.seatCount(),
+				pattern.startTemplateColNo(),
+				resolveSeatZone(pattern.rowNo())
+			);
+		}
+	}
+
+	private SeatZone resolveSeatZone(int rowNo) {
+		if (rowNo <= 3) {
+			return SeatZone.LOW;
+		}
+		if (rowNo <= 7) {
+			return SeatZone.MID;
+		}
+		return SeatZone.HIGH;
+	}
+
+	private void saveRow(
+		Block block,
+		int rowNo,
+		int seatCount,
+		int startTemplateColNo,
+		SeatZone seatZone
+	) {
+		for (int i = 0; i < seatCount; i++) {
+			seatRepository.save(
+				Seat.builder()
+					.block(block)
+					.rowNo(rowNo)
+					.seatNo(i + 1)
+					.templateColNo(startTemplateColNo + i)
+					.seatZone(seatZone)
+					.build()
+			);
+		}
 	}
 }
