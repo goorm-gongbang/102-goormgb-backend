@@ -34,6 +34,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SeatDataInitializer implements CommandLineRunner {
 
+	private static final Integer LOW_ZONE_MAX_ROW = 3;
+	private static final Integer MID_ZONE_MAX_ROW = 7;
+
 	private final AreaRepository areaRepository;
 	private final SectionRepository sectionRepository;
 	private final BlockRepository blockRepository;
@@ -243,10 +246,10 @@ public class SeatDataInitializer implements CommandLineRunner {
 	}
 
 	private SeatZone resolveSeatZone(int rowNo) {
-		if (rowNo <= 3) {
+		if (rowNo <= LOW_ZONE_MAX_ROW) {
 			return SeatZone.LOW;
 		}
-		if (rowNo <= 7) {
+		if (rowNo <= MID_ZONE_MAX_ROW) {
 			return SeatZone.MID;
 		}
 		return SeatZone.HIGH;
