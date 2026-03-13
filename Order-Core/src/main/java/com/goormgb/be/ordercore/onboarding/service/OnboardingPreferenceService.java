@@ -8,15 +8,21 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.goormgb.be.domain.club.entity.Club;
+import com.goormgb.be.domain.club.repository.ClubRepository;
 import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
-import com.goormgb.be.domain.onboarding.enums.SeatHeight;
-import com.goormgb.be.domain.onboarding.enums.Section;
+import com.goormgb.be.domain.onboarding.entity.OnboardingPreferredBlock;
+import com.goormgb.be.domain.onboarding.entity.OnboardingViewpointPriority;
+import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
+import com.goormgb.be.domain.onboarding.enums.PriceMode;
 import com.goormgb.be.domain.onboarding.enums.Viewpoint;
 import com.goormgb.be.domain.onboarding.repository.OnboardingPreferenceRepository;
+import com.goormgb.be.domain.onboarding.repository.OnboardingPreferredBlockRepository;
+import com.goormgb.be.domain.onboarding.repository.OnboardingViewpointPriorityRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
-import com.goormgb.be.ordercore.onboarding.dto.OnboardingPreferenceDto;
+import com.goormgb.be.ordercore.onboarding.dto.OnboardingPreferenceItemDto;
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceCreateRequest;
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceUpdateRequest;
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingPreferenceCreateResponse;
@@ -30,44 +36,56 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class OnboardingPreferenceService {
+
 	private final OnboardingPreferenceRepository onboardingPreferenceRepository;
+	private final OnboardingViewpointPriorityRepository viewpointPriorityRepository;
+	private final OnboardingPreferredBlockRepository preferredBlockRepository;
+	private final ClubRepository clubRepository;
 	private final UserRepository userRepository;
 
 	@Transactional(readOnly = true)
 	public OnboardingStatusGetResponse getOnboardingStatus(Long userId) {
 		var user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
-
 		return OnboardingStatusGetResponse.from(user);
 	}
 
 	@Transactional(readOnly = true)
 	public OnboardingPreferenceGetResponse getPreferences(Long userId) {
-		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+		userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
-		var preferences = onboardingPreferenceRepository.findAllByUserIdOrderByPriorityAsc(userId);
+		var preference = onboardingPreferenceRepository.findByUserIdOrThrow(userId, ErrorCode.PREFERENCE_NOT_FOUND);
+		var viewpointPriorities = viewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId);
+		var preferredBlocks = preferredBlockRepository.findAllByUserId(userId);
 
-		return OnboardingPreferenceGetResponse.from(preferences);
+		return OnboardingPreferenceGetResponse.from(preference, viewpointPriorities, preferredBlocks);
 	}
 
 	@Transactional
-	public OnboardingPreferenceCreateResponse createPreferences(Long userId,
-		OnboardingPreferenceCreateRequest request) {
+	public OnboardingPreferenceCreateResponse createPreferences(
+		Long userId,
+		OnboardingPreferenceCreateRequest request
+	) {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
-		// 온보딩 완료 여부 검증
 		Preconditions.validate(!user.isCompletedOnboarding(), ErrorCode.ONBOARDING_ALREADY_COMPLETED);
 
 		// 검증
+		validateFavoriteClub(request.favoriteClubId());
+		validateCheerProximityPref(request.cheerProximityPref());
 		validatePreferences(request.preferences());
+		validatePreferredBlocks(request.preferredBlockIds());
+
+		// 1순위 항목에서 옵셔널 필드 추출
+		OnboardingPreferenceItemDto firstPref = request.preferences().get(0);
+		validatePrice(firstPref.priceMode(), firstPref.priceMin(), firstPref.priceMax());
 
 		// 저장
-		var entities = request
-			.preferences()
-			.stream()
-			.map(preference -> toEntity(user, preference))
-			.toList();
+		Club club = clubRepository.findById(request.favoriteClubId())
+			.orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
 
-		onboardingPreferenceRepository.saveAll(entities);
+		savePreference(user, club, request.cheerProximityPref(), firstPref);
+		saveViewpointPriorities(user, request.preferences());
+		savePreferredBlocks(user, request.preferredBlockIds());
 
 		// 마케팅 동의
 		applyMarketingConsent(user, request.marketingConsent());
@@ -83,102 +101,143 @@ public class OnboardingPreferenceService {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 
 		// 검증
+		validateFavoriteClub(request.favoriteClubId());
+		validateCheerProximityPref(request.cheerProximityPref());
 		validatePreferences(request.preferences());
+		validatePreferredBlocks(request.preferredBlockIds());
 
-		// 저장
-		replacePreferences(userId, request.preferences());
+		OnboardingPreferenceItemDto firstPref = request.preferences().get(0);
+		validatePrice(firstPref.priceMode(), firstPref.priceMin(), firstPref.priceMax());
 
-		// 온보딩 수정 완료
+		Club club = clubRepository.findById(request.favoriteClubId())
+			.orElseThrow(() -> new CustomException(ErrorCode.CLUB_NOT_FOUND));
+
+		// preference: update 또는 신규 생성
+		var existingPreference = onboardingPreferenceRepository.findByUserId(userId);
+		if (existingPreference.isPresent()) {
+			existingPreference.get().update(
+				club,
+				request.cheerProximityPref(),
+				firstPref.seatHeight(),
+				firstPref.section(),
+				firstPref.seatPositionPref(),
+				firstPref.environmentPref(),
+				firstPref.moodPref(),
+				firstPref.obstructionSensitivity(),
+				firstPref.priceMode(),
+				firstPref.priceMin(),
+				firstPref.priceMax()
+			);
+		} else {
+			savePreference(user, club, request.cheerProximityPref(), firstPref);
+		}
+
+		// viewpoint priorities: delete + insert
+		viewpointPriorityRepository.deleteAllByUserId(userId);
+		saveViewpointPriorities(user, request.preferences());
+
+		// preferred blocks: delete + insert
+		preferredBlockRepository.deleteAllByUserId(userId);
+		savePreferredBlocks(user, request.preferredBlockIds());
+
 		user.completeOnboarding();
 	}
 
-	private void replacePreferences(Long userId, List<OnboardingPreferenceDto> preferences) {
-		var existingPreferences = onboardingPreferenceRepository.findAllByUserIdOrderByPriorityAsc(userId);
+	// ── 저장 헬퍼 ──
 
-		for (OnboardingPreferenceDto pref : preferences) {
-			OnboardingPreference preferenceToUpdate = existingPreferences
-				.stream()
-				.filter(p -> p
-					.getPriority()
-					.equals(pref.priority()))
-				.findFirst()
-				.orElseThrow(() -> new CustomException(ErrorCode.PREFERENCE_NOT_FOUND_FOR_UPDATE));
-
-			preferenceToUpdate.update(
-				pref.cheerProximityPref(),
-				pref.viewpoint(),
-				pref.seatHeight(),
-				pref.section(),
-				pref.seatPositionPref(),
-				pref.environmentPref(),
-				pref.moodPref(),
-				pref.obstructionSensitivity(),
-				pref.priceMode(),
-				pref.priceMin(),
-				pref.priceMax()
-			);
-		}
+	private void savePreference(User user, Club club, CheerProximityPref cheerProximityPref,
+		OnboardingPreferenceItemDto pref) {
+		onboardingPreferenceRepository.save(
+			OnboardingPreference.builder()
+				.user(user)
+				.favoriteClub(club)
+				.cheerProximityPref(cheerProximityPref)
+				.seatHeight(pref.seatHeight())
+				.section(pref.section())
+				.seatPositionPref(pref.seatPositionPref())
+				.environmentPref(pref.environmentPref())
+				.moodPref(pref.moodPref())
+				.obstructionSensitivity(pref.obstructionSensitivity())
+				.priceMode(pref.priceMode())
+				.priceMin(pref.priceMin())
+				.priceMax(pref.priceMax())
+				.build()
+		);
 	}
 
-	private void validatePreferences(List<OnboardingPreferenceDto> preferences) {
-		Preconditions.validate(preferences != null, ErrorCode.ONBOARDING_NOT_COMPLETED);
-		Preconditions.validate(preferences
-			.size() == 3, ErrorCode.MISSING_REQUIRED_PREFERENCE_FIELD);
+	private void saveViewpointPriorities(User user, List<OnboardingPreferenceItemDto> preferences) {
+		var entities = preferences.stream()
+			.map(pref -> OnboardingViewpointPriority.builder()
+				.user(user)
+				.priority(pref.priority())
+				.viewpoint(pref.viewpoint())
+				.build())
+			.toList();
 
-		// 우선순위 검증
-		validatePriority(preferences);
-
-		// 필수 값 검증
-		validateRequiredFields(preferences);
-
-		// 가격 검증
-		validatePrice(preferences);
+		viewpointPriorityRepository.saveAll(entities);
 	}
 
-	private void validatePriority(List<OnboardingPreferenceDto> preferences) {
+	private void savePreferredBlocks(User user, List<Long> blockIds) {
+		var entities = blockIds.stream()
+			.map(blockId -> OnboardingPreferredBlock.builder()
+				.user(user)
+				.blockId(blockId)
+				.build())
+			.toList();
+
+		preferredBlockRepository.saveAll(entities);
+	}
+
+	// ── 검증 ──
+
+	private void validateFavoriteClub(Long favoriteClubId) {
+		Preconditions.validate(favoriteClubId != null, ErrorCode.MISSING_REQUIRED_PREFERENCE_FIELD);
+		Preconditions.validate(clubRepository.existsById(favoriteClubId), ErrorCode.CLUB_NOT_FOUND);
+	}
+
+	private void validateCheerProximityPref(CheerProximityPref cheerProximityPref) {
+		Preconditions.validate(cheerProximityPref != null, ErrorCode.MISSING_REQUIRED_PREFERENCE_FIELD);
+	}
+
+	private void validatePreferences(List<OnboardingPreferenceItemDto> preferences) {
+		Preconditions.validate(
+			preferences != null && !preferences.isEmpty() && preferences.size() <= 3,
+			ErrorCode.INVALID_VIEWPOINT_PRIORITY_COUNT
+		);
+
+		// priority 연속성 검증 (1부터 시작, 연속)
 		Set<Integer> priorities = preferences.stream()
-			.map(OnboardingPreferenceDto::priority)
+			.map(OnboardingPreferenceItemDto::priority)
 			.collect(Collectors.toSet());
 
-		Preconditions.validate(priorities.size() == 3, ErrorCode.INVALID_PREFERENCE_RANK);
-		Preconditions.validate(priorities.containsAll(List.of(1, 2, 3)), ErrorCode.INVALID_PREFERENCE_PRIORITY_VALUE);
-	}
+		for (int i = 1; i <= preferences.size(); i++) {
+			Preconditions.validate(priorities.contains(i), ErrorCode.INVALID_VIEWPOINT_PRIORITY_SEQUENCE);
+		}
 
-	private void validateRequiredFields(List<OnboardingPreferenceDto> preferences) {
+		// viewpoint 중복 검증
 		Set<Viewpoint> viewpoints = new HashSet<>();
-		Set<SeatHeight> seatHeights = new HashSet<>();
-		Set<Section> sections = new HashSet<>();
-
-		for (OnboardingPreferenceDto dto : preferences) {
-			Preconditions.validate(dto.viewpoint() != null && dto.seatHeight() != null && dto.section() != null,
-				ErrorCode.MISSING_REQUIRED_PREFERENCE_FIELD);
-
-			Preconditions.validate(viewpoints.add(dto.viewpoint()), ErrorCode.DUPLICATE_PREFERENCE_VIEWPOINT);
-			Preconditions.validate(seatHeights.add(dto.seatHeight()), ErrorCode.DUPLICATE_PREFERENCE_SEAT_HEIGHT);
-			Preconditions.validate(sections.add(dto.section()), ErrorCode.DUPLICATE_PREFERENCE_SECTION);
+		for (OnboardingPreferenceItemDto pref : preferences) {
+			Preconditions.validate(pref.viewpoint() != null, ErrorCode.MISSING_REQUIRED_PREFERENCE_FIELD);
+			Preconditions.validate(viewpoints.add(pref.viewpoint()), ErrorCode.DUPLICATE_PREFERENCE_VIEWPOINT);
 		}
 	}
 
-	private void validatePrice(List<OnboardingPreferenceDto> preferences) {
-		// TODO: 가격 정책 정해지면 구현
+	private void validatePreferredBlocks(List<Long> blockIds) {
+		Preconditions.validate(
+			blockIds != null && !blockIds.isEmpty() && blockIds.size() <= 10,
+			ErrorCode.INVALID_PREFERRED_BLOCK_COUNT
+		);
+
+		Set<Long> uniqueBlockIds = new HashSet<>(blockIds);
+		Preconditions.validate(uniqueBlockIds.size() == blockIds.size(), ErrorCode.DUPLICATE_PREFERRED_BLOCK);
 	}
 
-	private OnboardingPreference toEntity(User user, OnboardingPreferenceDto preference) {
-		return OnboardingPreference
-			.builder()
-			.user(user)
-			.priority(preference.priority())
-			.viewpoint(preference.viewpoint())
-			.seatHeight(preference.seatHeight())
-			.section(preference.section())
-			.seatPositionPref(preference.seatPositionPref())
-			.environmentPref(preference.environmentPref())
-			.moodPref(preference.moodPref())
-			.obstructionSensitivity(preference.obstructionSensitivity())
-			.priceMode(preference.priceMode())
-			.priceMin(preference.priceMin())
-			.priceMax(preference.priceMax())
-			.build();
+	private void validatePrice(PriceMode priceMode, Integer priceMin, Integer priceMax) {
+		if (priceMode == PriceMode.RANGE) {
+			if (priceMin != null && priceMax != null) {
+				Preconditions.validate(priceMin <= priceMax, ErrorCode.INVALID_PRICE_RANGE);
+			}
+		}
 	}
 
 	private void applyMarketingConsent(User user, OnboardingPreferenceCreateRequest.MarketingConsent marketingConsent) {

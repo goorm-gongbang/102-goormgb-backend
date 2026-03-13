@@ -1,6 +1,7 @@
 package com.goormgb.be.ordercore.fixture.onboarding;
 
-import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
+import java.util.List;
+
 import com.goormgb.be.domain.onboarding.enums.EnvironmentPref;
 import com.goormgb.be.domain.onboarding.enums.MoodPref;
 import com.goormgb.be.domain.onboarding.enums.ObstructionSensitivity;
@@ -9,64 +10,47 @@ import com.goormgb.be.domain.onboarding.enums.SeatHeight;
 import com.goormgb.be.domain.onboarding.enums.SeatPositionPref;
 import com.goormgb.be.domain.onboarding.enums.Section;
 import com.goormgb.be.domain.onboarding.enums.Viewpoint;
-import com.goormgb.be.ordercore.onboarding.dto.OnboardingPreferenceDto;
+import com.goormgb.be.ordercore.onboarding.dto.OnboardingPreferenceItemDto;
 
 public final class OnboardingPreferenceDtoFixture {
 
 	private OnboardingPreferenceDtoFixture() {
 	}
 
-	public static OnboardingPreferenceDto createFirst() {
-		return new OnboardingPreferenceDto(
-			1,
-			1L,
-			CheerProximityPref.NEAR,
-			Viewpoint.CENTER,
-			SeatHeight.LOW,
-			Section.CENTER_SIDE,
-			SeatPositionPref.AISLE,
-			EnvironmentPref.SHADE,
-			MoodPref.CHEERFUL,
-			ObstructionSensitivity.NORMAL,
-			PriceMode.RANGE,
-			30000,
-			80000
+	public static List<OnboardingPreferenceItemDto> createThreePreferences() {
+		return List.of(
+			new OnboardingPreferenceItemDto(
+				1, Viewpoint.CENTER,
+				SeatHeight.LOW, Section.CENTER_SIDE,
+				SeatPositionPref.AISLE, EnvironmentPref.SHADE,
+				MoodPref.CHEERFUL, ObstructionSensitivity.NORMAL,
+				PriceMode.RANGE, 30000, 80000
+			),
+			new OnboardingPreferenceItemDto(
+				2, Viewpoint.INFIELD_1B,
+				null, null, null, null, null, null, null, null, null
+			),
+			new OnboardingPreferenceItemDto(
+				3, Viewpoint.OUTFIELD_L,
+				null, null, null, null, null, null, null, null, null
+			)
 		);
 	}
 
-	public static OnboardingPreferenceDto createSecond() {
-		return new OnboardingPreferenceDto(
-			2,
-			1L,
-			CheerProximityPref.ANY,
-			Viewpoint.INFIELD_1B,
-			SeatHeight.MID,
-			Section.MIDDLE,
-			SeatPositionPref.ANY,
-			EnvironmentPref.SUN_OK,
-			MoodPref.QUIET,
-			ObstructionSensitivity.NET_SENSITIVE,
-			PriceMode.ANY,
-			null,
-			null
+	public static List<OnboardingPreferenceItemDto> createTwoPreferences() {
+		return List.of(
+			new OnboardingPreferenceItemDto(
+				1, Viewpoint.CENTER,
+				null, null, null, null, null, null, PriceMode.ANY, null, null
+			),
+			new OnboardingPreferenceItemDto(
+				2, Viewpoint.INFIELD_1B,
+				null, null, null, null, null, null, null, null, null
+			)
 		);
 	}
 
-	public static OnboardingPreferenceDto createThird() {
-		return new OnboardingPreferenceDto(
-			3,
-			1L,
-			CheerProximityPref.FAR,
-			Viewpoint.OUTFIELD_L,
-			SeatHeight.HIGH,
-			Section.CORNER,
-			SeatPositionPref.MIDDLE,
-			EnvironmentPref.ANY,
-			MoodPref.ANY,
-			ObstructionSensitivity.RAIL_PILLAR_SENSITIVE,
-			PriceMode.RANGE,
-			10000,
-			50000
-		);
+	public static List<Long> createPreferredBlockIds() {
+		return List.of(1L, 5L, 12L, 23L, 45L);
 	}
 }

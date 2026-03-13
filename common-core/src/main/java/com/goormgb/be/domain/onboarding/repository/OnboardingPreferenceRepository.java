@@ -1,6 +1,5 @@
 package com.goormgb.be.domain.onboarding.repository;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,22 +7,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
-import com.goormgb.be.domain.onboarding.enums.Viewpoint;
 
 public interface OnboardingPreferenceRepository extends JpaRepository<OnboardingPreference, Long> {
-	List<OnboardingPreference> findAllByUserId(Long userId);
 
-	List<OnboardingPreference> findAllByUserIdOrderByPriorityAsc(Long userId);
+	Optional<OnboardingPreference> findByUserId(Long userId);
 
-	Optional<OnboardingPreference> findByUserIdAndPriority(Long userId, Integer priority);
+	boolean existsByUserId(Long userId);
 
-	Optional<OnboardingPreference> findByUserIdAndViewpoint(Long userId, Viewpoint viewpoint);
+	void deleteByUserId(Long userId);
 
-	boolean existsByUserIdAndPriority(Long userId, Integer priority);
-
-	boolean existsByUserIdAndViewpoint(Long userId, Viewpoint viewpoint);
-
-	void deleteAllByUserId(Long userId);
+	default OnboardingPreference findByUserIdOrThrow(Long userId, ErrorCode errorCode) {
+		return findByUserId(userId).orElseThrow(() -> new CustomException(errorCode));
+	}
 
 	default OnboardingPreference findByIdOrThrow(Long id, ErrorCode errorCode) {
 		return findById(id).orElseThrow(() -> new CustomException(errorCode));
