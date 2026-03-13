@@ -1,5 +1,8 @@
 package com.goormgb.be.seat.config;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -221,15 +224,22 @@ public class SeatDataInitializer implements CommandLineRunner {
 	}
 
 	private void saveSeats(Block block) {
+		List<Seat> seats = new ArrayList<>();
+
 		for (RowPattern pattern : SeatLayoutPatterns.STANDARD) {
-			saveRow(
-				block,
-				pattern.rowNo(),
-				pattern.seatCount(),
-				pattern.startTemplateColNo(),
-				resolveSeatZone(pattern.rowNo())
-			);
+			SeatZone seatZone = resolveSeatZone(pattern.rowNo());
+			for (int i = 0; i < pattern.seatCount(); i++) {
+				seats.add(Seat.builder()
+					.block(block)
+					.rowNo(pattern.rowNo())
+					.seatNo(i + 1)
+					.templateColNo(pattern.startTemplateColNo() + i)
+					.seatZone(seatZone)
+					.build());
+			}
 		}
+
+		seatRepository.saveAll(seats);
 	}
 
 	private SeatZone resolveSeatZone(int rowNo) {
@@ -240,25 +250,5 @@ public class SeatDataInitializer implements CommandLineRunner {
 			return SeatZone.MID;
 		}
 		return SeatZone.HIGH;
-	}
-
-	private void saveRow(
-		Block block,
-		int rowNo,
-		int seatCount,
-		int startTemplateColNo,
-		SeatZone seatZone
-	) {
-		for (int i = 0; i < seatCount; i++) {
-			seatRepository.save(
-				Seat.builder()
-					.block(block)
-					.rowNo(rowNo)
-					.seatNo(i + 1)
-					.templateColNo(startTemplateColNo + i)
-					.seatZone(seatZone)
-					.build()
-			);
-		}
 	}
 }
