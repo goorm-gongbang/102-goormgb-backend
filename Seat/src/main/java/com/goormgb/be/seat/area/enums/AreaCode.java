@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 public enum AreaCode {
 	HOME("1루(홈)"),
 	AWAY("3루(어웨이)"),
-	PREMIUM("프리미엄");
+	OUTFIELD("외야"),
+	CENTER("중앙");
 
 	private final String description;
 }

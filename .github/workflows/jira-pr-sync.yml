@@ -45,10 +45,16 @@ jobs:
           ISSUE_KEY: ${{ steps.jira.outputs.key }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          AUTH=$(printf "%s:%s" "$JIRA_EMAIL" "$JIRA_API_TOKEN" | base64)
+          AUTH=$(printf "%s:%s" "$JIRA_EMAIL" "$JIRA_API_TOKEN" | base64 | tr -d '\n')
+
+          echo "Jira base url: $JIRA_BASE_URL"
+          echo "Issue key: $ISSUE_KEY"
+          echo "PR URL: $PR_URL"
 
           # 리뷰 중(In Review) transition id = 31
           REVIEW_ID="31"
+
+          echo "=== Transition start ==="
 
           curl --fail -L -s -X POST \
             -H "Authorization: Basic $AUTH" \
@@ -57,12 +63,18 @@ jobs:
             "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/transitions" \
             -d "{\"transition\":{\"id\":\"$REVIEW_ID\"}}"
 
+          echo "=== Transition success ==="
+
+          echo "=== Comment start ==="
+
           curl --fail -L -s -X POST \
             -H "Authorization: Basic $AUTH" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
             "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/comment" \
             -d "{\"body\":{\"type\":\"doc\",\"version\":1,\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"PR 링크: $PR_URL\"}]}]}}"
+
+          echo "=== Comment success ==="
 
       # PR이 merge 되어 closed 되면 Jira 상태를 "완료 (Done)" 로 전환
       - name: Move to Done on merge
@@ -73,10 +85,15 @@ jobs:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           ISSUE_KEY: ${{ steps.jira.outputs.key }}
         run: |
-          AUTH=$(printf "%s:%s" "$JIRA_EMAIL" "$JIRA_API_TOKEN" | base64)
+          AUTH=$(printf "%s:%s" "$JIRA_EMAIL" "$JIRA_API_TOKEN" | base64 | tr -d '\n')
+
+          echo "Jira base url: $JIRA_BASE_URL"
+          echo "Issue key: $ISSUE_KEY"
 
           # 완료 (Done) transition id = 41
           DONE_ID="41"
+
+          echo "=== Done transition start ==="
 
           curl --fail -L -s -X POST \
             -H "Authorization: Basic $AUTH" \
@@ -84,3 +101,5 @@ jobs:
             -H "Content-Type: application/json" \
             "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/transitions" \
             -d "{\"transition\":{\"id\":\"$DONE_ID\"}}"
+
+          echo "=== Done transition success ==="

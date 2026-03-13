@@ -47,19 +47,14 @@ public class Section extends BaseEntity {
 	@Column(name = "name", nullable = false, length = 50)
 	private String name;
 
-	@Column(name = "color_hex", length = 10)
-	private String colorHex;
-
 	@Builder
 	public Section(
 		Area area,
 		SectionCode code,
-		String name,
-		String colorHex
+		String name
 	) {
 		this.area = area;
 		this.code = code;
 		this.name = name;
-		this.colorHex = colorHex;
 	}
 }
