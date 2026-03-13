@@ -38,6 +38,14 @@ queue:
   wait-key-prefix: queue:wait
   ready-key-prefix: queue:ready
   preference-key-prefix: seat:preference
+  expired-key-prefix: queue:expired
+  polling:
+    ready-ms: 1000
+    fast-ms: 1500
+    medium-ms: 3000
+    slow-ms: 5000
+    fast-rank-threshold: 100
+    medium-rank-threshold: 1000
 
   security:
     jwt:
