@@ -62,4 +62,10 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 		@Param("start") Instant start,
 		@Param("end") Instant end
 	);
+
+	List<Match> findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
+		SaleStatus saleStatus,
+		Instant start,
+		Instant end
+	);
 }
