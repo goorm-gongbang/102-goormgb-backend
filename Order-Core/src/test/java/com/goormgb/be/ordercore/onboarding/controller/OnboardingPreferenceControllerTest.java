@@ -20,10 +20,19 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
+import com.goormgb.be.domain.onboarding.enums.EnvironmentPref;
+import com.goormgb.be.domain.onboarding.enums.MoodPref;
+import com.goormgb.be.domain.onboarding.enums.ObstructionSensitivity;
+import com.goormgb.be.domain.onboarding.enums.PriceMode;
+import com.goormgb.be.domain.onboarding.enums.SeatHeight;
+import com.goormgb.be.domain.onboarding.enums.SeatPositionPref;
+import com.goormgb.be.domain.onboarding.enums.Section;
+import com.goormgb.be.domain.onboarding.enums.Viewpoint;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.ordercore.fixture.onboarding.OnboardingPreferenceDtoFixture;
 import com.goormgb.be.ordercore.fixture.onboarding.OnboardingPreferenceRequestFixture;
+import com.goormgb.be.ordercore.onboarding.dto.OnboardingPreferenceItemDto;
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceCreateRequest;
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceUpdateRequest;
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingPreferenceCreateResponse;
@@ -40,8 +49,8 @@ class OnboardingPreferenceControllerTest extends WebMvcTestSupport {
 
 	private void setAuthentication(Long userId) {
 		SecurityContextHolder.getContext().setAuthentication(
-				new UsernamePasswordAuthenticationToken(userId, null,
-						List.of(new SimpleGrantedAuthority("ROLE_USER"))));
+			new UsernamePasswordAuthenticationToken(userId, null,
+				List.of(new SimpleGrantedAuthority("ROLE_USER"))));
 	}
 
 	@Test
@@ -52,24 +61,43 @@ class OnboardingPreferenceControllerTest extends WebMvcTestSupport {
 		setAuthentication(userId);
 
 		OnboardingPreferenceGetResponse response = new OnboardingPreferenceGetResponse(
-				List.of(
-						OnboardingPreferenceDtoFixture.createFirst(),
-						OnboardingPreferenceDtoFixture.createSecond(),
-						OnboardingPreferenceDtoFixture.createThird()
+			1L,
+			"LG 트윈스",
+			CheerProximityPref.NEAR,
+			List.of(1L, 5L, 12L),
+			List.of(
+				new OnboardingPreferenceItemDto(
+					1, Viewpoint.CENTER,
+					SeatHeight.LOW, Section.CENTER_SIDE,
+					SeatPositionPref.AISLE, EnvironmentPref.SHADE,
+					MoodPref.CHEERFUL, ObstructionSensitivity.NORMAL,
+					PriceMode.RANGE, 30000, 80000
+				),
+				new OnboardingPreferenceItemDto(
+					2, Viewpoint.INFIELD_1B,
+					SeatHeight.LOW, Section.CENTER_SIDE,
+					SeatPositionPref.AISLE, EnvironmentPref.SHADE,
+					MoodPref.CHEERFUL, ObstructionSensitivity.NORMAL,
+					PriceMode.RANGE, 30000, 80000
 				)
+			)
 		);
 
 		given(onboardingPreferenceService.getPreferences(userId)).willReturn(response);
 
 		// when & then
 		mockMvc.perform(get("/onboarding/preferences"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.code").value("OK"))
-				.andExpect(jsonPath("$.message").value("성공"))
-				.andExpect(jsonPath("$.data.preferences").isArray())
-				.andExpect(jsonPath("$.data.preferences.length()").value(3))
-				.andExpect(jsonPath("$.data.preferences[0].priority").value(1))
-				.andExpect(jsonPath("$.data.preferences[0].viewpoint").value("CENTER"));
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("OK"))
+			.andExpect(jsonPath("$.message").value("성공"))
+			.andExpect(jsonPath("$.data.favoriteClubId").value(1))
+			.andExpect(jsonPath("$.data.cheerProximityPref").value("NEAR"))
+			.andExpect(jsonPath("$.data.preferredBlockIds").isArray())
+			.andExpect(jsonPath("$.data.preferredBlockIds.length()").value(3))
+			.andExpect(jsonPath("$.data.preferences").isArray())
+			.andExpect(jsonPath("$.data.preferences.length()").value(2))
+			.andExpect(jsonPath("$.data.preferences[0].priority").value(1))
+			.andExpect(jsonPath("$.data.preferences[0].viewpoint").value("CENTER"));
 	}
 
 	@Test
@@ -80,12 +108,12 @@ class OnboardingPreferenceControllerTest extends WebMvcTestSupport {
 		setAuthentication(userId);
 
 		given(onboardingPreferenceService.getPreferences(userId))
-				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+			.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
 
 		// when & then
 		mockMvc.perform(get("/onboarding/preferences"))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
 	}
 
 	@Test
@@ -99,23 +127,23 @@ class OnboardingPreferenceControllerTest extends WebMvcTestSupport {
 
 		Instant now = LocalDateTime.of(2026, 2, 22, 12, 0, 0).toInstant(ZoneOffset.UTC);
 		OnboardingPreferenceCreateResponse response = new OnboardingPreferenceCreateResponse(
-				true, now, true, now
+			true, now, true, now
 		);
 
 		given(onboardingPreferenceService.createPreferences(eq(userId), any(OnboardingPreferenceCreateRequest.class)))
-				.willReturn(response);
+			.willReturn(response);
 
 		// when & then
 		mockMvc.perform(post("/onboarding/preferences")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.code").value("OK"))
-				.andExpect(jsonPath("$.message").value("성공"))
-				.andExpect(jsonPath("$.data.onboardingStatus").value(true))
-				.andExpect(jsonPath("$.data.marketingConsent").value(true))
-				.andExpect(jsonPath("$.data.onboardingCompletedAt").exists())
-				.andExpect(jsonPath("$.data.marketingConsentedAt").exists());
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request)))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.code").value("OK"))
+			.andExpect(jsonPath("$.message").value("성공"))
+			.andExpect(jsonPath("$.data.onboardingStatus").value(true))
+			.andExpect(jsonPath("$.data.marketingConsent").value(true))
+			.andExpect(jsonPath("$.data.onboardingCompletedAt").exists())
+			.andExpect(jsonPath("$.data.marketingConsentedAt").exists());
 	}
 
 	@Test
@@ -128,14 +156,14 @@ class OnboardingPreferenceControllerTest extends WebMvcTestSupport {
 		OnboardingPreferenceCreateRequest request = OnboardingPreferenceRequestFixture.createCreateRequest();
 
 		given(onboardingPreferenceService.createPreferences(eq(userId), any(OnboardingPreferenceCreateRequest.class)))
-				.willThrow(new CustomException(ErrorCode.ONBOARDING_ALREADY_COMPLETED));
+			.willThrow(new CustomException(ErrorCode.ONBOARDING_ALREADY_COMPLETED));
 
 		// when & then
 		mockMvc.perform(post("/onboarding/preferences")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.message").value("이미 온보딩이 완료되었습니다."));
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.message").value("이미 온보딩이 완료되었습니다."));
 	}
 
 	@Test
@@ -148,14 +176,14 @@ class OnboardingPreferenceControllerTest extends WebMvcTestSupport {
 		OnboardingPreferenceCreateRequest request = OnboardingPreferenceRequestFixture.createCreateRequest();
 
 		given(onboardingPreferenceService.createPreferences(eq(userId), any(OnboardingPreferenceCreateRequest.class)))
-				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+			.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
 
 		// when & then
 		mockMvc.perform(post("/onboarding/preferences")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request)))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
 	}
 
 	@Test
@@ -168,36 +196,15 @@ class OnboardingPreferenceControllerTest extends WebMvcTestSupport {
 		OnboardingPreferenceUpdateRequest request = OnboardingPreferenceRequestFixture.createUpdateRequest();
 
 		willDoNothing().given(onboardingPreferenceService)
-				.updatePreferences(eq(userId), any(OnboardingPreferenceUpdateRequest.class));
+			.updatePreferences(eq(userId), any(OnboardingPreferenceUpdateRequest.class));
 
 		// when & then
 		mockMvc.perform(put("/onboarding/preferences")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.code").value("OK"))
-				.andExpect(jsonPath("$.message").value("성공"));
-	}
-
-	@Test
-	@DisplayName("PUT /onboarding/preferences - 수정할 선호도를 찾을 수 없음 404")
-	void 선호도_수정_수정할_선호도_없음() throws Exception {
-		// given
-		Long userId = 1L;
-		setAuthentication(userId);
-
-		OnboardingPreferenceUpdateRequest request = OnboardingPreferenceRequestFixture.createUpdateRequest();
-
-		willThrow(new CustomException(ErrorCode.PREFERENCE_NOT_FOUND_FOR_UPDATE))
-				.given(onboardingPreferenceService)
-				.updatePreferences(eq(userId), any(OnboardingPreferenceUpdateRequest.class));
-
-		// when & then
-		mockMvc.perform(put("/onboarding/preferences")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.message").value("수정할 선호도 정보를 찾을 수 없습니다."));
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("OK"))
+			.andExpect(jsonPath("$.message").value("성공"));
 	}
 
 	@Test
@@ -210,14 +217,14 @@ class OnboardingPreferenceControllerTest extends WebMvcTestSupport {
 		OnboardingPreferenceUpdateRequest request = OnboardingPreferenceRequestFixture.createUpdateRequest();
 
 		willThrow(new CustomException(ErrorCode.USER_NOT_FOUND))
-				.given(onboardingPreferenceService)
-				.updatePreferences(eq(userId), any(OnboardingPreferenceUpdateRequest.class));
+			.given(onboardingPreferenceService)
+			.updatePreferences(eq(userId), any(OnboardingPreferenceUpdateRequest.class));
 
 		// when & then
 		mockMvc.perform(put("/onboarding/preferences")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request)))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
 	}
 }

@@ -1,7 +1,8 @@
 package com.goormgb.be.domain.onboarding.entity;
 
+import java.util.Objects;
+
 import com.goormgb.be.domain.club.entity.Club;
-import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
 import com.goormgb.be.domain.onboarding.enums.EnvironmentPref;
 import com.goormgb.be.domain.onboarding.enums.MoodPref;
@@ -10,7 +11,7 @@ import com.goormgb.be.domain.onboarding.enums.PriceMode;
 import com.goormgb.be.domain.onboarding.enums.SeatHeight;
 import com.goormgb.be.domain.onboarding.enums.SeatPositionPref;
 import com.goormgb.be.domain.onboarding.enums.Section;
-import com.goormgb.be.domain.onboarding.enums.Viewpoint;
+import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.user.entity.User;
 
 import jakarta.persistence.Column;
@@ -30,14 +31,17 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(
-	name = "onboarding_preferences",
-	uniqueConstraints = {
-		@UniqueConstraint(columnNames = {"user_id", "priority"})
-	},
-	indexes = {
-		@Index(name = "idx_onboarding_preferences_user_id", columnList = "user_id"),
-		@Index(name = "idx_onboarding_preferences_favorite_club_id", columnList = "favorite_club_id")
-	}
+		name = "onboarding_preferences",
+		uniqueConstraints = {
+				@UniqueConstraint(
+						name = "uk_onboarding_preferences_user_id",
+						columnNames = {"user_id"}
+				)
+		},
+		indexes = {
+				@Index(name = "idx_onboarding_preferences_user_id", columnList = "user_id"),
+				@Index(name = "idx_onboarding_preferences_favorite_club_id", columnList = "favorite_club_id")
+		}
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -47,8 +51,7 @@ public class OnboardingPreference extends BaseEntity {
 	@JoinColumn(name = "user_id", nullable = false)
 	private User user;
 
-	@Column(name = "priority", nullable = false)
-	private Integer priority;
+	// ── 추천 알고리즘에 사용되는 필수 필드 ──
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "favorite_club_id", nullable = false)
@@ -58,17 +61,15 @@ public class OnboardingPreference extends BaseEntity {
 	@Column(name = "cheer_proximity_pref", nullable = false, length = 20)
 	private CheerProximityPref cheerProximityPref = CheerProximityPref.ANY;
 
-	@Enumerated(EnumType.STRING)
-	@Column(name = "viewpoint", nullable = false, length = 30)
-	private Viewpoint viewpoint;
+	// ── 추천 미사용 - 옵셔널 필드 (입력 안 하면 기본값 ANY/NORMAL) ──
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "seat_height", nullable = false, length = 20)
-	private SeatHeight seatHeight;
+	private SeatHeight seatHeight = SeatHeight.ANY;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "section", nullable = false, length = 20)
-	private Section section;
+	private Section section = Section.ANY;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "seat_position_pref", nullable = false, length = 20)
@@ -98,63 +99,63 @@ public class OnboardingPreference extends BaseEntity {
 
 	@Builder
 	public OnboardingPreference(
-		User user,
-		Integer priority,
-		Club favoriteClub,
-		CheerProximityPref cheerProximityPref,
-		Viewpoint viewpoint,
-		SeatHeight seatHeight,
-		Section section,
-		SeatPositionPref seatPositionPref,
-		EnvironmentPref environmentPref,
-		MoodPref moodPref,
-		ObstructionSensitivity obstructionSensitivity,
-		PriceMode priceMode,
-		Integer priceMin,
-		Integer priceMax
+			User user,
+			Club favoriteClub,
+			CheerProximityPref cheerProximityPref,
+			SeatHeight seatHeight,
+			Section section,
+			SeatPositionPref seatPositionPref,
+			EnvironmentPref environmentPref,
+			MoodPref moodPref,
+			ObstructionSensitivity obstructionSensitivity,
+			PriceMode priceMode,
+			Integer priceMin,
+			Integer priceMax
 	) {
 		this.user = user;
-		this.priority = priority;
 		this.favoriteClub = favoriteClub;
-		update(
-			cheerProximityPref,
-			viewpoint,
-			seatHeight,
-			section,
-			seatPositionPref,
-			environmentPref,
-			moodPref,
-			obstructionSensitivity,
-			priceMode,
-			priceMin,
-			priceMax
-		);
+		applyOptionalFields(cheerProximityPref, seatHeight, section, seatPositionPref,
+			environmentPref, moodPref, obstructionSensitivity, priceMode, priceMin, priceMax);
 	}
 
 	public void update(
-		CheerProximityPref cheerProximityPref,
-		Viewpoint viewpoint,
-		SeatHeight seatHeight,
-		Section section,
-		SeatPositionPref seatPositionPref,
-		EnvironmentPref environmentPref,
-		MoodPref moodPref,
-		ObstructionSensitivity obstructionSensitivity,
-		PriceMode priceMode,
-		Integer priceMin,
-		Integer priceMax
+			Club favoriteClub,
+			CheerProximityPref cheerProximityPref,
+			SeatHeight seatHeight,
+			Section section,
+			SeatPositionPref seatPositionPref,
+			EnvironmentPref environmentPref,
+			MoodPref moodPref,
+			ObstructionSensitivity obstructionSensitivity,
+			PriceMode priceMode,
+			Integer priceMin,
+			Integer priceMax
 	) {
-		this.cheerProximityPref =
-			cheerProximityPref != null ? cheerProximityPref : CheerProximityPref.ANY;
-		this.viewpoint = viewpoint;
-		this.seatHeight = seatHeight;
-		this.section = section;
-		this.seatPositionPref = seatPositionPref != null ? seatPositionPref : SeatPositionPref.ANY;
-		this.environmentPref = environmentPref != null ? environmentPref : EnvironmentPref.ANY;
-		this.moodPref = moodPref != null ? moodPref : MoodPref.ANY;
-		this.obstructionSensitivity =
-			obstructionSensitivity != null ? obstructionSensitivity : ObstructionSensitivity.NORMAL;
-		this.priceMode = priceMode != null ? priceMode : PriceMode.ANY;
+		this.favoriteClub = favoriteClub;
+		applyOptionalFields(cheerProximityPref, seatHeight, section, seatPositionPref,
+			environmentPref, moodPref, obstructionSensitivity, priceMode, priceMin, priceMax);
+	}
+
+	private void applyOptionalFields(
+			CheerProximityPref cheerProximityPref,
+			SeatHeight seatHeight,
+			Section section,
+			SeatPositionPref seatPositionPref,
+			EnvironmentPref environmentPref,
+			MoodPref moodPref,
+			ObstructionSensitivity obstructionSensitivity,
+			PriceMode priceMode,
+			Integer priceMin,
+			Integer priceMax
+	) {
+		this.cheerProximityPref = Objects.requireNonNullElse(cheerProximityPref, CheerProximityPref.ANY);
+		this.seatHeight = Objects.requireNonNullElse(seatHeight, SeatHeight.ANY);
+		this.section = Objects.requireNonNullElse(section, Section.ANY);
+		this.seatPositionPref = Objects.requireNonNullElse(seatPositionPref, SeatPositionPref.ANY);
+		this.environmentPref = Objects.requireNonNullElse(environmentPref, EnvironmentPref.ANY);
+		this.moodPref = Objects.requireNonNullElse(moodPref, MoodPref.ANY);
+		this.obstructionSensitivity = Objects.requireNonNullElse(obstructionSensitivity, ObstructionSensitivity.NORMAL);
+		this.priceMode = Objects.requireNonNullElse(priceMode, PriceMode.ANY);
 		this.priceMin = priceMin;
 		this.priceMax = priceMax;
 	}
