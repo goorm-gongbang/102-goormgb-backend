@@ -30,6 +30,20 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
+queue:
+  ready-ttl-seconds: 30
+  promotion-batch-size: 100
+  promotion-interval-ms: 1000
+  active-match-key: queue:match
+  wait-key-prefix: queue:wait
+  ready-key-prefix: queue:ready
+  preference-key-prefix: seat:preference
+
+  security:
+    jwt:
+      admission-secret: ${ADMISSION_JWT_SECRET}
+      issuer: queue-service
+
 springdoc:
   swagger-ui:
     urls:
