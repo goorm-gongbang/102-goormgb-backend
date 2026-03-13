@@ -6,6 +6,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -39,12 +40,15 @@ public class CorsGlobalFilter implements WebFilter, Ordered {
 		return chain.filter(exchange);
 	}
 
+	private static final AntPathMatcher MATCHER = new AntPathMatcher();
+
 	private boolean isAllowed(String origin) {
 		if ("*".equals(allowedOrigins)) {
 			return true;
 		}
 		for (String allowed : allowedOrigins.split(",")) {
-			if (origin.equalsIgnoreCase(allowed.trim())) {
+			String pattern = allowed.trim();
+			if (origin.equalsIgnoreCase(pattern) || MATCHER.match(pattern, origin)) {
 				return true;
 			}
 		}
