@@ -16,7 +16,7 @@ public class QueuePollingPolicy {
 	}
 
 	public long forWaiting(long rank) {
-		if (rank <= 0 || rank <= properties.fastRankThreshold()) {
+        if (rank <= properties.fastRankThreshold()) {
 			return properties.fastMs();
 		}
 		if (rank <= properties.mediumRankThreshold()) {
