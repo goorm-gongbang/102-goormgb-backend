@@ -2,7 +2,7 @@ package com.goormgb.be.seat.pricePolicy.entity;
 
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.seat.pricePolicy.enums.DayType;
-import com.goormgb.be.seat.pricePolicy.enums.TicketType;
+import com.goormgb.be.domain.ticket.enums.TicketType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
