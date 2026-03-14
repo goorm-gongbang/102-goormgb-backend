@@ -133,6 +133,7 @@ public class PricePolicyInitializer implements CommandLineRunner {
 				result.add(policy(sectionId, DayType.WEEKDAY, TicketType.DISABLED, 4_500));
 				result.add(policy(sectionId, DayType.WEEKEND, TicketType.DISABLED, 5_000));
 			}
+			default -> log.warn("[PricePolicyInitializer] 가격 정책 미정의 섹션 코드: {} (section_id={}). 가격 정책을 추가해 주세요.", code, sectionId);
 		}
 
 		return result;
