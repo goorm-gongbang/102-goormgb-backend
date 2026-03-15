@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.goormgb.be.seat.block.entity.Block;
 
@@ -13,4 +14,7 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
 	List<Block> findAllWithSectionAndArea();
 
 	List<Block> findBySectionIdInOrderBySectionIdAscBlockCodeAsc(List<Long> sectionIds);
+
+	@Query("SELECT b FROM Block b JOIN FETCH b.section s JOIN FETCH b.area a WHERE b.id IN :blockIds")
+	List<Block> findAllByIdInWithSectionAndArea(@Param("blockIds") List<Long> blockIds);
 }

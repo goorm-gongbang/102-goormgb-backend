@@ -23,4 +23,16 @@ public interface MatchSeatRepository extends JpaRepository<MatchSeat, Long> {
 		@Param("matchId") Long matchId,
 		@Param("saleStatus") MatchSeatSaleStatus saleStatus
 	);
+
+	@Query("""
+		SELECT ms FROM MatchSeat ms
+		WHERE ms.matchId = :matchId
+		  AND ms.blockId = :blockId
+		  AND ms.saleStatus = com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus.AVAILABLE
+		ORDER BY ms.rowNo ASC, ms.templateColNo ASC
+		""")
+	List<MatchSeat> findAvailableSeatsByMatchIdAndBlockId(
+		@Param("matchId") Long matchId,
+		@Param("blockId") Long blockId
+	);
 }
