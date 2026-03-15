@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.goormgb.be.global.response.ApiResult;
+import com.goormgb.be.seat.recommendation.dto.response.BlockRecommendationResponse;
 import com.goormgb.be.seat.recommendation.dto.response.SeatEntryResponse;
 import com.goormgb.be.seat.recommendation.service.SeatRecommendationService;
 
@@ -38,5 +39,21 @@ public class SeatRecommendationController {
 		// TODO: 큐 진입 토큰 확인
 	) {
 		return ApiResult.ok(seatRecommendationService.getRecommendationSeatEntry(matchId, userId));
+	}
+
+	@Operation(
+		summary = "추천 블럭 리스트 조회",
+		description = "사용자의 선호 블럭 내에서 N연석 가능 개수와 취향 점수를 기반으로 추천 블럭 리스트를 반환합니다.",
+		security = @SecurityRequirement(name = "BearerAuth"))
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "추천 블럭 리스트 조회 성공"),
+		@ApiResponse(responseCode = "404", description = "추천 가능한 블럭이 없거나 세션/경기를 찾을 수 없습니다.")
+	})
+	@GetMapping("/blocks")
+	public ApiResult<BlockRecommendationResponse> getRecommendedBlocks(
+		@PathVariable Long matchId,
+		@AuthenticationPrincipal Long userId
+	) {
+		return ApiResult.ok(seatRecommendationService.getRecommendedBlocks(matchId, userId));
 	}
 }
