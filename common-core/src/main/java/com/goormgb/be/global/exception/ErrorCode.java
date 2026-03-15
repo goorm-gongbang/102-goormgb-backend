@@ -59,6 +59,8 @@ public enum ErrorCode {
 	INVALID_MATCH_MONTH(HttpStatus.BAD_REQUEST, "올바른 경기 월을 입력해주세요."),
 	INVALID_MATCH_YEAR(HttpStatus.BAD_REQUEST, "올바른 경기 년도를 입력해주세요."),
 
+	// Seat
+	SEAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "좌석 세션이 존재하지 않거나 만료되었습니다."),
 	;
 
 	private final HttpStatus status;
