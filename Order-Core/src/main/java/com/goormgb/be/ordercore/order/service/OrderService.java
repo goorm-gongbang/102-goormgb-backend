@@ -38,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 public class OrderService {
 
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-	private static final int BOOKING_FEE = 2000;
+	private static final int BOOKING_FEE = 2_000;
 
 	private final MatchRepository matchRepository;
 	private final UserRepository userRepository;
@@ -90,22 +90,20 @@ public class OrderService {
 		Preconditions.validate(holdInfos.size() == matchSeatIds.size(), ErrorCode.SEAT_HOLD_NOT_FOUND);
 
 		Instant now = Instant.now();
-		for (SeatHoldInfo hold : holdInfos) {
-			Preconditions.validate(!hold.isExpired(now), ErrorCode.SEAT_HOLD_EXPIRED);
-			Preconditions.validate(!seatInfoQueryService.isAlreadyOrdered(hold.matchSeatId()),
-					ErrorCode.INVALID_ORDER_STATUS);
-		}
-
 		String dayType = determineDayType(match.getMatchAt());
 		Map<Long, SeatOrderItem> seatItemMap = request.seats().stream()
 				.collect(Collectors.toMap(SeatOrderItem::matchSeatId, item -> item));
 
-		// 가격 미리 계산
+		// 유효성 검증 + 가격 계산
 		record SeatPriceItem(SeatHoldInfo hold, SeatOrderItem item, int price) {
 		}
 		List<SeatPriceItem> priceItems = new ArrayList<>();
 		int ticketTotal = 0;
 		for (SeatHoldInfo hold : holdInfos) {
+			Preconditions.validate(!hold.isExpired(now), ErrorCode.SEAT_HOLD_EXPIRED);
+			Preconditions.validate(!seatInfoQueryService.isAlreadyOrdered(hold.matchSeatId()),
+					ErrorCode.INVALID_ORDER_STATUS);
+
 			SeatOrderItem item = seatItemMap.get(hold.matchSeatId());
 			Integer price = seatInfoQueryService.findPrice(hold.sectionId(), dayType, item.ticketType().name());
 			Preconditions.validate(price != null, ErrorCode.PRICE_POLICY_NOT_FOUND);

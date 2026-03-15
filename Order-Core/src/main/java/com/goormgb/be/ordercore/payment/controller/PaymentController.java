@@ -82,6 +82,6 @@ public class PaymentController {
 		@PathVariable Long orderId,
 		@Valid @RequestBody CashReceiptCreateRequest request
 	) {
-		return ApiResult.ok(paymentService.createCashReceipt(userId, orderId, request));
+		return ApiResult.created(paymentService.createCashReceipt(userId, orderId, request));
 	}
 }

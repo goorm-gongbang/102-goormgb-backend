@@ -207,7 +207,7 @@ class PaymentControllerTest extends WebMvcTestSupport {
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(objectMapper.writeValueAsString(request)))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.code").value("CREATED"))
 				.andExpect(jsonPath("$.data.orderId").value(1))
 				.andExpect(jsonPath("$.data.purpose").value("PERSONAL_DEDUCTION"))
 				.andExpect(jsonPath("$.data.number").value("010-1234-5678"));

@@ -191,7 +191,7 @@ class OrderControllerTest extends WebMvcTestSupport {
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(objectMapper.writeValueAsString(request)))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.code").value("CREATED"))
 				.andExpect(jsonPath("$.data.orderId").value(1))
 				.andExpect(jsonPath("$.data.status").value("PAYMENT_PENDING"))
 				.andExpect(jsonPath("$.data.matchId").value(1))

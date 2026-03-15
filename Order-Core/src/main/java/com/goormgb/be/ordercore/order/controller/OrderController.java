@@ -78,6 +78,6 @@ public class OrderController {
 		@AuthenticationPrincipal Long userId,
 		@Valid @RequestBody OrderCreateRequest request
 	) {
-		return ApiResult.ok(orderService.createOrder(userId, request));
+		return ApiResult.created(orderService.createOrder(userId, request));
 	}
 }
