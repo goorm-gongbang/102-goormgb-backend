@@ -35,4 +35,15 @@ public interface MatchSeatRepository extends JpaRepository<MatchSeat, Long> {
 		@Param("matchId") Long matchId,
 		@Param("blockId") Long blockId
 	);
+
+	@Query("""
+		SELECT ms FROM MatchSeat ms
+		WHERE ms.matchId = :matchId
+		  AND ms.sectionId = :sectionId
+		ORDER BY ms.blockId ASC, ms.rowNo ASC, ms.seatNo ASC
+		""")
+	List<MatchSeat> findByMatchIdAndSectionIdOrderByBlockIdAscRowNoAscSeatNoAsc(
+		@Param("matchId") Long matchId,
+		@Param("sectionId") Long sectionId
+	);
 }
