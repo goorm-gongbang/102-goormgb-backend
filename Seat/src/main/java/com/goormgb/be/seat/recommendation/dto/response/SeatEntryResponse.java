@@ -69,7 +69,7 @@ public record SeatEntryResponse(
 
 	public record SeatSessionInfo(
 		boolean recommendationEnabled,
-		int headCount,
+		int ticketCount,
 		List<Long> preferredBlockIds
 	) {
 
