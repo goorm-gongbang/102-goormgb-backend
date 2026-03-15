@@ -37,6 +37,7 @@ public class SemiConsecutiveFinder {
 
 	private final MatchSeatRepository matchSeatRepository;
 	private final AisleDistanceCalculator aisleDistanceCalculator;
+	private final SeatSegmentExtractor seatSegmentExtractor;
 
 	/**
 	 * 특정 블럭에서 최적의 준연석 묶음을 찾는다.
@@ -72,8 +73,8 @@ public class SemiConsecutiveFinder {
 					return;
 				}
 
-				var upperSegments = extractConsecutiveSegments(seatsByRow.get(upperRow));
-				var lowerSegments = extractConsecutiveSegments(seatsByRow.get(lowerRow));
+				var upperSegments = seatSegmentExtractor.extractConsecutiveSegments(seatsByRow.get(upperRow));
+				var lowerSegments = seatSegmentExtractor.extractConsecutiveSegments(seatsByRow.get(lowerRow));
 
 				for (var upperSeg : upperSegments) {
 					for (var lowerSeg : lowerSegments) {
@@ -134,22 +135,4 @@ public class SemiConsecutiveFinder {
 		}
 	}
 
-	private List<List<MatchSeat>> extractConsecutiveSegments(List<MatchSeat> sortedSeats) {
-		List<List<MatchSeat>> segments = new ArrayList<>();
-		List<MatchSeat> current = new ArrayList<>();
-		current.add(sortedSeats.get(0));
-
-		for (int i = 1; i < sortedSeats.size(); i++) {
-			if (sortedSeats.get(i).getTemplateColNo() == sortedSeats.get(i - 1).getTemplateColNo() + 1) {
-				current.add(sortedSeats.get(i));
-			} else {
-				segments.add(current);
-				current = new ArrayList<>();
-				current.add(sortedSeats.get(i));
-			}
-		}
-		segments.add(current);
-
-		return segments;
-	}
 }

@@ -30,6 +30,9 @@ class RealConsecutiveFinderTest {
 	@Spy
 	private AisleDistanceCalculator aisleDistanceCalculator = new AisleDistanceCalculator();
 
+	@Spy
+	private SeatSegmentExtractor seatSegmentExtractor = new SeatSegmentExtractor();
+
 	@InjectMocks
 	private RealConsecutiveFinder realConsecutiveFinder;
 

@@ -30,6 +30,9 @@ class SemiConsecutiveFinderTest {
 	@Spy
 	private AisleDistanceCalculator aisleDistanceCalculator = new AisleDistanceCalculator();
 
+	@Spy
+	private SeatSegmentExtractor seatSegmentExtractor = new SeatSegmentExtractor();
+
 	@InjectMocks
 	private SemiConsecutiveFinder semiConsecutiveFinder;
 
