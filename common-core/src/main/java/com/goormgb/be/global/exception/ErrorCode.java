@@ -59,8 +59,29 @@ public enum ErrorCode {
 	INVALID_MATCH_MONTH(HttpStatus.BAD_REQUEST, "올바른 경기 월을 입력해주세요."),
 	INVALID_MATCH_YEAR(HttpStatus.BAD_REQUEST, "올바른 경기 년도를 입력해주세요."),
 
-	// Seat
+	// Order
+	ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."),
+	ORDER_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 주문에 접근할 권한이 없습니다."),
+	INVALID_ORDER_STATUS(HttpStatus.BAD_REQUEST, "주문 상태가 올바르지 않습니다."),
+	ORDER_SEAT_EMPTY(HttpStatus.BAD_REQUEST, "주문 좌석 정보가 없습니다."),
+
+	// Seat Hold
+	SEAT_HOLD_NOT_FOUND(HttpStatus.NOT_FOUND, "좌석 선점 정보를 찾을 수 없습니다."),
+	SEAT_HOLD_EXPIRED(HttpStatus.BAD_REQUEST, "좌석 선점이 만료되었습니다."),
+	SEAT_HOLD_OWNERSHIP_DENIED(HttpStatus.FORBIDDEN, "해당 좌석 선점에 접근할 권한이 없습니다."),
+	PRICE_POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 좌석의 가격 정책을 찾을 수 없습니다."),
 	SEAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "좌석 세션이 존재하지 않거나 만료되었습니다."),
+
+	// Payment
+	PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "결제 정보를 찾을 수 없습니다."),
+	PAYMENT_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 결제가 완료된 주문입니다."),
+	CASH_RECEIPT_ALREADY_EXISTS(HttpStatus.CONFLICT, "현금영수증이 이미 신청되었습니다."),
+	INVALID_PAYMENT_METHOD(HttpStatus.BAD_REQUEST, "지원하지 않는 결제 수단입니다."),
+
+	// Mypage
+	INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "size는 최대 10까지 허용됩니다."),
+	INVALID_TICKET_TAB(HttpStatus.BAD_REQUEST, "유효하지 않은 탭 값입니다."),
+
 	;
 
 	private final HttpStatus status;
