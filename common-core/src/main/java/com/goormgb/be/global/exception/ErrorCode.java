@@ -69,6 +69,10 @@ public enum ErrorCode {
 	NO_AVAILABLE_BLOCK(HttpStatus.NOT_FOUND, "선택하신 선호 블럭 내에서는 현재 해당 연석이 가능한 좌석을 찾지 못했어요."),
 	BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "블럭을 찾을 수 없습니다."),
 
+	// Seat Assignment
+	NO_CONSECUTIVE_SEAT_AVAILABLE(HttpStatus.NOT_FOUND, "해당 블럭에서 연석 가능한 좌석을 찾을 수 없습니다."),
+	SEAT_LOCK_ACQUISITION_FAILED(HttpStatus.CONFLICT, "다른 사용자가 좌석을 선택 중입니다. 잠시 후 다시 시도해주세요."),
+
 	// Seat Hold
 	SEAT_HOLD_NOT_FOUND(HttpStatus.NOT_FOUND, "좌석 선점 정보를 찾을 수 없습니다."),
 	SEAT_HOLD_EXPIRED(HttpStatus.BAD_REQUEST, "좌석 선점이 만료되었습니다."),
