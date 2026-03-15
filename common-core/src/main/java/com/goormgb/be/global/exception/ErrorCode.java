@@ -70,6 +70,7 @@ public enum ErrorCode {
 	SEAT_HOLD_EXPIRED(HttpStatus.BAD_REQUEST, "좌석 선점이 만료되었습니다."),
 	SEAT_HOLD_OWNERSHIP_DENIED(HttpStatus.FORBIDDEN, "해당 좌석 선점에 접근할 권한이 없습니다."),
 	PRICE_POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 좌석의 가격 정책을 찾을 수 없습니다."),
+	SEAT_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "좌석 세션이 존재하지 않거나 만료되었습니다."),
 
 	// Payment
 	PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "결제 정보를 찾을 수 없습니다."),
