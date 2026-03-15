@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.goormgb.be.global.response.ApiResult;
 import com.goormgb.be.seat.common.dto.response.SeatGroupsEntryResponse;
+import com.goormgb.be.seat.common.dto.response.SectionBlocksResponse;
 import com.goormgb.be.seat.common.service.SeatCommonService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,4 +41,24 @@ public class SeatCommonController {
 	) {
 		return ApiResult.ok(seatCommonService.getSeatGroupsEntry(matchId, userId));
 	}
+
+	@Operation(
+		summary = "섹션 별 블럭 좌석 현황 조회",
+		description = "특정 경기/섹션의 블럭별 좌석 현황을 행 단위로 조회합니다.",
+		security = @SecurityRequirement(name = "BearerAuth")
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "조회 성공"),
+		@ApiResponse(responseCode = "404", description = "경기, 섹션을 찾을 수 없거나 좌석 세션이 존재하지 않거나 만료되었습니다.")
+	})
+	@GetMapping("/sections/{sectionId}/blocks")
+	public ApiResult<SectionBlocksResponse> getSectionBlocks(
+		@PathVariable Long matchId,
+		@PathVariable Long sectionId,
+		@AuthenticationPrincipal Long userId
+		// TODO: 큐 진입 토큰 확인
+	) {
+		return ApiResult.ok(seatCommonService.getSectionBlocks(matchId, sectionId, userId));
+	}
+
 }
