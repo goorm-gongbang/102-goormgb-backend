@@ -114,11 +114,13 @@ public class SeatCommonService {
 				.computeIfAbsent(matchSeat.getRowNo(), RowAccumulator::new);
 
 			String seatSaleStatus = toSeatSaleStatus(matchSeat, activeHeldMatchSeatIds);
-			row.seats().add(SectionBlocksResponse.SeatInfo.of(
-				matchSeat.getSeatId(),
-				matchSeat.getSeatNo(),
-				seatSaleStatus
-			));
+			row.addSeat(
+				SectionBlocksResponse.SeatInfo.of(
+					matchSeat.getSeatId(),
+					matchSeat.getSeatNo(),
+					seatSaleStatus
+				)
+			);
 
 			if (MatchSeatSaleStatus.AVAILABLE.name().equals(seatSaleStatus)) {
 				row.increaseRemainingSeatCount();
@@ -210,6 +212,7 @@ public class SeatCommonService {
 	}
 
 	private static final class RowAccumulator {
+
 		private final int rowNo;
 		private long remainingSeatCount;
 		private final List<SectionBlocksResponse.SeatInfo> seats = new ArrayList<>();
@@ -218,8 +221,8 @@ public class SeatCommonService {
 			this.rowNo = rowNo;
 		}
 
-		private List<SectionBlocksResponse.SeatInfo> seats() {
-			return seats;
+		public void addSeat(SectionBlocksResponse.SeatInfo seat) {
+			this.seats.add(seat);
 		}
 
 		private void increaseRemainingSeatCount() {
