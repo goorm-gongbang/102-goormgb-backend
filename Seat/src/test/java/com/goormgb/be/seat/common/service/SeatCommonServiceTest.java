@@ -130,12 +130,15 @@ class SeatCommonServiceTest {
 		lenient().when(
 				matchSeatRepository.findByMatchIdAndSectionIdOrderByBlockIdAscRowNoAscSeatNoAsc(matchId, sectionId))
 			.thenReturn(List.of(s1, s2, s3, s4));
-		lenient().when(seatHoldRepository.findAllByMatchIdAndExpiresAtAfter(eq(matchId), any(Instant.class)))
-			.thenReturn(List.of(
-				createSeatHold(1003L, matchId, Instant.now().plusSeconds(60)),
-				createSeatHold(9999L, matchId, Instant.now().plusSeconds(60))
-			));
-
+		lenient().when(
+			seatHoldRepository.findAllByMatchIdAndMatchSeatIdInAndExpiresAtAfter(
+				eq(matchId),
+				anyList(),
+				any(Instant.class)
+			)
+		).thenReturn(List.of(
+			createSeatHold(1003L, matchId, Instant.now().plusSeconds(60))
+		));
 		SectionBlocksResponse result = seatCommonService.getSectionBlocks(matchId, sectionId, userId);
 
 		assertThat(result.blocks()).hasSize(2);
