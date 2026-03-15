@@ -6,14 +6,14 @@ import java.util.List;
 import com.goormgb.be.domain.club.entity.Club;
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.stadium.entity.Stadium;
-import com.goormgb.be.global.model.SeatPreferenceCache;
+import com.goormgb.be.seat.redis.SeatSession;
 
 public record SeatEntryResponse(
 	MatchInfo match,
 	SeatSessionInfo seatSession
 ) {
 
-	public static SeatEntryResponse of(Match match, SeatPreferenceCache seatPreferenceCache) {
+	public static SeatEntryResponse of(Match match, SeatSession seatPreferenceCache) {
 		return new SeatEntryResponse(
 			MatchInfo.from(match),
 			SeatSessionInfo.from(seatPreferenceCache)
@@ -73,11 +73,14 @@ public record SeatEntryResponse(
 		List<Long> preferredBlockIds
 	) {
 
-		public static SeatSessionInfo from(SeatPreferenceCache seatPreferenceCache) {
+		public static SeatSessionInfo from(SeatSession seatPreferenceCache) {
 			return new SeatSessionInfo(
-				seatPreferenceCache.recommendationEnabled(),
-				seatPreferenceCache.ticketCount(),
-				seatPreferenceCache.preferredBlockIds()
+				seatPreferenceCache.isRecommendationEnabled(),
+				seatPreferenceCache.getTicketCount(),
+				seatPreferenceCache.getPreferredBlockIds()
+				// seatPreferenceCache.recommendationEnabled(),
+				// seatPreferenceCache.ticketCount(),
+				// seatPreferenceCache.preferredBlockIds()
 			);
 		}
 	}

@@ -1,44 +1,63 @@
 package com.goormgb.be.seat.redis;
 
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.model.SeatPreferenceCache;
 import com.goormgb.be.global.support.Preconditions;
 
-import lombok.RequiredArgsConstructor;
-
 @Repository
-@RequiredArgsConstructor
 public class SeatPreferenceRedisRepository {
 
-	private final StringRedisTemplate redisTemplate;
+	private static final String KEY_PREFIX = "seat:preference:";
 
-	@Qualifier("redisObjectMapper")
+	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper redisObjectMapper;
 
-	@Value("${queue.preference-key-prefix}")
-	private String preferenceKeyPrefix;
+	public SeatPreferenceRedisRepository(
+		StringRedisTemplate redisTemplate,
+		@Qualifier("redisObjectMapper") ObjectMapper redisObjectMapper
+	) {
+		this.redisTemplate = redisTemplate;
+		this.redisObjectMapper = redisObjectMapper;
+	}
 
-	public SeatPreferenceCache getByUserIdAndMatchIdOrThrow(Long userId, Long matchId) {
-		String key = generateKey(matchId, userId);
+	public SeatSession getByUserIdAndMatchIdOrThrow(Long userId, Long matchId) {
+		String key = generateQueueKey(userId, matchId);
+
+		SeatSession seatSession = getByKey(key);
+
+		Preconditions.validate(seatSession != null, ErrorCode.SEAT_SESSION_NOT_FOUND);
+
+		return seatSession;
+	}
+
+	private SeatSession getByKey(String key) {
 		String raw = redisTemplate.opsForValue().get(key);
-
-		Preconditions.validate(raw != null, ErrorCode.SEAT_SESSION_NOT_FOUND);
+		if (raw == null) {
+			return null;
+		}
 
 		try {
-			return redisObjectMapper.readValue(raw, SeatPreferenceCache.class);
-		} catch (JsonProcessingException e) {
-			throw new IllegalStateException("Failed to deserialize Redis value for key: " + key, e);
+			SeatPreferenceCache cache = redisObjectMapper.readValue(raw, SeatPreferenceCache.class);
+			return new SeatSession(
+				cache.userId(),
+				cache.matchId(),
+				cache.recommendationEnabled(),
+				cache.ticketCount(),
+				cache.preferredBlockIds()
+			);
+		} catch (IOException e) {
+			throw new IllegalStateException("Failed to deserialize redis seat preference for key: " + key, e);
 		}
 	}
 
-	private String generateKey(Long matchId, Long userId) {
-		return preferenceKeyPrefix + ":" + matchId + ":" + userId;
+	private String generateQueueKey(Long userId, Long matchId) {
+		return KEY_PREFIX + matchId + ":" + userId;
 	}
 }
