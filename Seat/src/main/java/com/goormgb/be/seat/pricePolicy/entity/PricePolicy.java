@@ -21,8 +21,8 @@ import lombok.NoArgsConstructor;
 	name = "price_policies",
 	uniqueConstraints = {
 		@UniqueConstraint(
-			name = "uk_price_policies_stadium_id_section_id_day_type_ticket_type",
-			columnNames = {"stadium_id", "section_id", "day_type", "ticket_type"}
+			name = "uk_price_policies_section_id_day_type_ticket_type",
+			columnNames = {"section_id", "day_type", "ticket_type"}
 		)
 	},
 	indexes = {
@@ -35,9 +35,6 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PricePolicy extends BaseEntity {
-
-	@Column(name = "stadium_id", nullable = false)
-	private Long stadiumId;
 
 	@Column(name = "section_id", nullable = false)
 	private Long sectionId;
@@ -55,13 +52,11 @@ public class PricePolicy extends BaseEntity {
 
 	@Builder
 	public PricePolicy(
-		Long stadiumId,
 		Long sectionId,
 		DayType dayType,
 		TicketType ticketType,
 		Integer price
 	) {
-		this.stadiumId = stadiumId;
 		this.sectionId = sectionId;
 		this.dayType = dayType;
 		this.ticketType = ticketType;
