@@ -56,23 +56,43 @@ jobs:
 
           echo "=== Transition start ==="
 
-          curl --fail -L -s -X POST \
+          TRANSITION_RESPONSE=$(mktemp)
+          TRANSITION_STATUS=$(curl -L -s -o "$TRANSITION_RESPONSE" -w "%{http_code}" -X POST \
             -H "Authorization: Basic $AUTH" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
             "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/transitions" \
-            -d "{\"transition\":{\"id\":\"$REVIEW_ID\"}}"
+            -d "{\"transition\":{\"id\":\"$REVIEW_ID\"}}")
+
+          echo "Transition HTTP status: $TRANSITION_STATUS"
+          echo "Transition response body:"
+          cat "$TRANSITION_RESPONSE"
+
+          if [ "$TRANSITION_STATUS" -lt 200 ] || [ "$TRANSITION_STATUS" -ge 300 ]; then
+            echo "Transition request failed"
+            exit 1
+          fi
 
           echo "=== Transition success ==="
 
           echo "=== Comment start ==="
 
-          curl --fail -L -s -X POST \
+          COMMENT_RESPONSE=$(mktemp)
+          COMMENT_STATUS=$(curl -L -s -o "$COMMENT_RESPONSE" -w "%{http_code}" -X POST \
             -H "Authorization: Basic $AUTH" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
             "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/comment" \
-            -d "{\"body\":{\"type\":\"doc\",\"version\":1,\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"PR 링크: $PR_URL\"}]}]}}"
+            -d "{\"body\":{\"type\":\"doc\",\"version\":1,\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"PR 링크: $PR_URL\"}]}]}}")
+
+          echo "Comment HTTP status: $COMMENT_STATUS"
+          echo "Comment response body:"
+          cat "$COMMENT_RESPONSE"
+
+          if [ "$COMMENT_STATUS" -lt 200 ] || [ "$COMMENT_STATUS" -ge 300 ]; then
+            echo "Comment request failed"
+            exit 1
+          fi
 
           echo "=== Comment success ==="
 
@@ -95,11 +115,21 @@ jobs:
 
           echo "=== Done transition start ==="
 
-          curl --fail -L -s -X POST \
+          DONE_RESPONSE=$(mktemp)
+          DONE_STATUS=$(curl -L -s -o "$DONE_RESPONSE" -w "%{http_code}" -X POST \
             -H "Authorization: Basic $AUTH" \
             -H "Accept: application/json" \
             -H "Content-Type: application/json" \
             "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY/transitions" \
-            -d "{\"transition\":{\"id\":\"$DONE_ID\"}}"
+            -d "{\"transition\":{\"id\":\"$DONE_ID\"}}")
+
+          echo "Done transition HTTP status: $DONE_STATUS"
+          echo "Done transition response body:"
+          cat "$DONE_RESPONSE"
+
+          if [ "$DONE_STATUS" -lt 200 ] || [ "$DONE_STATUS" -ge 300 ]; then
+            echo "Done transition request failed"
+            exit 1
+          fi
 
           echo "=== Done transition success ==="

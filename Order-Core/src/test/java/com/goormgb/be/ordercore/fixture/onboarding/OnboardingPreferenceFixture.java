@@ -12,12 +12,10 @@ import com.goormgb.be.domain.onboarding.enums.PriceMode;
 import com.goormgb.be.domain.onboarding.enums.SeatHeight;
 import com.goormgb.be.domain.onboarding.enums.SeatPositionPref;
 import com.goormgb.be.domain.onboarding.enums.Section;
-import com.goormgb.be.domain.onboarding.enums.Viewpoint;
 import com.goormgb.be.user.entity.User;
 
 public final class OnboardingPreferenceFixture {
 
-	public static final Viewpoint DEFAULT_VIEWPOINT = Viewpoint.CENTER;
 	public static final SeatHeight DEFAULT_SEAT_HEIGHT = SeatHeight.LOW;
 	public static final Section DEFAULT_SECTION = Section.CENTER_SIDE;
 
@@ -27,10 +25,8 @@ public final class OnboardingPreferenceFixture {
 	public static OnboardingPreference createFirst(User user, Club favoriteClub) {
 		return OnboardingPreference.builder()
 			.user(user)
-			.priority(1)
 			.favoriteClub(favoriteClub)
 			.cheerProximityPref(CheerProximityPref.NEAR)
-			.viewpoint(Viewpoint.CENTER)
 			.seatHeight(SeatHeight.LOW)
 			.section(Section.CENTER_SIDE)
 			.seatPositionPref(SeatPositionPref.AISLE)
@@ -46,10 +42,8 @@ public final class OnboardingPreferenceFixture {
 	public static OnboardingPreference createSecond(User user, Club favoriteClub) {
 		return OnboardingPreference.builder()
 			.user(user)
-			.priority(2)
 			.favoriteClub(favoriteClub)
 			.cheerProximityPref(CheerProximityPref.ANY)
-			.viewpoint(Viewpoint.INFIELD_1B)
 			.seatHeight(SeatHeight.MID)
 			.section(Section.MIDDLE)
 			.seatPositionPref(SeatPositionPref.ANY)
@@ -63,10 +57,8 @@ public final class OnboardingPreferenceFixture {
 	public static OnboardingPreference createThird(User user, Club favoriteClub) {
 		return OnboardingPreference.builder()
 			.user(user)
-			.priority(3)
 			.favoriteClub(favoriteClub)
 			.cheerProximityPref(CheerProximityPref.FAR)
-			.viewpoint(Viewpoint.OUTFIELD_L)
 			.seatHeight(SeatHeight.HIGH)
 			.section(Section.CORNER)
 			.seatPositionPref(SeatPositionPref.MIDDLE)

@@ -41,8 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PricePolicyInitializer implements CommandLineRunner {
 
-	private static final Long JAMSIL_STADIUM_ID = 1L;
-
 	private final SectionRepository sectionRepository;
 	private final PricePolicyRepository pricePolicyRepository;
 
@@ -141,7 +139,6 @@ public class PricePolicyInitializer implements CommandLineRunner {
 
 	private PricePolicy policy(Long sectionId, DayType dayType, TicketType ticketType, int price) {
 		return PricePolicy.builder()
-			.stadiumId(JAMSIL_STADIUM_ID)
 			.sectionId(sectionId)
 			.dayType(dayType)
 			.ticketType(ticketType)

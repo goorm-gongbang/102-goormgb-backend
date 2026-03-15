@@ -1,7 +1,6 @@
 package com.goormgb.be.ordercore.order.entity;
 
 import java.time.Instant;
-import java.time.LocalDate;
 
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.global.entity.BaseEntity;
@@ -75,8 +74,8 @@ public class Order extends BaseEntity {
 	@Column(name = "orderer_phone", nullable = false, length = 20)
 	private String ordererPhone;
 
-	@Column(name = "orderer_birth_date", nullable = false)
-	private LocalDate ordererBirthDate;
+	@Column(name = "orderer_birth_date", nullable = false, length = 6)
+	private String ordererBirthDate;
 
 	@Builder
 	public Order(
@@ -86,7 +85,7 @@ public class Order extends BaseEntity {
 		String ordererName,
 		String ordererEmail,
 		String ordererPhone,
-		LocalDate ordererBirthDate
+		String ordererBirthDate
 	) {
 		this.user = user;
 		this.match = match;
