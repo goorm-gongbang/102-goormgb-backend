@@ -78,6 +78,10 @@ public enum ErrorCode {
 	CASH_RECEIPT_ALREADY_EXISTS(HttpStatus.CONFLICT, "현금영수증이 이미 신청되었습니다."),
 	INVALID_PAYMENT_METHOD(HttpStatus.BAD_REQUEST, "지원하지 않는 결제 수단입니다."),
 
+	// Mypage
+	INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "size는 최대 10까지 허용됩니다."),
+	INVALID_TICKET_TAB(HttpStatus.BAD_REQUEST, "유효하지 않은 탭 값입니다."),
+
 	;
 
 	private final HttpStatus status;
