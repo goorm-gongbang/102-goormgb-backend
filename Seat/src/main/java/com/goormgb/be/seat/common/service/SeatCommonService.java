@@ -1,21 +1,28 @@
 package com.goormgb.be.seat.common.service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.domain.match.repository.MatchRepository;
+import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.area.enums.AreaCode;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.common.dto.response.SeatGroupsEntryResponse;
+import com.goormgb.be.seat.common.dto.response.SectionBlocksResponse;
+import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
+import com.goormgb.be.seat.seatHold.entity.SeatHold;
+import com.goormgb.be.seat.seatHold.repository.SeatHoldRepository;
 import com.goormgb.be.seat.section.entity.Section;
 import com.goormgb.be.seat.section.repository.SectionRepository;
 
@@ -30,6 +37,7 @@ public class SeatCommonService {
 	private final SectionRepository sectionRepository;
 	private final BlockRepository blockRepository;
 	private final MatchSeatRepository matchSeatRepository;
+	private final SeatHoldRepository seatHoldRepository;
 
 	@Transactional(readOnly = true)
 	public SeatGroupsEntryResponse getSeatGroupsEntry(Long matchId, Long userId) {
@@ -63,6 +71,63 @@ public class SeatCommonService {
 			.toList();
 
 		return SeatGroupsEntryResponse.of(match, seatSession, seatGroups);
+	}
+
+	@Transactional(readOnly = true)
+	public SectionBlocksResponse getSectionBlocks(Long matchId, Long sectionId, Long userId) {
+		matchRepository.findDetailByIdOrThrow(matchId);
+		seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+		sectionRepository.findByIdOrThrow(sectionId, ErrorCode.SECTION_NOT_FOUND);
+
+		List<Block> blocks = blockRepository.findBySectionIdOrderByBlockCodeAsc(sectionId);
+		List<MatchSeat> matchSeats = matchSeatRepository.findByMatchIdAndSectionIdOrderByBlockIdAscRowNoAscSeatNoAsc(
+			matchId,
+			sectionId
+		);
+
+		Set<Long> sectionMatchSeatIds = matchSeats.stream()
+			.map(MatchSeat::getId)
+			.collect(java.util.stream.Collectors.toSet());
+
+		Set<Long> activeHeldMatchSeatIds = new HashSet<>(
+			seatHoldRepository.findAllByMatchIdAndExpiresAtAfter(matchId, java.time.Instant.now())
+				.stream()
+				.map(SeatHold::getMatchSeatId)
+				.filter(sectionMatchSeatIds::contains)
+				.toList()
+		);
+
+		Map<Long, BlockAccumulator> blockMap = new LinkedHashMap<>();
+		for (Block block : blocks) {
+			blockMap.put(block.getId(), new BlockAccumulator(block.getId(), block.getBlockCode()));
+		}
+
+		for (MatchSeat matchSeat : matchSeats) {
+			BlockAccumulator block = blockMap.get(matchSeat.getBlockId());
+			if (block == null) {
+				continue;
+			}
+			RowAccumulator row = block.rowsByRowNo()
+				.computeIfAbsent(matchSeat.getRowNo(), RowAccumulator::new);
+
+			String seatSaleStatus = toSeatSaleStatus(matchSeat, activeHeldMatchSeatIds);
+			row.seats().add(new SectionBlocksResponse.SeatInfo(
+				matchSeat.getSeatId(),
+				matchSeat.getSeatNo(),
+				seatSaleStatus
+			));
+
+			if (MatchSeatSaleStatus.AVAILABLE.name().equals(seatSaleStatus)) {
+				row.increaseRemainingSeatCount();
+			}
+		}
+
+		List<SectionBlocksResponse.BlockInfo> blockInfos = blockMap.values()
+			.stream()
+			.map(BlockAccumulator::toResponse)
+			.toList();
+
+		return new SectionBlocksResponse(blockInfos);
 	}
 
 	private Map<Long, List<Long>> createBlockIdsBySectionId(List<Long> sectionIds) {
@@ -103,6 +168,14 @@ public class SeatCommonService {
 		};
 	}
 
+	private String toSeatSaleStatus(MatchSeat matchSeat, Set<Long> activeHeldMatchSeatIds) {
+		if (matchSeat.getSaleStatus() == MatchSeatSaleStatus.AVAILABLE
+			&& activeHeldMatchSeatIds.contains(matchSeat.getId())) {
+			return "HELD";
+		}
+		return matchSeat.getSaleStatus().name();
+	}
+
 	private record SeatGroupAccumulator(
 		Long areaId,
 		String areaName,
@@ -110,6 +183,51 @@ public class SeatCommonService {
 	) {
 		private SeatGroupAccumulator(Long areaId, String areaName) {
 			this(areaId, areaName, new ArrayList<>());
+		}
+	}
+
+	private record BlockAccumulator(
+		Long blockId,
+		String blockCode,
+		Map<Integer, RowAccumulator> rowsByRowNo
+	) {
+		private BlockAccumulator(Long blockId, String blockCode) {
+			this(blockId, blockCode, new LinkedHashMap<>());
+		}
+
+		private SectionBlocksResponse.BlockInfo toResponse() {
+			return new SectionBlocksResponse.BlockInfo(
+				blockId,
+				blockCode,
+				blockCode + "블럭",
+				rowsByRowNo.values().stream().map(RowAccumulator::toResponse).toList()
+			);
+		}
+	}
+
+	private static final class RowAccumulator {
+		private final int rowNo;
+		private long remainingSeatCount;
+		private final List<SectionBlocksResponse.SeatInfo> seats = new ArrayList<>();
+
+		private RowAccumulator(int rowNo) {
+			this.rowNo = rowNo;
+		}
+
+		private List<SectionBlocksResponse.SeatInfo> seats() {
+			return seats;
+		}
+
+		private void increaseRemainingSeatCount() {
+			this.remainingSeatCount++;
+		}
+
+		private SectionBlocksResponse.RowInfo toResponse() {
+			return new SectionBlocksResponse.RowInfo(
+				rowNo,
+				remainingSeatCount,
+				seats
+			);
 		}
 	}
 }
