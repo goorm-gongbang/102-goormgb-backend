@@ -13,6 +13,7 @@ import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
+import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.recommendation.dto.internal.SemiGroup;
 import com.goormgb.be.seat.recommendation.dto.internal.SeatGroup;
 import com.goormgb.be.seat.recommendation.dto.response.SeatAssignmentResponse;
@@ -47,6 +48,7 @@ public class SeatAssignmentService {
 
 	private final SeatPreferenceRedisRepository seatPreferenceRedisRepository;
 	private final BlockRepository blockRepository;
+	private final MatchSeatRepository matchSeatRepository;
 	private final SeatHoldRepository seatHoldRepository;
 	private final RealConsecutiveFinder realConsecutiveFinder;
 	private final SemiConsecutiveFinder semiConsecutiveFinder;
@@ -131,8 +133,11 @@ public class SeatAssignmentService {
 			return;
 		}
 
-		seatHoldRepository.deleteAllByMatchSeatIdIn(
-			existingHolds.stream().map(SeatHold::getMatchSeatId).toList()
-		);
+		List<Long> matchSeatIds = existingHolds.stream().map(SeatHold::getMatchSeatId).toList();
+
+		List<MatchSeat> seatsToRelease = matchSeatRepository.findAllById(matchSeatIds);
+		seatsToRelease.forEach(MatchSeat::markAvailable);
+
+		seatHoldRepository.deleteAllByMatchSeatIdIn(matchSeatIds);
 	}
 }

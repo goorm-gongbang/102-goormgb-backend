@@ -22,6 +22,7 @@ import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.fixture.BlockFixture;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
+import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.recommendation.dto.internal.SemiGroup;
 import com.goormgb.be.seat.recommendation.dto.internal.SeatGroup;
 import com.goormgb.be.seat.recommendation.dto.response.SeatAssignmentResponse;
@@ -37,6 +38,8 @@ class SeatAssignmentServiceTest {
 	private SeatPreferenceRedisRepository seatPreferenceRedisRepository;
 	@Mock
 	private BlockRepository blockRepository;
+	@Mock
+	private MatchSeatRepository matchSeatRepository;
 	@Mock
 	private SeatHoldRepository seatHoldRepository;
 	@Mock
