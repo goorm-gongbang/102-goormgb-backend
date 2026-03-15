@@ -76,7 +76,7 @@ class SeatRecommendationControllerTest {
 			.andExpect(jsonPath("$.data.match.stadium.stadiumId").value(3))
 			.andExpect(jsonPath("$.data.match.stadium.koName").value("잠실 야구장"))
 			.andExpect(jsonPath("$.data.seatSession.recommendationEnabled").value(true))
-			.andExpect(jsonPath("$.data.seatSession.headCount").value(2))
+			.andExpect(jsonPath("$.data.seatSession.ticketCount").value(2))
 			.andExpect(jsonPath("$.data.seatSession.preferredBlockIds[0]").value(206))
 			.andExpect(jsonPath("$.data.seatSession.preferredBlockIds[1]").value(208))
 			.andExpect(jsonPath("$.data.seatSession.preferredBlockIds[2]").value(105));
