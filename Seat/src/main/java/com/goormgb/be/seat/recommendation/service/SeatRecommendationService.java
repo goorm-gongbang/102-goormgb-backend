@@ -17,8 +17,8 @@ public class SeatRecommendationService {
 
 	public SeatEntryResponse getRecommendationSeatEntry(Long matchId, Long userId) {
 		var match = matchRepository.findDetailByIdOrThrow(matchId);
-		var seatSession = seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+		var seatPreferenceCache = seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
 
-		return SeatEntryResponse.of(match, seatSession);
+		return SeatEntryResponse.of(match, seatPreferenceCache);
 	}
 }
