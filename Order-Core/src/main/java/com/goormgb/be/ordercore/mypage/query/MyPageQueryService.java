@@ -8,7 +8,6 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
 
 import lombok.RequiredArgsConstructor;
@@ -80,39 +79,6 @@ public class MyPageQueryService {
 				rs.getString("away_club_name"),
 				rs.getString("stadium_name"),
 				rs.getInt("seat_count")
-		));
-	}
-
-	/**
-	 * 주문 ID 목록에 해당하는 좌석 정보를 반환한다.
-	 */
-	public List<MyPageTicketListResponse.SeatInfo> findSeatsByOrderIds(List<Long> orderIds) {
-		if (orderIds.isEmpty()) {
-			return Collections.emptyList();
-		}
-
-		String sql = """
-				SELECT
-				    os.order_id,
-				    sec.name    AS section_name,
-				    b.block_code,
-				    os.row_no,
-				    os.seat_no
-				FROM order_seats os
-				JOIN sections sec ON os.section_id = sec.id
-				JOIN blocks b     ON os.block_id   = b.id
-				WHERE os.order_id IN (:orderIds)
-				ORDER BY os.order_id, os.id
-				""";
-
-		var params = new MapSqlParameterSource()
-				.addValue("orderIds", orderIds);
-
-		return namedJdbc.query(sql, params, (rs, rowNum) -> new MyPageTicketListResponse.SeatInfo(
-				rs.getString("section_name"),
-				rs.getString("block_code"),
-				rs.getInt("row_no"),
-				rs.getInt("seat_no")
 		));
 	}
 

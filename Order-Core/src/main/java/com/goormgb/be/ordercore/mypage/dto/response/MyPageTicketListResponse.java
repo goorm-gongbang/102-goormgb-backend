@@ -61,10 +61,11 @@ public record MyPageTicketListResponse(
 		boolean canCancel,
 		boolean canViewDetail
 	) {
-		public static TicketActions of(OrderStatus status) {
+		public static TicketActions of(OrderStatus status, Instant matchAt) {
+			boolean isUpcoming = matchAt.isAfter(Instant.now());
 			return new TicketActions(
-				status == OrderStatus.PAYMENT_PENDING,
-				status == OrderStatus.PAID,
+				status == OrderStatus.PAYMENT_PENDING && isUpcoming,
+				status == OrderStatus.PAID && isUpcoming,
 				true
 			);
 		}

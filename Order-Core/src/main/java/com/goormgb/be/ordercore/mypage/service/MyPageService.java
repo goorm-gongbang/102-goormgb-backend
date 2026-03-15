@@ -142,7 +142,7 @@ public class MyPageService {
 				row.seatCount(),
 				seats,
 				row.status(),
-				MyPageTicketListResponse.TicketActions.of(row.status())
+				MyPageTicketListResponse.TicketActions.of(row.status(), row.matchAt())
 		);
 	}
 }

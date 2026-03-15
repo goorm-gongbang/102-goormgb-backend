@@ -58,16 +58,17 @@ public final class MyPageFixture {
 	}
 
 	public static MyPageTicketListResponse createTicketListResponse() {
+		Instant futureMatchAt = Instant.now().plus(30, ChronoUnit.DAYS);
 		MyPageTicketListResponse.TicketItem ticket = new MyPageTicketListResponse.TicketItem(
 			101L,
-			Instant.now().plus(30, ChronoUnit.DAYS),
+			futureMatchAt,
 			new MyPageTicketListResponse.ClubInfo(1L, "LG 트윈스"),
 			new MyPageTicketListResponse.ClubInfo(2L, "두산 베어스"),
 			"잠실야구장",
 			2,
 			createSeatInfoList(),
 			OrderStatus.PAID,
-			MyPageTicketListResponse.TicketActions.of(OrderStatus.PAID)
+			MyPageTicketListResponse.TicketActions.of(OrderStatus.PAID, futureMatchAt)
 		);
 
 		return MyPageTicketListResponse.of(
