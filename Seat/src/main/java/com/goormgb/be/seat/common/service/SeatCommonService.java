@@ -87,14 +87,11 @@ public class SeatCommonService {
 	}
 
 	private String buildDisplayName(Section section) {
-		AreaCode areaCode = section.getArea().getCode();
-		if (areaCode == AreaCode.HOME) {
-			return "1루 " + section.getName();
-		}
-		if (areaCode == AreaCode.AWAY) {
-			return "3루 " + section.getName();
-		}
-		return section.getName();
+		return switch (section.getArea().getCode()) {
+			case HOME -> "1루 " + section.getName();
+			case AWAY -> "3루 " + section.getName();
+			default -> section.getName();
+		};
 	}
 
 	private String toAreaName(AreaCode areaCode) {
