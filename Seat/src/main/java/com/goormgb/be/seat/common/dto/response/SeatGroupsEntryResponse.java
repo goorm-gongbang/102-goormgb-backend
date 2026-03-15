@@ -79,8 +79,6 @@ public record SeatGroupsEntryResponse(
 			return new SeatSessionInfo(
 				seatPreferenceCache.isRecommendationEnabled(),
 				seatPreferenceCache.getTicketCount()
-				// seatPreferenceCache.recommendationEnabled(),
-				// seatPreferenceCache.ticketCount()
 			);
 		}
 	}

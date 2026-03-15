@@ -78,9 +78,6 @@ public record SeatEntryResponse(
 				seatPreferenceCache.isRecommendationEnabled(),
 				seatPreferenceCache.getTicketCount(),
 				seatPreferenceCache.getPreferredBlockIds()
-				// seatPreferenceCache.recommendationEnabled(),
-				// seatPreferenceCache.ticketCount(),
-				// seatPreferenceCache.preferredBlockIds()
 			);
 		}
 	}
