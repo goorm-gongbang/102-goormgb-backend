@@ -111,7 +111,7 @@ public class SeatCommonService {
 				.computeIfAbsent(matchSeat.getRowNo(), RowAccumulator::new);
 
 			String seatSaleStatus = toSeatSaleStatus(matchSeat, activeHeldMatchSeatIds);
-			row.seats().add(new SectionBlocksResponse.SeatInfo(
+			row.seats().add(SectionBlocksResponse.SeatInfo.of(
 				matchSeat.getSeatId(),
 				matchSeat.getSeatNo(),
 				seatSaleStatus
@@ -196,11 +196,12 @@ public class SeatCommonService {
 		}
 
 		private SectionBlocksResponse.BlockInfo toResponse() {
-			return new SectionBlocksResponse.BlockInfo(
+			return SectionBlocksResponse.BlockInfo.of(
 				blockId,
 				blockCode,
-				blockCode + "블럭",
-				rowsByRowNo.values().stream().map(RowAccumulator::toResponse).toList()
+				rowsByRowNo.values().stream()
+					.map(RowAccumulator::toResponse)
+					.toList()
 			);
 		}
 	}
@@ -223,7 +224,7 @@ public class SeatCommonService {
 		}
 
 		private SectionBlocksResponse.RowInfo toResponse() {
-			return new SectionBlocksResponse.RowInfo(
+			return SectionBlocksResponse.RowInfo.of(
 				rowNo,
 				remainingSeatCount,
 				seats
