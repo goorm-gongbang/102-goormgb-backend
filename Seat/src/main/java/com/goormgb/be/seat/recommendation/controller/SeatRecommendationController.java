@@ -29,8 +29,7 @@ public class SeatRecommendationController {
 		security = @SecurityRequirement(name = "BearerAuth"))
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", description = "조회 성공"),
-		@ApiResponse(responseCode = "404", description = "경기를 찾을 수 없습니다."),
-		@ApiResponse(responseCode = "404", description = "좌석 세션이 존재하지 않거나 만료되었습니다.")
+		@ApiResponse(responseCode = "404", description = "경기를 찾을 수 없거나 좌석 세션이 존재하지 않거나 만료되었습니다.")
 	})
 	@GetMapping("/seat-entry")
 	public ApiResult<SeatEntryResponse> getRecommendationSeatEntry(
@@ -38,7 +37,6 @@ public class SeatRecommendationController {
 		@AuthenticationPrincipal Long userId
 		// TODO: 큐 진입 토큰 확인
 	) {
-
 		return ApiResult.ok(seatRecommendationService.getRecommendationSeatEntry(matchId, userId));
 	}
 }
