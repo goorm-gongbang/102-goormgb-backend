@@ -32,6 +32,8 @@ spring:
 
 queue:
   ready-ttl-seconds: 30
+  preference-ttl-seconds: 900
+  expired-marker-ttl-seconds: 300
   promotion-batch-size: 100
   promotion-interval-ms: 1000
   active-match-key: queue:match
@@ -39,6 +41,7 @@ queue:
   ready-key-prefix: queue:ready
   preference-key-prefix: seat:preference
   expired-key-prefix: queue:expired
+  ready-index-key-prefix: queue:ready:index
   polling:
     ready-ms: 1000
     fast-ms: 1500
@@ -49,7 +52,8 @@ queue:
 
   security:
     jwt:
-      admission-secret: ${ADMISSION_JWT_SECRET}
+      private-key: ${JWT_PRIVATE_KEY}
+      public-key: ${JWT_PUBLIC_KEY}
       issuer: queue-service
 
 springdoc:
