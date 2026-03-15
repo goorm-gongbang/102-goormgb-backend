@@ -3,6 +3,7 @@ package com.goormgb.be.seat.redis;
 import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -14,17 +15,18 @@ import com.goormgb.be.global.support.Preconditions;
 @Repository
 public class SeatPreferenceRedisRepository {
 
-	private static final String KEY_PREFIX = "seat:preference:";
-
+	private final String preferenceKeyPrefix;
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper redisObjectMapper;
 
 	public SeatPreferenceRedisRepository(
 		StringRedisTemplate redisTemplate,
-		@Qualifier("redisObjectMapper") ObjectMapper redisObjectMapper
+		@Qualifier("redisObjectMapper") ObjectMapper redisObjectMapper,
+		@Value("${queue.preference-key-prefix}") String preferenceKeyPrefix
 	) {
 		this.redisTemplate = redisTemplate;
 		this.redisObjectMapper = redisObjectMapper;
+		this.preferenceKeyPrefix = preferenceKeyPrefix;
 	}
 
 	public SeatSession getByUserIdAndMatchIdOrThrow(Long userId, Long matchId) {
@@ -58,6 +60,6 @@ public class SeatPreferenceRedisRepository {
 	}
 
 	private String generateQueueKey(Long userId, Long matchId) {
-		return KEY_PREFIX + matchId + ":" + userId;
+		return preferenceKeyPrefix + ":" + matchId + ":" + userId;
 	}
 }

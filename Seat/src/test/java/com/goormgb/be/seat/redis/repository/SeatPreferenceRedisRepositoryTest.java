@@ -21,13 +21,16 @@ class SeatPreferenceRedisRepositoryTest {
 	@DisplayName("Queue와 동일한 키 포맷(matchId:userId)과 JSON 포맷을 읽어 SeatSession으로 변환한다")
 	void 큐_포맷_좌석선호도_조회_성공() {
 		// given
+		String KEY_PREFIX = "seat:preference";
+
 		StringRedisTemplate redisTemplate = Mockito.mock(StringRedisTemplate.class);
 		@SuppressWarnings("unchecked")
 		ValueOperations<String, String> valueOperations = Mockito.mock(ValueOperations.class);
 		given(redisTemplate.opsForValue()).willReturn(valueOperations);
 
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-		SeatPreferenceRedisRepository repository = new SeatPreferenceRedisRepository(redisTemplate, objectMapper);
+		SeatPreferenceRedisRepository repository = new SeatPreferenceRedisRepository(redisTemplate, objectMapper,
+			KEY_PREFIX);
 
 		String json = """
 			{
@@ -57,13 +60,16 @@ class SeatPreferenceRedisRepositoryTest {
 	@DisplayName("Redis 값이 없으면 좌석 세션 없음 예외를 던진다")
 	void 좌석세션_없음_예외() {
 		// given
+		String KEY_PREFIX = "seat:preference";
+
 		StringRedisTemplate redisTemplate = Mockito.mock(StringRedisTemplate.class);
 		@SuppressWarnings("unchecked")
 		ValueOperations<String, String> valueOperations = Mockito.mock(ValueOperations.class);
 		given(redisTemplate.opsForValue()).willReturn(valueOperations);
 
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-		SeatPreferenceRedisRepository repository = new SeatPreferenceRedisRepository(redisTemplate, objectMapper);
+		SeatPreferenceRedisRepository repository = new SeatPreferenceRedisRepository(redisTemplate, objectMapper,
+			KEY_PREFIX);
 
 		given(valueOperations.get("seat:preference:10:7")).willReturn(null);
 
