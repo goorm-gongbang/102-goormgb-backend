@@ -1,6 +1,5 @@
 package com.goormgb.be.ordercore.order.dto.request;
 
-import java.time.LocalDate;
 import java.util.List;
 
 import jakarta.validation.Valid;
@@ -8,6 +7,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record OrderCreateRequest(
@@ -32,7 +32,8 @@ public record OrderCreateRequest(
 	@Size(max = 20)
 	String ordererPhone,
 
-	@NotNull(message = "예매자 생년월일은 필수입니다.")
-	LocalDate ordererBirthDate
+	@NotBlank(message = "예매자 생년월일은 필수입니다.")
+	@Pattern(regexp = "^\\d{6}$", message = "생년월일은 6자리 숫자여야 합니다. (예: 990831)")
+	String ordererBirthDate
 ) {
 }
