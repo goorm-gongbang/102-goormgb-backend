@@ -1,4 +1,4 @@
-package com.goormgb.be.queue.queue.model;
+package com.goormgb.be.global.model;
 
 import java.time.Instant;
 import java.util.List;
