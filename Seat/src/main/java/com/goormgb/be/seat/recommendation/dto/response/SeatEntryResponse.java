@@ -1,0 +1,84 @@
+package com.goormgb.be.seat.recommendation.dto.response;
+
+import java.time.Instant;
+import java.util.List;
+
+import com.goormgb.be.domain.club.entity.Club;
+import com.goormgb.be.domain.match.entity.Match;
+import com.goormgb.be.domain.stadium.entity.Stadium;
+import com.goormgb.be.seat.redis.SeatSession;
+
+public record SeatEntryResponse(
+	MatchInfo match,
+	SeatSessionInfo seatSession
+) {
+
+	public static SeatEntryResponse of(Match match, SeatSession seatSession) {
+		return new SeatEntryResponse(
+			MatchInfo.from(match),
+			SeatSessionInfo.from(seatSession)
+		);
+	}
+
+	public record MatchInfo(
+		Long matchId,
+		ClubInfo homeClub,
+		ClubInfo awayClub,
+		Instant matchAt,
+		StadiumInfo stadium
+	) {
+
+		public static MatchInfo from(Match match) {
+			return new MatchInfo(
+				match.getId(),
+				ClubInfo.from(match.getHomeClub()),
+				ClubInfo.from(match.getAwayClub()),
+				match.getMatchAt(),
+				StadiumInfo.from(match.getStadium())
+			);
+		}
+	}
+
+	public record ClubInfo(
+		Long clubId,
+		String koName,
+		String logoImg
+	) {
+
+		public static ClubInfo from(Club club) {
+			return new ClubInfo(
+				club.getId(),
+				club.getKoName(),
+				club.getLogoImg()
+			);
+		}
+	}
+
+	public record StadiumInfo(
+		Long stadiumId,
+		String koName
+	) {
+
+		public static StadiumInfo from(Stadium stadium) {
+			return new StadiumInfo(
+				stadium.getId(),
+				stadium.getKoName()
+			);
+		}
+	}
+
+	public record SeatSessionInfo(
+		boolean recommendationEnabled,
+		int headCount,
+		List<Long> preferredBlockIds
+	) {
+
+		public static SeatSessionInfo from(SeatSession seatSession) {
+			return new SeatSessionInfo(
+				seatSession.isRecommendationEnabled(),
+				seatSession.getTicketCount(),
+				seatSession.getPreferredBlockIds()
+			);
+		}
+	}
+}
