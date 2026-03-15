@@ -14,4 +14,10 @@ public interface SeatHoldRepository extends JpaRepository<SeatHold, Long> {
 	void deleteAllByMatchSeatIdIn(List<Long> matchSeatIds);
 
 	List<SeatHold> findAllByMatchIdAndExpiresAtAfter(Long matchId, Instant now);
+
+	List<SeatHold> findAllByMatchIdAndMatchSeatIdInAndExpiresAtAfter(
+		Long matchId,
+		List<Long> matchSeatIds,
+		Instant now
+	);
 }

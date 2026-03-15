@@ -1,11 +1,12 @@
 package com.goormgb.be.seat.common.service;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,13 +90,15 @@ public class SeatCommonService {
 			.map(MatchSeat::getId)
 			.collect(java.util.stream.Collectors.toSet());
 
-		Set<Long> activeHeldMatchSeatIds = new HashSet<>(
-			seatHoldRepository.findAllByMatchIdAndExpiresAtAfter(matchId, java.time.Instant.now())
-				.stream()
-				.map(SeatHold::getMatchSeatId)
-				.filter(sectionMatchSeatIds::contains)
-				.toList()
-		);
+		Set<Long> activeHeldMatchSeatIds = seatHoldRepository
+			.findAllByMatchIdAndMatchSeatIdInAndExpiresAtAfter(
+				matchId,
+				new ArrayList<>(sectionMatchSeatIds),
+				Instant.now()
+			)
+			.stream()
+			.map(SeatHold::getMatchSeatId)
+			.collect(Collectors.toSet());
 
 		Map<Long, BlockAccumulator> blockMap = new LinkedHashMap<>();
 		for (Block block : blocks) {
