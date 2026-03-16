@@ -11,9 +11,9 @@ import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.goormgb.be.global.model.SeatPreferenceCache;
 import com.goormgb.be.queue.config.QueueProperties;
 import com.goormgb.be.queue.queue.model.ReadyTokenPayload;
-import com.goormgb.be.queue.queue.model.SeatPreferenceCache;
 
 @Repository
 public class QueueRedisRepository {

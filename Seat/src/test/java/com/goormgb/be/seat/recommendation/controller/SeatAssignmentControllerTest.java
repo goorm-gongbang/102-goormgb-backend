@@ -13,19 +13,20 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.goormgb.be.seat.recommendation.dto.response.SeatEntryResponse;
+import com.goormgb.be.seat.recommendation.dto.response.SeatAssignmentResponse;
 import com.goormgb.be.seat.recommendation.service.SeatAssignmentService;
 import com.goormgb.be.seat.recommendation.service.SeatRecommendationService;
 
 @WebMvcTest(SeatRecommendationController.class)
 @AutoConfigureMockMvc(addFilters = false)
-class SeatRecommendationControllerTest {
+class SeatAssignmentControllerTest {
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -43,46 +44,44 @@ class SeatRecommendationControllerTest {
 	}
 
 	@Test
-	@DisplayName("추천 좌석 초기 조회에 성공한다")
-	void 추천_좌석_초기_조회_성공() throws Exception {
+	@DisplayName("좌석 배정 및 선점 요청에 성공한다")
+	void 좌석_배정_성공() throws Exception {
 		// given
-		Long matchId = 10L;
+		Long matchId = 1L;
+		Long blockId = 10L;
 		Long userId = 1L;
 		setAuthentication(userId);
 
-		SeatEntryResponse response = new SeatEntryResponse(
-			new SeatEntryResponse.MatchInfo(
-				10L,
-				new SeatEntryResponse.ClubInfo(1L, "LG 트윈스", "lg-twins.png"),
-				new SeatEntryResponse.ClubInfo(3L, "두산 베어스", "doosan-bears.png"),
-				Instant.parse("2026-04-15T18:30:00Z"),
-				new SeatEntryResponse.StadiumInfo(3L, "잠실 야구장")
+		Instant expiresAt = Instant.parse("2026-04-15T10:05:00Z");
+		SeatAssignmentResponse response = new SeatAssignmentResponse(
+			matchId,
+			"CP",
+			"테라존(중앙 프리미엄석)",
+			List.of(
+				new SeatAssignmentResponse.AssignedSeat(101L, 1, 1, 1),
+				new SeatAssignmentResponse.AssignedSeat(102L, 1, 2, 2),
+				new SeatAssignmentResponse.AssignedSeat(103L, 1, 3, 3)
 			),
-			new SeatEntryResponse.SeatSessionInfo(
-				true,
-				2,
-				List.of(206L, 208L, 105L)
-			)
+			expiresAt,
+			false
 		);
 
-		given(seatRecommendationService.getRecommendationSeatEntry(eq(matchId), eq(userId)))
+		given(seatAssignmentService.assignAndHoldSeats(eq(userId), eq(matchId), eq(blockId), eq(false)))
 			.willReturn(response);
 
 		// when & then
-		mockMvc.perform(get("/matches/{matchId}/recommendations/seat-entry", matchId))
+		mockMvc.perform(post("/matches/{matchId}/recommendations/blocks/{blockId}/assign", matchId, blockId)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"nearAdjacentToggle\": false}"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("OK"))
-			.andExpect(jsonPath("$.data.match.matchId").value(10))
-			.andExpect(jsonPath("$.data.match.homeClub.clubId").value(1))
-			.andExpect(jsonPath("$.data.match.homeClub.koName").value("LG 트윈스"))
-			.andExpect(jsonPath("$.data.match.awayClub.clubId").value(3))
-			.andExpect(jsonPath("$.data.match.awayClub.koName").value("두산 베어스"))
-			.andExpect(jsonPath("$.data.match.stadium.stadiumId").value(3))
-			.andExpect(jsonPath("$.data.match.stadium.koName").value("잠실 야구장"))
-			.andExpect(jsonPath("$.data.seatSession.recommendationEnabled").value(true))
-			.andExpect(jsonPath("$.data.seatSession.ticketCount").value(2))
-			.andExpect(jsonPath("$.data.seatSession.preferredBlockIds[0]").value(206))
-			.andExpect(jsonPath("$.data.seatSession.preferredBlockIds[1]").value(208))
-			.andExpect(jsonPath("$.data.seatSession.preferredBlockIds[2]").value(105));
+			.andExpect(jsonPath("$.data.matchId").value(1))
+			.andExpect(jsonPath("$.data.blockCode").value("CP"))
+			.andExpect(jsonPath("$.data.sectionName").value("테라존(중앙 프리미엄석)"))
+			.andExpect(jsonPath("$.data.assignedSeats").isArray())
+			.andExpect(jsonPath("$.data.assignedSeats.length()").value(3))
+			.andExpect(jsonPath("$.data.assignedSeats[0].rowNo").value(1))
+			.andExpect(jsonPath("$.data.assignedSeats[0].seatNo").value(1))
+			.andExpect(jsonPath("$.data.semiConsecutive").value(false));
 	}
 }

@@ -20,6 +20,7 @@ import com.goormgb.be.seat.area.enums.AreaCode;
 import com.goormgb.be.seat.area.repository.AreaRepository;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
+import com.goormgb.be.seat.seat.repository.SeatRepository;
 import com.goormgb.be.seat.section.entity.Section;
 import com.goormgb.be.seat.section.enums.SectionCode;
 import com.goormgb.be.seat.section.repository.SectionRepository;
@@ -35,6 +36,9 @@ class SeatDataInitializerTest {
 
 	@Mock
 	private BlockRepository blockRepository;
+
+	@Mock
+	private SeatRepository seatRepository;
 
 	@InjectMocks
 	private SeatDataInitializer seatDataInitializer;

@@ -30,6 +30,9 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
+queue:
+  preference-key-prefix: seat:preference
+
 springdoc:
   swagger-ui:
     urls:
