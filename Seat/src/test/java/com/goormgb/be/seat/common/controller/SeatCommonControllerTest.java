@@ -18,8 +18,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.goormgb.be.seat.common.dto.response.SeatGroupsEntryResponse;
+import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.common.dto.response.SectionBlocksResponse;
 import com.goormgb.be.seat.common.service.SeatCommonService;
+import com.goormgb.be.seat.common.service.SeatHoldService;
 import com.goormgb.be.seat.support.WebMvcTestSupport;
 
 @WebMvcTest(SeatCommonController.class)
@@ -28,6 +30,9 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 
 	@MockitoBean
 	private SeatCommonService seatCommonService;
+
+	@MockitoBean
+	private SeatHoldService seatHoldService;
 
 	private void setAuthentication(Long userId) {
 		SecurityContextHolder.getContext().setAuthentication(
@@ -89,6 +94,36 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 			.andExpect(jsonPath("$.data.seatGroups[1].sections[0].remainingSeatCount").value(120));
 
 		then(seatCommonService).should().getSeatGroupsEntry(matchId, userId);
+	}
+
+	@Test
+	@DisplayName("POST /matches/{matchId}/seat-holds - 좌석 선점 성공")
+	void 좌석_선점_성공() throws Exception {
+		Long matchId = 10L;
+		Long userId = 7L;
+		setAuthentication(userId);
+
+		SeatHoldCreateResponse response = SeatHoldCreateResponse.of(
+			matchId,
+			List.of(206313L, 206314L),
+			Instant.parse("2026-04-15T10:05:00Z")
+		);
+		given(seatHoldService.createOrRefreshHold(eq(userId), eq(matchId), eq(List.of(206313L, 206314L))))
+			.willReturn(response);
+
+		mockMvc.perform(post("/matches/{matchId}/seat-holds", matchId)
+				.contentType("application/json")
+				.content("""
+					{"seatIds":[206313,206314]}
+					"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("OK"))
+			.andExpect(jsonPath("$.data.matchId").value(10))
+			.andExpect(jsonPath("$.data.seatCount").value(2))
+			.andExpect(jsonPath("$.data.seatIds[0]").value(206313))
+			.andExpect(jsonPath("$.data.holdExpiresAt").value("2026-04-15T10:05:00Z"));
+
+		then(seatHoldService).should().createOrRefreshHold(userId, matchId, List.of(206313L, 206314L));
 	}
 
 	@Test
