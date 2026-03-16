@@ -18,7 +18,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
+  # 1. 기존 캐시용 레디스 (6379)
   local-redis:
     image: redis:7
     container_name: goormgb-redis
@@ -32,7 +32,22 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  # 2. 추가된 큐 전용 레디스 (6380)
+  queue-redis:
+    image: redis:7
+    container_name: goormgb-redis-queue
+    ports:
+      - "6380:6379" # 외부 포트만 6380으로 매핑
+    platform: linux/arm64
+    networks:
+      - goormgb-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  
   api-gateway:
     build:
       context: ..
@@ -95,14 +110,14 @@ services:
       DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: local-redis
+      REDIS_HOST: queue-redis
       REDIS_PORT: 6379
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
     depends_on:
       local-postgres:
         condition: service_healthy
-      local-redis:
+      queue-redis:
         condition: service_healthy
     networks:
       - goormgb-network
