@@ -53,6 +53,14 @@ public class QueueController {
 		@AuthenticationPrincipal Long userId
 	) {
 		QueueStatusResponse response = queueService.getStatus(matchId, userId);
+		QueueStatusResponse responseBody = new QueueStatusResponse(
+			response.status(),
+			response.rank(),
+			response.totalWaitingCount(),
+			null,
+			response.expiresIn(),
+			response.pollingMs()
+		);
 		ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
 
 		if (response.status() == QueueStatus.READY && response.admissionToken() != null) {
@@ -67,6 +75,6 @@ public class QueueController {
 			builder.header(HttpHeaders.SET_COOKIE, admissionTokenCookieUtils.deleteAdmissionTokenCookie().toString());
 		}
 
-		return builder.body(ApiResult.ok("대기열 상태 조회 성공", response));
+		return builder.body(ApiResult.ok("대기열 상태 조회 성공", responseBody));
 	}
 }
