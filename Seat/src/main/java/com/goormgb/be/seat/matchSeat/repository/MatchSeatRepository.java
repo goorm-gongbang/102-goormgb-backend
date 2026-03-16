@@ -46,4 +46,6 @@ public interface MatchSeatRepository extends JpaRepository<MatchSeat, Long> {
 		@Param("matchId") Long matchId,
 		@Param("sectionId") Long sectionId
 	);
+
+	List<MatchSeat> findAllByMatchIdAndSeatIdIn(Long matchId, List<Long> seatIds);
 }

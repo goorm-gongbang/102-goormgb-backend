@@ -20,4 +20,8 @@ public interface SeatHoldRepository extends JpaRepository<SeatHold, Long> {
 		List<Long> matchSeatIds,
 		Instant now
 	);
+
+	List<SeatHold> findAllByUserIdAndMatchIdAndExpiresAtAfter(Long userId, Long matchId, Instant now);
+
+	List<SeatHold> findAllByMatchIdAndSeatIdInAndExpiresAtAfter(Long matchId, List<Long> seatIds, Instant now);
 }
