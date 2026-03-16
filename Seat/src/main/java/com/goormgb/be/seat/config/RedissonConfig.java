@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RedissonConfig {
 
-	@Bean
+	@Bean(destroyMethod = "shutdown")
 	public RedissonClient redissonClient(
 		@Value("${spring.data.redis.host}") String host,
 		@Value("${spring.data.redis.port}") int port
