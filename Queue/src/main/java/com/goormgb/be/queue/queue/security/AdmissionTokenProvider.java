@@ -81,7 +81,7 @@ public class AdmissionTokenProvider {
 				claims.getIssuedAt().toInstant(),
 				claims.getExpiration().toInstant()
 			);
-		} catch (CustomException e) {
+		} catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
 			throw new CustomException(ErrorCode.INVALID_TOKEN);
