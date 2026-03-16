@@ -18,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.goormgb.be.seat.common.dto.response.SeatGroupsEntryResponse;
+import com.goormgb.be.seat.common.dto.response.SectionBlocksResponse;
 import com.goormgb.be.seat.common.service.SeatCommonService;
 import com.goormgb.be.seat.support.WebMvcTestSupport;
 
@@ -88,5 +89,52 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 			.andExpect(jsonPath("$.data.seatGroups[1].sections[0].remainingSeatCount").value(120));
 
 		then(seatCommonService).should().getSeatGroupsEntry(matchId, userId);
+	}
+
+	@Test
+	@DisplayName("GET /matches/{matchId}/sections/{sectionId}/blocks - 섹션 별 블럭 좌석 현황 조회 성공")
+	void 섹션_별_블럭_좌석_현황_조회_성공() throws Exception {
+		// given
+		Long matchId = 10L;
+		Long sectionId = 20L;
+		Long userId = 7L;
+		setAuthentication(userId);
+
+		SectionBlocksResponse response = new SectionBlocksResponse(
+			List.of(
+				new SectionBlocksResponse.BlockInfo(
+					205L,
+					"205",
+					"205블럭",
+					List.of(
+						new SectionBlocksResponse.RowInfo(
+							1,
+							2,
+							List.of(
+								new SectionBlocksResponse.SeatInfo(205001L, 1, "AVAILABLE"),
+								new SectionBlocksResponse.SeatInfo(205002L, 2, "SOLD"),
+								new SectionBlocksResponse.SeatInfo(205003L, 3, "HELD")
+							)
+						)
+					)
+				)
+			)
+		);
+
+		given(seatCommonService.getSectionBlocks(eq(matchId), eq(sectionId), eq(userId))).willReturn(response);
+
+		// when & then
+		mockMvc.perform(get("/matches/{matchId}/sections/{sectionId}/blocks", matchId, sectionId))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("OK"))
+			.andExpect(jsonPath("$.message").value("성공"))
+			.andExpect(jsonPath("$.data.blocks.length()").value(1))
+			.andExpect(jsonPath("$.data.blocks[0].blockId").value(205))
+			.andExpect(jsonPath("$.data.blocks[0].displayName").value("205블럭"))
+			.andExpect(jsonPath("$.data.blocks[0].rows[0].rowNo").value(1))
+			.andExpect(jsonPath("$.data.blocks[0].rows[0].remainingSeatCount").value(2))
+			.andExpect(jsonPath("$.data.blocks[0].rows[0].seats[2].saleStatus").value("HELD"));
+
+		then(seatCommonService).should().getSectionBlocks(matchId, sectionId, userId);
 	}
 }

@@ -65,6 +65,9 @@ public enum ErrorCode {
 	INVALID_ORDER_STATUS(HttpStatus.BAD_REQUEST, "주문 상태가 올바르지 않습니다."),
 	ORDER_SEAT_EMPTY(HttpStatus.BAD_REQUEST, "주문 좌석 정보가 없습니다."),
 
+	// Section
+	SECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "섹션을 찾을 수 없습니다."),
+
 	// Block Recommendation
 	NO_AVAILABLE_BLOCK(HttpStatus.NOT_FOUND, "선택하신 선호 블럭 내에서는 현재 해당 연석이 가능한 좌석을 찾지 못했어요."),
 	BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "블럭을 찾을 수 없습니다."),
