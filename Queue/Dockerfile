@@ -15,7 +15,6 @@ COPY common-core/build.gradle common-core/
 COPY Order-Core/build.gradle Order-Core/
 COPY Queue/build.gradle Queue/
 COPY Seat/build.gradle Seat/
-COPY Recommendation/build.gradle Recommendation/
 
 # 3. 필요한 소스 코드만 복사 (공통 모듈 + 현재 서비스)
 COPY common-core/src common-core/src
