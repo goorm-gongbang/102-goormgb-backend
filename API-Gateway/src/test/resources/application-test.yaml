@@ -28,10 +28,6 @@ spring:
               uri: http://localhost
               predicates:
                 - Path=/order/**
-            - id: recommendation
-              uri: http://localhost
-              predicates:
-                - Path=/recommendation/**
   data:
     redis:
       host: localhost
