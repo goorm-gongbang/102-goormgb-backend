@@ -15,7 +15,6 @@ COPY common-core/build.gradle common-core/
 COPY Order-Core/build.gradle Order-Core/
 COPY Queue/build.gradle Queue/
 COPY Seat/build.gradle Seat/
-COPY Recommendation/build.gradle Recommendation/
 
 # 3. 의존성 다운로드 (소스 코드 복사 전)
 # 소스 코드가 없으므로 빌드는 실패하지만, 의존성은 다운로드되어 캐시됩니다.
