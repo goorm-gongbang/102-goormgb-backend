@@ -3,7 +3,6 @@ package com.goormgb.be.queue.queue.service;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,15 +14,14 @@ import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.model.SeatPreferenceCache;
 import com.goormgb.be.queue.config.QueueProperties;
 import com.goormgb.be.queue.queue.dto.request.QueueEnterRequest;
 import com.goormgb.be.queue.queue.dto.response.QueueEnterResponse;
 import com.goormgb.be.queue.queue.dto.response.QueueStatusResponse;
 import com.goormgb.be.queue.queue.model.ReadyTokenPayload;
-import com.goormgb.be.queue.queue.model.SeatPreferenceCache;
 import com.goormgb.be.queue.queue.policy.QueuePollingPolicy;
 import com.goormgb.be.queue.queue.repository.QueueRedisRepository;
-import com.goormgb.be.queue.queue.security.AdmissionTokenProvider;
 
 import io.micrometer.core.instrument.Counter;
 @Service
@@ -33,7 +31,6 @@ public class QueueService {
 	private final QueueRedisRepository queueRedisRepository;
 	private final QueueProperties queueProperties;
 	private final QueuePollingPolicy queuePollingPolicy;
-	private final AdmissionTokenProvider admissionTokenProvider;
 	private final Counter queueEntriesCounter;
 
 	public QueueService(
@@ -41,14 +38,12 @@ public class QueueService {
 		QueueRedisRepository queueRedisRepository,
 		QueueProperties queueProperties,
 		QueuePollingPolicy queuePollingPolicy,
-		AdmissionTokenProvider admissionTokenProvider,
 		@Qualifier("queueEntriesCounter") Counter queueEntriesCounter
 	) {
 		this.matchRepository = matchRepository;
 		this.queueRedisRepository = queueRedisRepository;
 		this.queueProperties = queueProperties;
 		this.queuePollingPolicy = queuePollingPolicy;
-		this.admissionTokenProvider = admissionTokenProvider;
 		this.queueEntriesCounter = queueEntriesCounter;
 	}
 
@@ -91,7 +86,7 @@ public class QueueService {
 		);
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public QueueStatusResponse getStatus(Long matchId, Long userId) {
 		requireAuthenticated(userId);
 
@@ -123,75 +118,6 @@ public class QueueService {
 			queueRedisRepository.getWaitingCount(matchId),
 			queuePollingPolicy.forWaiting(rank)
 		);
-	}
-
-	@Transactional
-	public void promoteActiveMatches() {
-		for (Long matchId : queueRedisRepository.getActiveMatches()) {
-			promoteWaitingUsers(matchId);
-		}
-	}
-
-	@Transactional
-	public int promoteWaitingUsers(Long matchId) {
-		int activeReadyCount = syncExpiredReadyUsers(matchId);
-		int permit = Math.max(0, queueProperties.promotionBatchSize() - activeReadyCount);
-		if (permit == 0) {
-			return 0;
-		}
-
-		List<Long> promotedUserIds = queueRedisRepository.popWaitingUsers(matchId, permit);
-		if (promotedUserIds.isEmpty()) {
-			cleanupInactiveMatch(matchId, activeReadyCount);
-			return 0;
-		}
-
-		Duration readyTtl = Duration.ofSeconds(queueProperties.readyTtlSeconds());
-		for (Long userId : promotedUserIds) {
-			String token = admissionTokenProvider.issue(userId, matchId, readyTtl);
-			ReadyTokenPayload payload = new ReadyTokenPayload(
-				userId,
-				matchId,
-				token,
-				Instant.now(),
-				Instant.now().plusSeconds(queueProperties.readyTtlSeconds())
-			);
-
-			queueRedisRepository.saveReadyToken(payload);
-		}
-
-		cleanupInactiveMatch(matchId, activeReadyCount + promotedUserIds.size());
-		return promotedUserIds.size();
-	}
-
-	// READY 인덱스는 Redis TTL과 별도로 남을 수 있어, 스케줄러가 stale entry를 정리해준다.
-	private int syncExpiredReadyUsers(Long matchId) {
-		Set<Long> readyUserIds = queueRedisRepository.getReadyUserIds(matchId);
-		if (readyUserIds.isEmpty()) {
-			return 0;
-		}
-
-		int activeReadyCount = 0;
-		for (Long userId : readyUserIds) {
-			if (queueRedisRepository.hasReadyToken(matchId, userId)) {
-				activeReadyCount++;
-				continue;
-			}
-
-			queueRedisRepository.markExpired(
-				matchId,
-				userId,
-				Duration.ofSeconds(queueProperties.expiredMarkerTtlSeconds())
-			);
-		}
-
-		return activeReadyCount;
-	}
-
-	private void cleanupInactiveMatch(Long matchId, int activeReadyCount) {
-		if (queueRedisRepository.getWaitingCount(matchId) == 0 && activeReadyCount == 0) {
-			queueRedisRepository.removeActiveMatch(matchId);
-		}
 	}
 
 	private void validateQueueOpen(Match match) {
