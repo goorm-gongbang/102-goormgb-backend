@@ -1,7 +1,7 @@
 package com.goormgb.be.user.entity;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import com.goormgb.be.user.enums.WithdrawStatus;
 
@@ -42,35 +42,35 @@ public class WithdrawalRequest {
 	private User user;
 
 	@Column(name = "requested_at", nullable = false)
-	private LocalDateTime requestedAt;
+	private Instant requestedAt;
 
 	@Column(name = "effective_at", nullable = false)
-	private LocalDateTime effectiveAt;
+	private Instant effectiveAt;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status", nullable = false, length = 20)
 	private WithdrawStatus status = WithdrawStatus.REQUESTED;
 
 	@Column(name = "cancelled_at")
-	private LocalDateTime cancelledAt;
+	private Instant cancelledAt;
 
 	@Column(name = "created_at", nullable = false, updatable = false)
-	private LocalDateTime createdAt;
+	private Instant createdAt;
 
 	@PrePersist
 	protected void onCreate() {
-		this.createdAt = LocalDateTime.now(ZoneOffset.UTC);
+		this.createdAt = Instant.now();
 	}
 
 	@Builder
 	public WithdrawalRequest(User user) {
 		this.user = user;
-		this.requestedAt = LocalDateTime.now(ZoneOffset.UTC);
-		this.effectiveAt = this.requestedAt.plusDays(GRACE_PERIOD_DAYS);
+		this.requestedAt = Instant.now();
+		this.effectiveAt = this.requestedAt.plus(GRACE_PERIOD_DAYS, ChronoUnit.DAYS);
 		this.status = WithdrawStatus.REQUESTED;
 	}
 
 	public boolean isExpired() {
-		return LocalDateTime.now(ZoneOffset.UTC).isAfter(this.effectiveAt);
+		return Instant.now().isAfter(this.effectiveAt);
 	}
 }

@@ -1,30 +1,49 @@
 package com.goormgb.be.apigateway.fixture;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
-
-import javax.crypto.SecretKey;
 
 import com.goormgb.be.apigateway.jwt.enums.TokenType;
 
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 
 public final class JwtTokenFixture {
 
-	public static final String SECRET_KEY = "goormgb-test-secret-key-do-not-use-in-production-20260302-must-be-at-least-256-bits";
-	public static final String WRONG_SECRET_KEY = "wrong-secret-key-that-is-long-enough-for-hmac-sha256!!";
+	/** 테스트용 RSA 키 페어 (서명 전용) */
+	private static final KeyPair KEY_PAIR;
+	/** 서명 검증 실패 시나리오용 다른 RSA 키 페어 */
+	private static final KeyPair WRONG_KEY_PAIR;
+
+	public static final RSAPrivateKey PRIVATE_KEY;
+	public static final RSAPublicKey PUBLIC_KEY;
+	/** JwtProperties.setPublicKey()에 전달할 base64 DER 문자열 */
+	public static final String PUBLIC_KEY_BASE64;
+
 	public static final Long DEFAULT_USER_ID = 1L;
 	public static final String DEFAULT_ROLE = "ROLE_USER";
 	public static final String DEFAULT_JTI = "test-jti-123";
 
-	private static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
-
-	private JwtTokenFixture() {
+	static {
+		try {
+			KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+			kpg.initialize(2048);
+			KEY_PAIR = kpg.generateKeyPair();
+			WRONG_KEY_PAIR = kpg.generateKeyPair();
+			PRIVATE_KEY = (RSAPrivateKey)KEY_PAIR.getPrivate();
+			PUBLIC_KEY = (RSAPublicKey)KEY_PAIR.getPublic();
+			PUBLIC_KEY_BASE64 = Base64.getEncoder().encodeToString(PUBLIC_KEY.getEncoded());
+		} catch (NoSuchAlgorithmException e) {
+			throw new ExceptionInInitializerError(e);
+		}
 	}
 
-	public static SecretKey secretKey() {
-		return KEY;
+	private JwtTokenFixture() {
 	}
 
 	public static String createAccessToken(Long userId, String role, String jti) {
@@ -35,7 +54,7 @@ public final class JwtTokenFixture {
 				.claim("auth", role)
 				.issuedAt(new Date())
 				.expiration(new Date(System.currentTimeMillis() + 3600_000))
-				.signWith(KEY)
+				.signWith(PRIVATE_KEY, Jwts.SIG.RS256)
 				.compact();
 	}
 
@@ -55,7 +74,7 @@ public final class JwtTokenFixture {
 				.claim("auth", DEFAULT_ROLE)
 				.issuedAt(new Date())
 				.expiration(new Date(System.currentTimeMillis() + 3600_000))
-				.signWith(KEY)
+				.signWith(PRIVATE_KEY, Jwts.SIG.RS256)
 				.compact();
 	}
 
@@ -67,17 +86,19 @@ public final class JwtTokenFixture {
 				.claim("auth", DEFAULT_ROLE)
 				.issuedAt(new Date(System.currentTimeMillis() - 7200_000))
 				.expiration(new Date(System.currentTimeMillis() - 3600_000))
-				.signWith(KEY)
+				.signWith(PRIVATE_KEY, Jwts.SIG.RS256)
 				.compact();
 	}
 
+	/** 다른 RSA 키쌍으로 서명 → 검증 실패 시나리오 */
 	public static String createWrongSignatureToken() {
-		SecretKey wrongKey = Keys.hmacShaKeyFor(WRONG_SECRET_KEY.getBytes());
 		return Jwts.builder()
 				.subject(String.valueOf(DEFAULT_USER_ID))
 				.claim("tokenType", TokenType.ACCESS.getValue())
 				.claim("auth", DEFAULT_ROLE)
-				.signWith(wrongKey)
+				.issuedAt(new Date())
+				.expiration(new Date(System.currentTimeMillis() + 3600_000))
+				.signWith((RSAPrivateKey)WRONG_KEY_PAIR.getPrivate(), Jwts.SIG.RS256)
 				.compact();
 	}
 
@@ -90,7 +111,7 @@ public final class JwtTokenFixture {
 				.claim("auth", role)
 				.issuedAt(new Date())
 				.expiration(expiration)
-				.signWith(KEY)
+				.signWith(PRIVATE_KEY, Jwts.SIG.RS256)
 				.compact();
 	}
 }

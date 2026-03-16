@@ -22,7 +22,7 @@ class JwtTokenProviderTest {
 	@BeforeEach
 	void setUp() {
 		JwtProperties properties = new JwtProperties();
-		properties.setSecretKey(JwtTokenFixture.SECRET_KEY);
+		properties.setPublicKey(JwtTokenFixture.PUBLIC_KEY_BASE64);
 		properties.setIssuer("test-issuer");
 
 		jwtTokenProvider = new JwtTokenProvider(properties);

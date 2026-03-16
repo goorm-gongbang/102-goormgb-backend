@@ -5,7 +5,10 @@ import static org.mockito.BDDMockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -115,8 +118,8 @@ class AuthControllerTest extends WebMvcTestSupport {
 		Long userId = 1L;
 		setAuthentication(userId);
 
-		LocalDateTime withdrawnAt = LocalDateTime.of(2026, 2, 17, 12, 0, 0);
-		LocalDateTime reactivateUntil = withdrawnAt.plusDays(30);
+		Instant withdrawnAt = LocalDateTime.of(2026, 2, 17, 12, 0, 0).toInstant(ZoneOffset.UTC);
+		Instant reactivateUntil = withdrawnAt.plus(30, ChronoUnit.DAYS);
 		WithdrawalResponse response = new WithdrawalResponse("DEACTIVATE", withdrawnAt, reactivateUntil);
 
 		given(authService.withdraw(userId)).willReturn(response);

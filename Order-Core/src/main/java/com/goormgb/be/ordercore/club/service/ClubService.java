@@ -5,14 +5,14 @@ import java.time.LocalDate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.goormgb.be.domain.club.repository.ClubRepository;
+import com.goormgb.be.domain.state.repository.TeamSeasonStatsRepository;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.ordercore.club.dto.response.ClubDetailGetResponse;
 import com.goormgb.be.ordercore.club.dto.response.ClubGetResponse;
-import com.goormgb.be.ordercore.club.repository.ClubRepository;
 import com.goormgb.be.ordercore.match.dto.response.ClubMonthlyMatchesResponse;
 import com.goormgb.be.ordercore.match.service.MatchService;
-import com.goormgb.be.ordercore.state.repository.TeamSeasonStatsRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,10 +20,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ClubService {
-	final private MatchService matchService;
-
-	final private ClubRepository clubRepository;
-	final private TeamSeasonStatsRepository teamSeasonStatsRepository;
+	private final MatchService matchService;
+	private final ClubRepository clubRepository;
+	private final TeamSeasonStatsRepository teamSeasonStatsRepository;
 
 	public ClubGetResponse getAllClubs() {
 		var clubs = clubRepository.findAll();
@@ -38,8 +37,8 @@ public class ClubService {
 
 		int currentYear = LocalDate.now().getYear();
 		var stats = teamSeasonStatsRepository
-				.findByClubIdAndSeasonYear(id, currentYear)
-				.orElse(null);
+			.findByClubIdAndSeasonYear(id, currentYear)
+			.orElse(null);
 
 		return ClubDetailGetResponse.of(club, stats);
 	}

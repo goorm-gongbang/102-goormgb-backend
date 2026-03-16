@@ -9,6 +9,7 @@ out/
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
+.gradle-user-home/
 
 ### Spring ###
 application-local.properties
@@ -76,6 +77,13 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+### JWT Keys (프로덕션 키는 절대 커밋 금지!!) ###
+*.pem
+*.key
+*.p8
+*.p12
+*.jks
 
 ### AI Agent ###
 .claude/

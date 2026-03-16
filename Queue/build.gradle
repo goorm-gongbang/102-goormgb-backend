@@ -5,12 +5,22 @@ dependencies {
     implementation project(':common-core')
     testImplementation(testFixtures(project(':common-core')))
 
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+
     // 필수: Actuator & Prometheus
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
     // 필수: JSON 로깅
     implementation "net.logstash.logback:logstash-logback-encoder:7.4"
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.7'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.7'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.7'
 
     runtimeOnly 'org.postgresql:postgresql'
 }

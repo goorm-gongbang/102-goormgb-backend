@@ -45,7 +45,7 @@ class JwtAuthenticationFilterTest {
 	@BeforeEach
 	void setUp() {
 		JwtProperties properties = new JwtProperties();
-		properties.setSecretKey(JwtTokenFixture.SECRET_KEY);
+		properties.setPublicKey(JwtTokenFixture.PUBLIC_KEY_BASE64);
 		properties.setIssuer("test-issuer");
 
 		JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(properties);
@@ -90,6 +90,7 @@ class JwtAuthenticationFilterTest {
 				"/auth/v3/api-docs",
 				"/queue/v3/api-docs",
 				"/seat/v3/api-docs",
+				"/seat/blocks",
 				"/order/v3/api-docs",
 				"/recommendation/v3/api-docs",
 				"/actuator",

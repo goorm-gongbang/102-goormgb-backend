@@ -1,22 +1,23 @@
 package com.goormgb.be.ordercore.match.service;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.goormgb.be.domain.club.entity.Club;
+import com.goormgb.be.domain.club.repository.ClubRepository;
+import com.goormgb.be.domain.match.entity.Match;
+import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
-import com.goormgb.be.ordercore.club.entity.Club;
-import com.goormgb.be.ordercore.club.repository.ClubRepository;
 import com.goormgb.be.ordercore.match.dto.response.ClubMonthlyMatchesResponse;
 import com.goormgb.be.ordercore.match.dto.response.MatchDetailGetResponse;
 import com.goormgb.be.ordercore.match.dto.response.MatchListByDateResponse;
-import com.goormgb.be.ordercore.match.entity.Match;
-import com.goormgb.be.ordercore.match.repository.MatchRepository;
 import com.goormgb.be.ordercore.match.utils.MatchDisplayUtils;
 import com.goormgb.be.ordercore.match.utils.SalesOpenUtils;
 
@@ -26,10 +27,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class MatchService {
-	final private MatchRepository matchRepository;
-	final private ClubRepository clubRepository;
-	final private MatchDisplayUtils matchDisplayUtils;
-	final private SalesOpenUtils salesOpenUtils;
+	private final MatchRepository matchRepository;
+	private final ClubRepository clubRepository;
+	private final MatchDisplayUtils matchDisplayUtils;
+	private final SalesOpenUtils salesOpenUtils;
 
 	public MatchDetailGetResponse getMatchDetail(Long id) {
 		var match = matchRepository.findDetailByIdOrThrow(id);
@@ -39,15 +40,15 @@ public class MatchService {
 	}
 
 	public MatchListByDateResponse getMatchesByDate(LocalDate date) {
-		LocalDateTime start = date.atStartOfDay();
-		LocalDateTime end = date.plusDays(1).atStartOfDay();
+		Instant start = date.atStartOfDay(ZoneOffset.UTC).toInstant();
+		Instant end = date.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
 
 		List<Match> matches = matchRepository.findAllByMatchAtGreaterThanEqualAndMatchAtLessThanOrderByMatchAtAsc(start,
-				end);
+			end);
 
 		var summaries = matches.stream()
-				.map(m -> MatchListByDateResponse.MatchSummary.of(m, salesOpenUtils.calculateSalesOpenAt(m)))
-				.toList();
+			.map(m -> MatchListByDateResponse.MatchSummary.of(m, salesOpenUtils.calculateSalesOpenAt(m)))
+			.toList();
 
 		return MatchListByDateResponse.of(date, summaries);
 	}
@@ -58,14 +59,14 @@ public class MatchService {
 		Preconditions.validate(year >= 1900 && year <= 2100, ErrorCode.INVALID_MATCH_YEAR);
 
 		YearMonth ym = YearMonth.of(year, month);
-		LocalDateTime start = ym.atDay(1).atStartOfDay();
-		LocalDateTime end = ym.plusMonths(1).atDay(1).atStartOfDay();
+		Instant start = ym.atDay(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+		Instant end = ym.plusMonths(1).atDay(1).atStartOfDay(ZoneOffset.UTC).toInstant();
 
 		List<Match> matches = matchRepository.findMonthlyByClubId(clubId, start, end);
 
 		List<ClubMonthlyMatchesResponse.MatchItem> items = matches.stream()
-				.map(m -> toItem(clubId, m))
-				.toList();
+			.map(m -> toItem(clubId, m))
+			.toList();
 
 		return ClubMonthlyMatchesResponse.of(clubId, year, month, items);
 	}
@@ -75,15 +76,15 @@ public class MatchService {
 		Club opponent = isHome ? m.getAwayClub() : m.getHomeClub();
 
 		return new ClubMonthlyMatchesResponse.MatchItem(
-				m.getId(),
-				m.getMatchAt(),
-				new ClubMonthlyMatchesResponse.OpponentClub(
-						opponent.getId(),
-						opponent.getKoName(),
-						opponent.getLogoImg()
-				),
-				m.getSaleStatus(),
-				isHome
+			m.getId(),
+			m.getMatchAt(),
+			new ClubMonthlyMatchesResponse.OpponentClub(
+				opponent.getId(),
+				opponent.getKoName(),
+				opponent.getLogoImg()
+			),
+			m.getSaleStatus(),
+			isHome
 		);
 	}
 }

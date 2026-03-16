@@ -30,6 +30,14 @@ public class ApiResult<T> {
 		return of("OK", message, data);
 	}
 
+	public static ApiResult<Void> created() {
+		return of("CREATED", "성공", null);
+	}
+
+	public static <T> ApiResult<T> created(T data) {
+		return of("CREATED", "성공", data);
+	}
+
 	private static <T> ApiResult<T> of(String code, String message, T data) {
 		return new ApiResult<>(code, message, data);
 	}

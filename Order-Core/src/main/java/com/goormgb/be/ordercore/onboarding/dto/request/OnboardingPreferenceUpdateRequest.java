@@ -2,9 +2,13 @@ package com.goormgb.be.ordercore.onboarding.dto.request;
 
 import java.util.List;
 
-import com.goormgb.be.ordercore.onboarding.dto.OnboardingPreferenceDto;
+import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
+import com.goormgb.be.ordercore.onboarding.dto.OnboardingPreferenceItemDto;
 
 public record OnboardingPreferenceUpdateRequest(
-		List<OnboardingPreferenceDto> preferences
+	Long favoriteClubId,
+	CheerProximityPref cheerProximityPref,
+	List<Long> preferredBlockIds,
+	List<OnboardingPreferenceItemDto> preferences
 ) {
 }
