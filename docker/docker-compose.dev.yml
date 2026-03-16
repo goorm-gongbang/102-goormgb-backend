@@ -21,6 +21,3 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
 
-  recommendation:
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
