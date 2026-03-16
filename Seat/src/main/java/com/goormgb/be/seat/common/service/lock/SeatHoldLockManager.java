@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class SeatHoldLockManager {
 
 	private static final String KEY_PREFIX = "seat:hold:match:";
-	private static final Duration WAIT_TIME = Duration.ofMillis(100);
+	private static final Duration WAIT_TIME = Duration.ofMillis(500);
 	private static final Duration LEASE_TIME = Duration.ofSeconds(5);
 
 	private final RedissonClient redissonClient;
