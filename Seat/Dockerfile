@@ -1,3 +1,6 @@
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+
 FROM --platform=$BUILDPLATFORM gradle:jdk21-alpine AS builder
 WORKDIR /app
 
