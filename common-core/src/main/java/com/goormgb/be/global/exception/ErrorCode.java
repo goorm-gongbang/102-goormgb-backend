@@ -86,6 +86,10 @@ public enum ErrorCode {
 	SEAT_LOCK_ACQUISITION_FAILED(HttpStatus.CONFLICT, "다른 사용자가 좌석을 선택 중입니다. 잠시 후 다시 시도해주세요."),
 
 	// Seat Hold
+	INVALID_SEAT_HOLD_REQUEST(HttpStatus.BAD_REQUEST, "좌석 선점 요청이 올바르지 않습니다."),
+	MATCH_SEAT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 경기의 좌석 정보를 찾을 수 없습니다."),
+	SEAT_ALREADY_HELD_BY_OTHER(HttpStatus.CONFLICT, "다른 사용자가 이미 좌석을 선점했습니다."),
+	SEAT_ALREADY_SOLD(HttpStatus.CONFLICT, "이미 판매 완료된 좌석입니다."),
 	SEAT_HOLD_NOT_FOUND(HttpStatus.NOT_FOUND, "좌석 선점 정보를 찾을 수 없습니다."),
 	SEAT_HOLD_EXPIRED(HttpStatus.BAD_REQUEST, "좌석 선점이 만료되었습니다."),
 	SEAT_HOLD_OWNERSHIP_DENIED(HttpStatus.FORBIDDEN, "해당 좌석 선점에 접근할 권한이 없습니다."),

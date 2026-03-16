@@ -1,0 +1,145 @@
+package com.goormgb.be.seat.common.service;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.redisson.api.RLock;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.support.Preconditions;
+import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
+import com.goormgb.be.seat.common.service.lock.SeatHoldLockManager;
+import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
+import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
+import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
+import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
+import com.goormgb.be.seat.redis.SeatSession;
+import com.goormgb.be.seat.seatHold.entity.SeatHold;
+import com.goormgb.be.seat.seatHold.repository.SeatHoldRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class SeatHoldService {
+
+	private static final Duration HOLD_TTL = Duration.ofMinutes(5);
+
+	private final SeatPreferenceRedisRepository seatPreferenceRedisRepository;
+	private final MatchSeatRepository matchSeatRepository;
+	private final SeatHoldRepository seatHoldRepository;
+	private final SeatHoldLockManager seatHoldLockManager;
+	private final Clock clock;
+
+	@Transactional
+	public SeatHoldCreateResponse createOrRefreshHold(Long userId, Long matchId, List<Long> seatIds) {
+		List<Long> normalizedSeatIds = normalizeSeatIds(seatIds);
+		validateSeatCount(userId, matchId, normalizedSeatIds.size());
+
+		List<RLock> locks = seatHoldLockManager.lockAll(matchId, normalizedSeatIds);
+		try {
+			return createOrRefreshHoldTx(userId, matchId, normalizedSeatIds);
+		} finally {
+			seatHoldLockManager.unlockAll(locks);
+		}
+	}
+
+	private SeatHoldCreateResponse createOrRefreshHoldTx(Long userId, Long matchId, List<Long> seatIds) {
+		Instant now = clock.instant();
+		Instant expiresAt = now.plus(HOLD_TTL);
+
+		List<MatchSeat> requestedSeats = matchSeatRepository.findAllByMatchIdAndSeatIdIn(matchId, seatIds);
+
+		Preconditions.validate(requestedSeats.size() == seatIds.size(), ErrorCode.MATCH_SEAT_NOT_FOUND);
+		Preconditions.validate(
+			requestedSeats.stream().noneMatch(seat -> seat.getSaleStatus() == MatchSeatSaleStatus.SOLD),
+			ErrorCode.SEAT_ALREADY_SOLD
+		);
+
+		List<SeatHold> activeRequestedHolds = seatHoldRepository
+			.findAllByMatchIdAndSeatIdInAndExpiresAtAfter(matchId, seatIds, now);
+
+		boolean hasOtherUserHold = activeRequestedHolds.stream().anyMatch(hold -> !hold.isOwnedBy(userId));
+		Preconditions.validate(!hasOtherUserHold, ErrorCode.SEAT_ALREADY_HELD_BY_OTHER);
+
+		List<SeatHold> userActiveHolds = seatHoldRepository.findAllByUserIdAndMatchIdAndExpiresAtAfter(userId, matchId,
+			now);
+		Set<Long> currentHeldSeatIds = userActiveHolds.stream()
+			.map(SeatHold::getSeatId)
+			.collect(java.util.stream.Collectors.toSet());
+		Set<Long> requestedSeatSet = new HashSet<>(seatIds);
+
+		if (currentHeldSeatIds.equals(requestedSeatSet) && !userActiveHolds.isEmpty()) {
+			userActiveHolds.forEach(hold -> hold.extendHold(expiresAt));
+			requestedSeats.forEach(MatchSeat::markBlocked);
+			return SeatHoldCreateResponse.of(matchId, seatIds, expiresAt);
+		}
+
+		releaseUserActiveHolds(userActiveHolds);
+
+		List<SeatHold> newHolds = requestedSeats.stream()
+			.map(seat -> SeatHold.builder()
+				.matchSeatId(seat.getId())
+				.matchId(matchId)
+				.seatId(seat.getSeatId())
+				.userId(userId)
+				.expiresAt(expiresAt)
+				.build())
+			.toList();
+
+		requestedSeats.forEach(MatchSeat::markBlocked);
+		seatHoldRepository.saveAll(newHolds);
+
+		return SeatHoldCreateResponse.of(matchId, seatIds, expiresAt);
+	}
+
+	private void releaseUserActiveHolds(List<SeatHold> userActiveHolds) {
+		if (userActiveHolds.isEmpty()) {
+			return;
+		}
+
+		List<Long> matchSeatIds = userActiveHolds.stream().map(SeatHold::getMatchSeatId).toList();
+		List<MatchSeat> seatsToRelease = matchSeatRepository.findAllById(matchSeatIds);
+		seatsToRelease.forEach(MatchSeat::markAvailable);
+		seatHoldRepository.deleteAllByMatchSeatIdIn(matchSeatIds);
+	}
+
+	private List<Long> normalizeSeatIds(List<Long> seatIds) {
+		Preconditions.validate(
+			seatIds != null && !seatIds.isEmpty(),
+			ErrorCode.INVALID_SEAT_HOLD_REQUEST
+		);
+
+		Preconditions.validate(
+			seatIds.stream().noneMatch(java.util.Objects::isNull),
+			ErrorCode.INVALID_SEAT_HOLD_REQUEST
+		);
+
+		Preconditions.validate(
+			new HashSet<>(seatIds).size() == seatIds.size(),
+			ErrorCode.INVALID_SEAT_HOLD_REQUEST
+		);
+
+		return seatIds.stream()
+			.sorted(Comparator.naturalOrder())
+			.toList();
+	}
+
+	private void validateSeatCount(Long userId, Long matchId, int requestedCount) {
+		SeatSession seatSession =
+			seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+
+		Preconditions.validate(
+			seatSession.getTicketCount() == requestedCount,
+			ErrorCode.INVALID_SEAT_HOLD_REQUEST
+		);
+	}
+}
+
