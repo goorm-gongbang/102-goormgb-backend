@@ -1,4 +1,4 @@
-FROM gradle:jdk21-alpine AS builder
+FROM --platform=$BUILDPLATFORM gradle:jdk21-alpine AS builder
 WORKDIR /app
 
 # 1. 프로젝트 설정 파일 복사 (Gradle 래퍼 불필요)
@@ -24,7 +24,7 @@ COPY API-Gateway/src API-Gateway/src
 # 5. 실제 빌드 수행
 RUN gradle :API-Gateway:bootJar -x test --no-daemon
 
-FROM eclipse-temurin:21-jre-alpine
+FROM --platform=$TARGETPLATFORM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/API-Gateway/build/libs/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]
