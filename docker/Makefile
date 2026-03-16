@@ -1,5 +1,8 @@
 # Docker commands for goormgb-backend
 
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+
 COMPOSE = docker-compose --env-file ../.env -f docker-compose.yml
 LOCAL = $(COMPOSE) -f docker-compose.local.yml
 DEV = $(COMPOSE) -f docker-compose.dev.yml

@@ -1,4 +1,7 @@
-FROM gradle:jdk21-alpine AS builder
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+
+FROM --platform=$BUILDPLATFORM gradle:jdk21-alpine AS builder
 WORKDIR /app
 
 # 1. 프로젝트 설정 파일 복사 (Gradle 래퍼 불필요)
@@ -12,7 +15,6 @@ COPY common-core/build.gradle common-core/
 COPY Order-Core/build.gradle Order-Core/
 COPY Queue/build.gradle Queue/
 COPY Seat/build.gradle Seat/
-COPY Recommendation/build.gradle Recommendation/
 
 # 3. 필요한 소스 코드만 복사 (공통 모듈 + 현재 서비스)
 COPY common-core/src common-core/src
@@ -21,7 +23,7 @@ COPY Auth-Guard/src Auth-Guard/src
 # 4. 빌드 수행 (테스트 제외)
 RUN gradle :Auth-Guard:bootJar -x test --no-daemon
 
-FROM eclipse-temurin:21-jre-alpine
+FROM --platform=$TARGETPLATFORM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/Auth-Guard/build/libs/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]

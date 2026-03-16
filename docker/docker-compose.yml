@@ -43,7 +43,6 @@ services:
       QUEUE_URL: http://queue:8081
       SEAT_URL: http://seat:8082
       ORDER_CORE_URL: http://order-core:8083
-      RECOMMENDATION_URL: http://recommendation:8084
       REDIS_HOST: local-redis
       REDIS_PORT: 6379
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
@@ -132,25 +131,6 @@ services:
       context: ..
       dockerfile: Order-Core/Dockerfile
     container_name: order-core
-    environment:
-      DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: local-redis
-      REDIS_PORT: 6379
-    depends_on:
-      local-postgres:
-        condition: service_healthy
-      local-redis:
-        condition: service_healthy
-    networks:
-      - goormgb-network
-
-  recommendation:
-    build:
-      context: ..
-      dockerfile: Recommendation/Dockerfile
-    container_name: recommendation
     environment:
       DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
       DB_USERNAME: ${DB_USERNAME}

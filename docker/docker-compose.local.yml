@@ -19,6 +19,3 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: local
 
-  recommendation:
-    environment:
-      SPRING_PROFILES_ACTIVE: local

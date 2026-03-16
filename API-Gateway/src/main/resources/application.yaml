@@ -27,10 +27,6 @@ spring:
               uri: ${ORDER_CORE_URL}
               predicates:
                 - Path=/order/**
-            - id: recommendation
-              uri: ${RECOMMENDATION_URL}
-              predicates:
-                - Path=/recommendation/**
   jackson:
     time-zone: UTC
     date-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
@@ -58,5 +54,3 @@ springdoc:
         url: /seat/v3/api-docs
       - name: Order-Core
         url: /order/v3/api-docs
-      - name: Recommendation
-        url: /recommendation/v3/api-docs

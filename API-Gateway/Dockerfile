@@ -1,4 +1,7 @@
-FROM gradle:jdk21-alpine AS builder
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+
+FROM --platform=$BUILDPLATFORM gradle:jdk21-alpine AS builder
 WORKDIR /app
 
 # 1. 프로젝트 설정 파일 복사 (Gradle 래퍼 불필요)
@@ -12,7 +15,6 @@ COPY common-core/build.gradle common-core/
 COPY Order-Core/build.gradle Order-Core/
 COPY Queue/build.gradle Queue/
 COPY Seat/build.gradle Seat/
-COPY Recommendation/build.gradle Recommendation/
 
 # 3. 의존성 다운로드 (소스 코드 복사 전)
 # 소스 코드가 없으므로 빌드는 실패하지만, 의존성은 다운로드되어 캐시됩니다.
@@ -24,7 +26,7 @@ COPY API-Gateway/src API-Gateway/src
 # 5. 실제 빌드 수행
 RUN gradle :API-Gateway:bootJar -x test --no-daemon
 
-FROM eclipse-temurin:21-jre-alpine
+FROM --platform=$TARGETPLATFORM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/API-Gateway/build/libs/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]

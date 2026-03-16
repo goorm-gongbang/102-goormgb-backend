@@ -39,10 +39,6 @@ spring:
               uri: ${ORDER_CORE_URL}
               predicates:
                 - Path=/order/**
-            - id: recommendation
-              uri: ${RECOMMENDATION_URL}
-              predicates:
-                - Path=/recommendation/**
 
   data:
     redis:
