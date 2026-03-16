@@ -17,6 +17,22 @@ import com.goormgb.be.seat.redis.SeatSession;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 직접 선택 좌석 선점(Hold) 서비스.
+ *
+ * <p>유저가 좌석맵에서 직접 클릭한 좌석들을 선점한다.
+ * 입력 검증과 Redisson 분산 락 관리를 담당하며,
+ * 실제 트랜잭션 처리는 {@link SeatHoldTransactionalService}에 위임하여
+ * 트랜잭션 커밋이 락 해제보다 먼저 완료되도록 보장한다.</p>
+ *
+ * <h3>처리 흐름</h3>
+ * <ol>
+ *   <li>seatIds 정규화 및 검증 (중복, null, 티켓 수 일치)</li>
+ *   <li>좌석 단위 Redisson 분산 락 획득 (정렬 순서로 데드락 방지)</li>
+ *   <li>트랜잭션 서비스에서 Hold 생성/갱신 + 커밋</li>
+ *   <li>락 해제</li>
+ * </ol>
+ */
 @Service
 @RequiredArgsConstructor
 public class SeatHoldService {
