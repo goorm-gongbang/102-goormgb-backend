@@ -5,13 +5,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "queue")
 public record QueueProperties(
 	long readyTtlSeconds,
+	long preferenceTtlSeconds,
+	long expiredMarkerTtlSeconds,
 	int promotionBatchSize,
 	long promotionIntervalMs,
 	String activeMatchKey,
 	String waitKeyPrefix,
 	String readyKeyPrefix,
 	String preferenceKeyPrefix,
-	String expiredKeyPrefix
+	String expiredKeyPrefix,
+	String readyIndexKeyPrefix
 ) {
 	public String waitKey(Long matchId) {
 		return waitKeyPrefix + ":" + matchId;
@@ -27,5 +30,9 @@ public record QueueProperties(
 
 	public String expiredKey(Long matchId, Long userId) {
 		return expiredKeyPrefix + ":" + matchId + ":" + userId;
+	}
+
+	public String readyIndexKey(Long matchId) {
+		return readyIndexKeyPrefix + ":" + matchId;
 	}
 }
