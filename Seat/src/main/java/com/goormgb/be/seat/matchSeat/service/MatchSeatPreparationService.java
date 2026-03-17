@@ -31,18 +31,30 @@ public class MatchSeatPreparationService {
 
 	public void prepareMatchSeats() {
 
-		Instant now = clock.instant();
-		LocalDate todayKst = now.atZone(KST).toLocalDate();
+		// Instant now = clock.instant();
+		// LocalDate todayKst = now.atZone(KST).toLocalDate();
 
-		List<Match> matchesToPrepare = matchRepository.findBySaleStatus(SaleStatus.UPCOMING)
-			.stream()
-			.filter(match ->
-				match.getMatchAt()
-					.atZone(KST)
-					.toLocalDate()
-					.equals(todayKst.plusDays(7))
-			)
-			.toList();
+		LocalDate todayKst = clock.instant().atZone(KST).toLocalDate();
+		LocalDate targetDate = todayKst.plusDays(7);
+
+		Instant startOfDay = targetDate.atStartOfDay(KST).toInstant();
+		Instant endOfDay = targetDate.plusDays(1).atStartOfDay(KST).toInstant();
+
+		List<Match> matchesToPrepare = matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
+			SaleStatus.UPCOMING,
+			startOfDay,
+			endOfDay
+		);
+
+		// List<Match> matchesToPrepare = matchRepository.findBySaleStatus(SaleStatus.UPCOMING)
+		// 	.stream()
+		// 	.filter(match ->
+		// 		match.getMatchAt()
+		// 			.atZone(KST)
+		// 			.toLocalDate()
+		// 			.equals(todayKst.plusDays(7))
+		// 	)
+		// 	.toList();
 
 		if (matchesToPrepare.isEmpty()) {
 			log.info("[MatchSeatPreparationService] 생성 대상 경기 없음");

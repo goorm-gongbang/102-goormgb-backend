@@ -55,7 +55,11 @@ class MatchSeatPreparationServiceTest {
 	@DisplayName("생성 대상 경기가 없으면 종료한다")
 	void 생성_대상_경기가_없으면_종료한다() {
 		// given
-		when(matchRepository.findBySaleStatus(eq(SaleStatus.UPCOMING))).thenReturn(List.of());
+		when(matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
+			eq(SaleStatus.UPCOMING),
+			any(Instant.class),
+			any(Instant.class)
+		)).thenReturn(List.of());
 
 		// when
 		matchSeatPreparationService.prepareMatchSeats();
@@ -66,44 +70,48 @@ class MatchSeatPreparationServiceTest {
 	}
 
 	@Test
-	@DisplayName("오늘 KST 기준 7일 뒤 경기만 생성 대상에 포함한다")
-	void 오늘_KST_기준_7일_뒤_경기만_생성_대상에_포함한다() {
+	@DisplayName("오늘 KST 기준 7일 뒤 날짜 범위의 경기만 조회한다")
+	void 오늘_KST_기준_7일_뒤_날짜_범위의_경기만_조회한다() {
 		// given
-		// todayKst = 2026-03-17
-		// 생성 대상 경기일 = 2026-03-24 (KST)
 		Match targetMatch = mock(Match.class);
-		Match nonTargetMatch = mock(Match.class);
-
-		// 생성 대상 경기
 		when(targetMatch.getId()).thenReturn(1L);
-		when(targetMatch.getMatchAt()).thenReturn(Instant.parse("2026-03-24T03:00:00Z")); // KST 2026-03-24 12:00
-
-		// 생성 대상이 아닌 경기
-		when(nonTargetMatch.getMatchAt()).thenReturn(Instant.parse("2026-03-25T03:00:00Z")); // KST 2026-03-25 12:00
-
-		when(matchRepository.findBySaleStatus(eq(SaleStatus.UPCOMING)))
-			.thenReturn(List.of(targetMatch, nonTargetMatch));
 
 		SeatTemplateProjection template = mock(SeatTemplateProjection.class);
 		when(seatRepository.findAllSeatTemplates()).thenReturn(List.of(template));
+
+		when(matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
+			eq(SaleStatus.UPCOMING),
+			any(Instant.class),
+			any(Instant.class)
+		)).thenReturn(List.of(targetMatch));
 
 		// when
 		matchSeatPreparationService.prepareMatchSeats();
 
 		// then
+		Instant expectedStart = Instant.parse("2026-03-23T15:00:00Z"); // KST 2026-03-24 00:00
+		Instant expectedEnd = Instant.parse("2026-03-24T15:00:00Z");   // KST 2026-03-25 00:00
+
+		verify(matchRepository).findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
+			eq(SaleStatus.UPCOMING),
+			eq(expectedStart),
+			eq(expectedEnd)
+		);
 		verify(transactionalService, times(1)).prepareSingleMatchSeats(eq(1L), any());
-		verify(transactionalService, never()).prepareSingleMatchSeats(eq(2L), any());
 	}
 
 	@Test
 	@DisplayName("좌석 템플릿이 없으면 종료한다")
 	void 좌석_템플릿이_없으면_종료한다() {
 		// given
-		// 생성 대상 경기는 있지만 좌석 템플릿이 없어서 실제 생성은 진행되지 않아야 한다.
 		Match match = mock(Match.class);
-		when(match.getMatchAt()).thenReturn(Instant.parse("2026-03-24T03:00:00Z")); // KST 2026-03-24 12:00
 
-		when(matchRepository.findBySaleStatus(eq(SaleStatus.UPCOMING))).thenReturn(List.of(match));
+		when(matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
+			eq(SaleStatus.UPCOMING),
+			any(Instant.class),
+			any(Instant.class)
+		)).thenReturn(List.of(match));
+
 		when(seatRepository.findAllSeatTemplates()).thenReturn(List.of());
 
 		// when
@@ -117,27 +125,24 @@ class MatchSeatPreparationServiceTest {
 	@DisplayName("한 경기 생성 실패해도 다음 경기는 계속 처리한다")
 	void 한_경기_생성에_실패해도_다음_경기는_계속_처리한다() {
 		// given
-		// 두 경기 모두 생성 대상 날짜(KST 2026-03-24)로 설정
 		Match match1 = mock(Match.class);
 		Match match2 = mock(Match.class);
 
 		when(match1.getId()).thenReturn(1L);
 		when(match2.getId()).thenReturn(2L);
 
-		when(match1.getMatchAt()).thenReturn(Instant.parse("2026-03-24T03:00:00Z")); // KST 12:00
-		when(match2.getMatchAt()).thenReturn(Instant.parse("2026-03-24T09:00:00Z")); // KST 18:00
-
-		when(matchRepository.findBySaleStatus(eq(SaleStatus.UPCOMING)))
-			.thenReturn(List.of(match1, match2));
+		when(matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
+			eq(SaleStatus.UPCOMING),
+			any(Instant.class),
+			any(Instant.class)
+		)).thenReturn(List.of(match1, match2));
 
 		SeatTemplateProjection template = mock(SeatTemplateProjection.class);
 		when(seatRepository.findAllSeatTemplates()).thenReturn(List.of(template));
 
-		// 첫 번째 경기 생성은 실패
 		doThrow(new RuntimeException("DB 오류"))
 			.when(transactionalService).prepareSingleMatchSeats(eq(1L), any());
 
-		// 두 번째 경기는 정상 생성
 		when(transactionalService.prepareSingleMatchSeats(eq(2L), any())).thenReturn(true);
 
 		// when
@@ -152,12 +157,14 @@ class MatchSeatPreparationServiceTest {
 	@DisplayName("대상 경기이고 템플릿이 있으면 생성에 성공한다")
 	void 대상_경기이고_템플릿이_있으면_생성에_성공한다() {
 		// given
-		// KST 기준 2026-03-24 경기이므로 생성 대상
 		Match match = mock(Match.class);
 		when(match.getId()).thenReturn(100L);
-		when(match.getMatchAt()).thenReturn(Instant.parse("2026-03-24T03:00:00Z")); // KST 12:00
 
-		when(matchRepository.findBySaleStatus(eq(SaleStatus.UPCOMING))).thenReturn(List.of(match));
+		when(matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
+			eq(SaleStatus.UPCOMING),
+			any(Instant.class),
+			any(Instant.class)
+		)).thenReturn(List.of(match));
 
 		SeatTemplateProjection template = mock(SeatTemplateProjection.class);
 		when(seatRepository.findAllSeatTemplates()).thenReturn(List.of(template));
