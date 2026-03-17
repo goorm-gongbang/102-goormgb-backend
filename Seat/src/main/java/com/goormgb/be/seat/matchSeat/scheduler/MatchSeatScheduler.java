@@ -1,5 +1,8 @@
 package com.goormgb.be.seat.matchSeat.scheduler;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +23,7 @@ public class MatchSeatScheduler {
 	 */
 	@Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
 	public void prepareMatchSeats() {
+		log.info("[MatchSeatScheduler] 스케줄러 실행 시각(KST): {}", ZonedDateTime.now(ZoneId.of("Asia/Seoul")));
 		matchSeatPreparationService.prepareMatchSeats();
 	}
 }
