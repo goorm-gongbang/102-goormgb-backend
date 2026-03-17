@@ -1,6 +1,7 @@
 package com.goormgb.be.seat.common.controller;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +16,7 @@ import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.common.dto.response.SectionBlocksResponse;
 import com.goormgb.be.seat.common.service.SeatCommonService;
 import com.goormgb.be.seat.common.service.SeatHoldService;
+import com.goormgb.be.seat.security.AdmissionTokenValidator;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -29,6 +31,7 @@ public class SeatCommonController {
 
 	private final SeatCommonService seatCommonService;
 	private final SeatHoldService seatHoldService;
+	private final AdmissionTokenValidator admissionTokenValidator;
 
 	@Operation(
 		summary = "좌석 그룹 초기 조회",
@@ -42,9 +45,10 @@ public class SeatCommonController {
 	@GetMapping("/seat-groups")
 	public ApiResult<SeatGroupsEntryResponse> getCommonSeatGroup(
 		@PathVariable Long matchId,
-		@AuthenticationPrincipal Long userId
-		// TODO: 큐 진입 토큰 확인
+		@AuthenticationPrincipal Long userId,
+		@CookieValue(name = "admissionToken") String admissionToken
 	) {
+		admissionTokenValidator.validate(admissionToken, userId, matchId);
 		return ApiResult.ok(seatCommonService.getSeatGroupsEntry(matchId, userId));
 	}
 
@@ -81,9 +85,10 @@ public class SeatCommonController {
 	public ApiResult<SectionBlocksResponse> getSectionBlocks(
 		@PathVariable Long matchId,
 		@PathVariable Long sectionId,
-		@AuthenticationPrincipal Long userId
-		// TODO: 큐 진입 토큰 확인
+		@AuthenticationPrincipal Long userId,
+		@CookieValue(name = "admissionToken") String admissionToken
 	) {
+		admissionTokenValidator.validate(admissionToken, userId, matchId);
 		return ApiResult.ok(seatCommonService.getSectionBlocks(matchId, sectionId, userId));
 	}
 

@@ -1,6 +1,7 @@
 package com.goormgb.be.seat.recommendation.controller;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +16,7 @@ import com.goormgb.be.seat.recommendation.dto.response.SeatAssignmentResponse;
 import com.goormgb.be.seat.recommendation.dto.response.SeatEntryResponse;
 import com.goormgb.be.seat.recommendation.service.SeatAssignmentService;
 import com.goormgb.be.seat.recommendation.service.SeatRecommendationService;
+import com.goormgb.be.seat.security.AdmissionTokenValidator;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -29,6 +31,7 @@ public class SeatRecommendationController {
 
 	private final SeatRecommendationService seatRecommendationService;
 	private final SeatAssignmentService seatAssignmentService;
+	private final AdmissionTokenValidator admissionTokenValidator;
 
 	@Operation(
 		summary = "추천 좌석 초기 조회",
@@ -41,9 +44,10 @@ public class SeatRecommendationController {
 	@GetMapping("/seat-entry")
 	public ApiResult<SeatEntryResponse> getRecommendationSeatEntry(
 		@PathVariable Long matchId,
-		@AuthenticationPrincipal Long userId
-		// TODO: 큐 진입 토큰 확인
+		@AuthenticationPrincipal Long userId,
+		@CookieValue(name = "admissionToken") String admissionToken
 	) {
+		admissionTokenValidator.validate(admissionToken, userId, matchId);
 		return ApiResult.ok(seatRecommendationService.getRecommendationSeatEntry(matchId, userId));
 	}
 
