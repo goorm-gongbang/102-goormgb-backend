@@ -31,9 +31,6 @@ public class MatchSeatPreparationService {
 
 	public void prepareMatchSeats() {
 
-		// Instant now = clock.instant();
-		// LocalDate todayKst = now.atZone(KST).toLocalDate();
-
 		LocalDate todayKst = clock.instant().atZone(KST).toLocalDate();
 		LocalDate targetDate = todayKst.plusDays(7);
 
