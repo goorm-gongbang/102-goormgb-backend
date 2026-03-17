@@ -41,7 +41,7 @@ public class SeatHoldCleanupScheduler {
 		}
 
 		int restoredCount = matchSeatRepository.markAvailableIfBlockedInBatch(expiredMatchSeatIds);
-		int deletedCount = seatHoldRepository.deleteExpiredHolds(now);
+		int deletedCount = seatHoldRepository.deleteByMatchSeatIdIn(expiredMatchSeatIds);
 
 		log.info("만료 Hold 정리 완료 - 좌석 복원: {}건, Hold 삭제: {}건", restoredCount, deletedCount);
 	}

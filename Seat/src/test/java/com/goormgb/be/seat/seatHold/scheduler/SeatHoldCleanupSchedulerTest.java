@@ -40,14 +40,14 @@ class SeatHoldCleanupSchedulerTest {
 		List<Long> expiredMatchSeatIds = List.of(100L, 200L, 300L);
 		given(seatHoldRepository.findExpiredMatchSeatIds(NOW)).willReturn(expiredMatchSeatIds);
 		given(matchSeatRepository.markAvailableIfBlockedInBatch(expiredMatchSeatIds)).willReturn(3);
-		given(seatHoldRepository.deleteExpiredHolds(NOW)).willReturn(3);
+		given(seatHoldRepository.deleteByMatchSeatIdIn(expiredMatchSeatIds)).willReturn(3);
 
 		// when
 		seatHoldCleanupScheduler.cleanupExpiredHolds();
 
 		// then
 		then(matchSeatRepository).should().markAvailableIfBlockedInBatch(expiredMatchSeatIds);
-		then(seatHoldRepository).should().deleteExpiredHolds(NOW);
+		then(seatHoldRepository).should().deleteByMatchSeatIdIn(expiredMatchSeatIds);
 	}
 
 	@Test
@@ -62,7 +62,7 @@ class SeatHoldCleanupSchedulerTest {
 
 		// then
 		then(matchSeatRepository).should(never()).markAvailableIfBlockedInBatch(any());
-		then(seatHoldRepository).should(never()).deleteExpiredHolds(any());
+		then(seatHoldRepository).should(never()).deleteByMatchSeatIdIn(any());
 	}
 
 	@Test
@@ -75,13 +75,13 @@ class SeatHoldCleanupSchedulerTest {
 		given(seatHoldRepository.findExpiredMatchSeatIds(NOW)).willReturn(expiredMatchSeatIds);
 		// 2개 중 1개만 BLOCKED → 1개만 복원됨
 		given(matchSeatRepository.markAvailableIfBlockedInBatch(expiredMatchSeatIds)).willReturn(1);
-		given(seatHoldRepository.deleteExpiredHolds(NOW)).willReturn(2);
+		given(seatHoldRepository.deleteByMatchSeatIdIn(expiredMatchSeatIds)).willReturn(2);
 
 		// when
 		seatHoldCleanupScheduler.cleanupExpiredHolds();
 
 		// then
 		then(matchSeatRepository).should().markAvailableIfBlockedInBatch(expiredMatchSeatIds);
-		then(seatHoldRepository).should().deleteExpiredHolds(NOW);
+		then(seatHoldRepository).should().deleteByMatchSeatIdIn(expiredMatchSeatIds);
 	}
 }

@@ -32,6 +32,6 @@ public interface SeatHoldRepository extends JpaRepository<SeatHold, Long> {
 	List<Long> findExpiredMatchSeatIds(@Param("now") Instant now);
 
 	@Modifying
-	@Query("DELETE FROM SeatHold sh WHERE sh.expiresAt < :now")
-	int deleteExpiredHolds(@Param("now") Instant now);
+	@Query("DELETE FROM SeatHold sh WHERE sh.matchSeatId IN :matchSeatIds")
+	int deleteByMatchSeatIdIn(@Param("matchSeatIds") List<Long> matchSeatIds);
 }
