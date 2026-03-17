@@ -1,3 +1,4 @@
+# 재배포 트리거
 server:
   port: 8081
   servlet:
