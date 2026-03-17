@@ -13,10 +13,10 @@ public record PaymentProcessResponse(
 	PaymentMethod paymentMethod,
 	PaymentStatus paymentStatus,
 	Instant paidAt,
-	VirtualAccountInfo virtualAccount
+	AccountInfo account
 ) {
 
-	public record VirtualAccountInfo(
+	public record AccountInfo(
 		String bank,
 		String accountNumber,
 		String holder,
@@ -24,12 +24,12 @@ public record PaymentProcessResponse(
 	) {}
 
 	public static PaymentProcessResponse of(Payment payment) {
-		VirtualAccountInfo vaInfo = null;
-		if (payment.getVirtualAccountBank() != null) {
-			vaInfo = new VirtualAccountInfo(
-				payment.getVirtualAccountBank(),
-				payment.getVirtualAccountNumber(),
-				payment.getVirtualAccountHolder(),
+		AccountInfo accountInfo = null;
+		if (payment.getAccountBank() != null) {
+			accountInfo = new AccountInfo(
+				payment.getAccountBank(),
+				payment.getAccountNumber(),
+				payment.getAccountHolder(),
 				payment.getDepositDeadline()
 			);
 		}
@@ -40,7 +40,7 @@ public record PaymentProcessResponse(
 			payment.getPaymentMethod(),
 			payment.getStatus(),
 			payment.getPaidAt(),
-			vaInfo
+			accountInfo
 		);
 	}
 }
