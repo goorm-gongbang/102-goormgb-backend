@@ -133,6 +133,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: local-redis
       REDIS_PORT: 6379
+      ADMISSION_PUBLIC_KEY: ${ADMISSION_PUBLIC_KEY}
     depends_on:
       local-postgres:
         condition: service_healthy
