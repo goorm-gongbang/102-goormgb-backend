@@ -2,6 +2,8 @@ package com.goormgb.be.seat.recommendation.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,8 @@ import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
+import com.goormgb.be.seat.matchSeat.repository.BlockRemainingSeatProjection;
+import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.recommendation.dto.internal.BlockRecommendation;
 import com.goormgb.be.seat.recommendation.dto.response.BlockRecommendationResponse;
 import com.goormgb.be.seat.recommendation.dto.response.SeatEntryResponse;
@@ -33,6 +37,7 @@ public class SeatRecommendationService {
 	private final MatchRepository matchRepository;
 	private final SeatPreferenceRedisRepository seatPreferenceRedisRepository;
 	private final BlockRepository blockRepository;
+	private final MatchSeatRepository matchSeatRepository;
 	private final OnboardingPreferenceRepository onboardingPreferenceRepository;
 	private final OnboardingViewpointPriorityRepository onboardingViewpointPriorityRepository;
 	private final ConsecutiveSeatCounter consecutiveSeatCounter;
@@ -68,12 +73,22 @@ public class SeatRecommendationService {
 	}
 
 	private List<BlockRecommendation> buildRecommendations(Long matchId, int ticketCount, List<Block> blocks) {
-		List<BlockRecommendation> recommendations = new ArrayList<>();
+		List<Long> blockIds = blocks.stream().map(Block::getId).toList();
 
+		Map<Long, Long> remainingMap = matchSeatRepository
+			.countRemainingSeatsByMatchIdAndBlockIdIn(matchId, blockIds)
+			.stream()
+			.collect(Collectors.toMap(
+				BlockRemainingSeatProjection::getBlockId,
+				BlockRemainingSeatProjection::getRemainingSeatCount
+			));
+
+		List<BlockRecommendation> recommendations = new ArrayList<>();
 		for (Block block : blocks) {
 			int count = consecutiveSeatCounter.countRealConsecutiveSeats(matchId, block.getId(), ticketCount);
 			if (count > 0) {
-				recommendations.add(new BlockRecommendation(block, count));
+				long remaining = remainingMap.getOrDefault(block.getId(), 0L);
+				recommendations.add(new BlockRecommendation(block, count, remaining));
 			}
 		}
 
