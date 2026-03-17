@@ -41,8 +41,6 @@ springdoc:
         url: http://localhost:8082/seat/v3/api-docs
       - name: Order-Core
         url: http://localhost:8083/order/v3/api-docs
-      - name: Recommendation
-        url: http://localhost:8084/recommendation/v3/api-docs
 
 management:
   endpoints:
