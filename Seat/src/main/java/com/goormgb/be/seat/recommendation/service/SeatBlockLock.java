@@ -12,7 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Redisson 기반 블럭 단위 분산 락.
  *
- * <p>좌석 배정 시 동일 블럭에 대한 동시 접근을 방지한다.
+ * <p>좌석 배정 시 동일 경기의 동일 블럭에 대한 동시 접근을 방지한다.
+ * 락 키에 matchId를 포함하여 서로 다른 경기의 같은 blockId가 간섭하지 않도록 한다.
  * 락 획득에 실패하면 다른 사용자가 해당 블럭에서 좌석을 선택 중임을 의미한다.</p>
  *
  * <ul>
@@ -26,13 +27,13 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SeatBlockLock {
 
-	private static final String LOCK_KEY_PREFIX = "block_lock:";
+	private static final String LOCK_KEY_FORMAT = "seat:recommendation:match:%d:block:%d";
 	private static final long WAIT_TIME_SECONDS = 3;
 
 	private final RedissonClient redissonClient;
 
-	public boolean tryLock(Long blockId) {
-		RLock lock = redissonClient.getLock(LOCK_KEY_PREFIX + blockId);
+	public boolean tryLock(Long matchId, Long blockId) {
+		RLock lock = redissonClient.getLock(buildKey(matchId, blockId));
 		try {
 			return lock.tryLock(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
@@ -41,14 +42,18 @@ public class SeatBlockLock {
 		}
 	}
 
-	public void unlock(Long blockId) {
-		RLock lock = redissonClient.getLock(LOCK_KEY_PREFIX + blockId);
+	public void unlock(Long matchId, Long blockId) {
+		RLock lock = redissonClient.getLock(buildKey(matchId, blockId));
 		if (lock.isHeldByCurrentThread()) {
 			try {
 				lock.unlock();
 			} catch (Exception e) {
-				log.error("Failed to unlock seat block lock for blockId: {}", blockId, e);
+				log.error("블럭 분산 락 해제 실패 - matchId: {}, blockId: {}", matchId, blockId, e);
 			}
 		}
+	}
+
+	private String buildKey(Long matchId, Long blockId) {
+		return String.format(LOCK_KEY_FORMAT, matchId, blockId);
 	}
 }

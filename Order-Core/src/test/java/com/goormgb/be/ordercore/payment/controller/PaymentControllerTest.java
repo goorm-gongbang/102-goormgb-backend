@@ -106,17 +106,17 @@ class PaymentControllerTest extends WebMvcTestSupport {
 		}
 
 		@Test
-		@DisplayName("가상계좌 결제 성공 시 200과 가상계좌 정보를 반환한다")
-		void processPayment_VIRTUAL_ACCOUNT_성공() throws Exception {
-			PaymentProcessRequest request = PaymentFixture.createVirtualAccountRequest();
+		@DisplayName("무통장 입금 성공 시 200과 계좌 정보를 반환한다")
+		void processPayment_BANK_TRANSFER_성공() throws Exception {
+			PaymentProcessRequest request = PaymentFixture.createBankTransferRequest();
 			Instant deadline = Instant.now().plus(3, ChronoUnit.DAYS);
-			PaymentProcessResponse.VirtualAccountInfo vaInfo = new PaymentProcessResponse.VirtualAccountInfo(
-				"국민은행", "047-000-00000001", "구름GB", deadline
+			PaymentProcessResponse.AccountInfo accountInfo = new PaymentProcessResponse.AccountInfo(
+				"신한은행", "110-123-456789", "주식회사 구름공방", deadline
 			);
 			PaymentProcessResponse response = new PaymentProcessResponse(
 				1L, OrderStatus.PAYMENT_PENDING,
-				PaymentMethod.VIRTUAL_ACCOUNT, PaymentStatus.PENDING,
-				null, vaInfo
+				PaymentMethod.BANK_TRANSFER, PaymentStatus.PENDING,
+				null, accountInfo
 			);
 
 			given(paymentService.processPayment(eq(1L), eq(1L), any(PaymentProcessRequest.class)))
@@ -126,12 +126,12 @@ class PaymentControllerTest extends WebMvcTestSupport {
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(objectMapper.writeValueAsString(request)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.data.paymentMethod").value("VIRTUAL_ACCOUNT"))
+				.andExpect(jsonPath("$.data.paymentMethod").value("BANK_TRANSFER"))
 				.andExpect(jsonPath("$.data.paymentStatus").value("PENDING"))
 				.andExpect(jsonPath("$.data.orderStatus").value("PAYMENT_PENDING"))
-				.andExpect(jsonPath("$.data.virtualAccount.bank").value("국민은행"))
-				.andExpect(jsonPath("$.data.virtualAccount.holder").value("구름GB"))
-				.andExpect(jsonPath("$.data.virtualAccount.accountNumber").value("047-000-00000001"));
+				.andExpect(jsonPath("$.data.account.bank").value("신한은행"))
+				.andExpect(jsonPath("$.data.account.holder").value("주식회사 구름공방"))
+				.andExpect(jsonPath("$.data.account.accountNumber").value("110-123-456789"));
 		}
 
 		@Test

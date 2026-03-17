@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
-import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 
@@ -20,60 +19,24 @@ import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.common.service.lock.SeatHoldLockManager;
-import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
-import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
-import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
 import com.goormgb.be.seat.redis.SeatSession;
-import com.goormgb.be.seat.seat.enums.SeatZone;
-import com.goormgb.be.seat.seatHold.entity.SeatHold;
-import com.goormgb.be.seat.seatHold.repository.SeatHoldRepository;
 
 @ExtendWith(MockitoExtension.class)
 class SeatHoldServiceTest {
 
 	private static final Long USER_ID = 7L;
 	private static final Long MATCH_ID = 10L;
-	private static final Instant NOW = Instant.parse("2026-04-15T10:00:00Z");
 
 	@Mock
 	private SeatPreferenceRedisRepository seatPreferenceRedisRepository;
 	@Mock
-	private MatchSeatRepository matchSeatRepository;
-	@Mock
-	private SeatHoldRepository seatHoldRepository;
-	@Mock
 	private SeatHoldLockManager seatHoldLockManager;
 	@Mock
-	private Clock clock;
+	private SeatHoldTransactionalService seatHoldTransactionalService;
 
 	@InjectMocks
 	private SeatHoldService seatHoldService;
-
-	private MatchSeat matchSeat(Long seatId, MatchSeatSaleStatus status) {
-		return MatchSeat.builder()
-			.matchId(MATCH_ID)
-			.seatId(seatId)
-			.areaId(1L)
-			.sectionId(1L)
-			.blockId(1L)
-			.rowNo(1)
-			.seatNo(seatId.intValue())
-			.templateColNo(seatId.intValue())
-			.seatZone(SeatZone.LOW)
-			.saleStatus(status)
-			.build();
-	}
-
-	private SeatHold seatHold(Long matchSeatId, Long seatId, Long userId, Instant expiresAt) {
-		return SeatHold.builder()
-			.matchSeatId(matchSeatId)
-			.matchId(MATCH_ID)
-			.seatId(seatId)
-			.userId(userId)
-			.expiresAt(expiresAt)
-			.build();
-	}
 
 	private void setupSession(int ticketCount) {
 		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(USER_ID, MATCH_ID))
@@ -93,30 +56,45 @@ class SeatHoldServiceTest {
 	}
 
 	@Test
-	@DisplayName("동일 좌석 재요청이면 hold 만료시간을 연장한다")
-	void 동일_좌석_재요청_만료_연장() {
+	@DisplayName("seatIds가 null이면 INVALID_SEAT_HOLD_REQUEST 예외가 발생한다")
+	void null_좌석_요청_예외() {
+		// when & then
+		assertThatThrownBy(() -> seatHoldService.createOrRefreshHold(USER_ID, MATCH_ID, null))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.INVALID_SEAT_HOLD_REQUEST);
+
+		verifyNoInteractions(seatHoldLockManager);
+	}
+
+	@Test
+	@DisplayName("티켓 수와 좌석 수가 다르면 INVALID_SEAT_HOLD_REQUEST 예외가 발생한다")
+	void 티켓수_불일치_예외() {
+		// given
+		setupSession(3);
+
+		// when & then
+		assertThatThrownBy(() -> seatHoldService.createOrRefreshHold(USER_ID, MATCH_ID, List.of(1L, 2L)))
+			.isInstanceOf(CustomException.class)
+			.extracting("errorCode")
+			.isEqualTo(ErrorCode.INVALID_SEAT_HOLD_REQUEST);
+
+		verifyNoInteractions(seatHoldLockManager);
+	}
+
+	@Test
+	@DisplayName("정상 요청 시 락 획득 후 트랜잭션 서비스를 호출하고 락을 해제한다")
+	void 정상_요청_락_트랜잭션_순서() {
 		// given
 		setupSession(2);
-		given(clock.instant()).willReturn(NOW);
 		RLock lock1 = mock(RLock.class);
 		RLock lock2 = mock(RLock.class);
 		given(seatHoldLockManager.lockAll(MATCH_ID, List.of(206313L, 206314L))).willReturn(List.of(lock1, lock2));
 
-		given(matchSeatRepository.findAllByMatchIdAndSeatIdIn(MATCH_ID, List.of(206313L, 206314L)))
-			.willReturn(List.of(matchSeat(206313L, MatchSeatSaleStatus.AVAILABLE),
-				matchSeat(206314L, MatchSeatSaleStatus.AVAILABLE)));
-		given(
-			seatHoldRepository.findAllByMatchIdAndSeatIdInAndExpiresAtAfter(eq(MATCH_ID), eq(List.of(206313L, 206314L)),
-				any()))
-			.willReturn(List.of(
-				seatHold(1L, 206313L, USER_ID, NOW.plusSeconds(60)),
-				seatHold(2L, 206314L, USER_ID, NOW.plusSeconds(60))
-			));
-		given(seatHoldRepository.findAllByUserIdAndMatchIdAndExpiresAtAfter(eq(USER_ID), eq(MATCH_ID), any()))
-			.willReturn(List.of(
-				seatHold(1L, 206313L, USER_ID, NOW.plusSeconds(60)),
-				seatHold(2L, 206314L, USER_ID, NOW.plusSeconds(60))
-			));
+		SeatHoldCreateResponse expectedResponse = SeatHoldCreateResponse.of(
+			MATCH_ID, List.of(206313L, 206314L), Instant.parse("2026-04-15T10:05:00Z"));
+		given(seatHoldTransactionalService.createOrRefreshHold(USER_ID, MATCH_ID, List.of(206313L, 206314L)))
+			.willReturn(expectedResponse);
 
 		// when
 		SeatHoldCreateResponse response = seatHoldService.createOrRefreshHold(USER_ID, MATCH_ID,
@@ -125,66 +103,22 @@ class SeatHoldServiceTest {
 		// then
 		assertThat(response.matchId()).isEqualTo(MATCH_ID);
 		assertThat(response.seatCount()).isEqualTo(2);
-		assertThat(response.holdExpiresAt()).isEqualTo(NOW.plusSeconds(300));
-		verify(seatHoldRepository, never()).saveAll(anyList());
-		verify(seatHoldRepository, never()).deleteAllByMatchSeatIdIn(anyList());
-		verify(seatHoldLockManager).unlockAll(List.of(lock1, lock2));
+
+		then(seatHoldTransactionalService).should().createOrRefreshHold(USER_ID, MATCH_ID, List.of(206313L, 206314L));
+		then(seatHoldLockManager).should().unlockAll(List.of(lock1, lock2));
 	}
 
 	@Test
-	@DisplayName("기존 hold와 다른 좌석 요청이면 기존 hold를 해제하고 신규 hold를 생성한다")
-	void 다른_좌석_요청시_교체_성공() {
+	@DisplayName("트랜잭션 서비스에서 예외 발생 시에도 락이 해제된다")
+	void 트랜잭션_예외시_락_해제() {
 		// given
 		setupSession(2);
-		given(clock.instant()).willReturn(NOW);
 		RLock lock1 = mock(RLock.class);
 		RLock lock2 = mock(RLock.class);
 		given(seatHoldLockManager.lockAll(MATCH_ID, List.of(206313L, 206314L))).willReturn(List.of(lock1, lock2));
 
-		given(matchSeatRepository.findAllByMatchIdAndSeatIdIn(MATCH_ID, List.of(206313L, 206314L)))
-			.willReturn(List.of(matchSeat(206313L, MatchSeatSaleStatus.AVAILABLE),
-				matchSeat(206314L, MatchSeatSaleStatus.AVAILABLE)));
-		given(
-			seatHoldRepository.findAllByMatchIdAndSeatIdInAndExpiresAtAfter(eq(MATCH_ID), eq(List.of(206313L, 206314L)),
-				any()))
-			.willReturn(List.of());
-		given(seatHoldRepository.findAllByUserIdAndMatchIdAndExpiresAtAfter(eq(USER_ID), eq(MATCH_ID), any()))
-			.willReturn(List.of(
-				seatHold(11L, 205000L, USER_ID, NOW.plusSeconds(60)),
-				seatHold(12L, 205001L, USER_ID, NOW.plusSeconds(60))
-			));
-		given(matchSeatRepository.findAllById(List.of(11L, 12L)))
-			.willReturn(List.of(matchSeat(205000L, MatchSeatSaleStatus.BLOCKED),
-				matchSeat(205001L, MatchSeatSaleStatus.BLOCKED)));
-
-		// when
-		SeatHoldCreateResponse response = seatHoldService.createOrRefreshHold(USER_ID, MATCH_ID,
-			List.of(206313L, 206314L));
-
-		// then
-		assertThat(response.seatIds()).containsExactly(206313L, 206314L);
-		verify(seatHoldRepository).deleteAllByMatchSeatIdIn(List.of(11L, 12L));
-		verify(seatHoldRepository).saveAll(anyList());
-		verify(seatHoldLockManager).unlockAll(List.of(lock1, lock2));
-	}
-
-	@Test
-	@DisplayName("타 사용자 활성 hold가 있으면 SEAT_ALREADY_HELD_BY_OTHER 예외가 발생한다")
-	void 타사용자_선점_충돌_예외() {
-		// given
-		setupSession(2);
-		given(clock.instant()).willReturn(NOW);
-		RLock lock1 = mock(RLock.class);
-		RLock lock2 = mock(RLock.class);
-		given(seatHoldLockManager.lockAll(MATCH_ID, List.of(206313L, 206314L))).willReturn(List.of(lock1, lock2));
-
-		given(matchSeatRepository.findAllByMatchIdAndSeatIdIn(MATCH_ID, List.of(206313L, 206314L)))
-			.willReturn(List.of(matchSeat(206313L, MatchSeatSaleStatus.AVAILABLE),
-				matchSeat(206314L, MatchSeatSaleStatus.AVAILABLE)));
-		given(
-			seatHoldRepository.findAllByMatchIdAndSeatIdInAndExpiresAtAfter(eq(MATCH_ID), eq(List.of(206313L, 206314L)),
-				any()))
-			.willReturn(List.of(seatHold(1L, 206313L, 999L, NOW.plusSeconds(60))));
+		given(seatHoldTransactionalService.createOrRefreshHold(USER_ID, MATCH_ID, List.of(206313L, 206314L)))
+			.willThrow(new CustomException(ErrorCode.SEAT_ALREADY_HELD_BY_OTHER));
 
 		// when & then
 		assertThatThrownBy(() -> seatHoldService.createOrRefreshHold(USER_ID, MATCH_ID, List.of(206313L, 206314L)))
@@ -192,7 +126,6 @@ class SeatHoldServiceTest {
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.SEAT_ALREADY_HELD_BY_OTHER);
 
-		verify(seatHoldLockManager).unlockAll(List.of(lock1, lock2));
-		verify(seatHoldRepository, never()).saveAll(anyList());
+		then(seatHoldLockManager).should().unlockAll(List.of(lock1, lock2));
 	}
 }

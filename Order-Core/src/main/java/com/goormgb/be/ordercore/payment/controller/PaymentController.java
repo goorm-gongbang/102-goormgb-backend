@@ -38,7 +38,7 @@ public class PaymentController {
 		summary = "결제 처리",
 		description = """
 			결제 수단을 선택하여 결제를 진행합니다.
-			- VIRTUAL_ACCOUNT: 가상계좌 발급, 입금 대기 상태 유지
+			- BANK_TRANSFER: 무통장 입금, 입금 대기 상태 유지
 			- TOSS_PAY / KAKAO_PAY: 즉시 결제 완료 처리 (목업)
 			""",
 		security = @SecurityRequirement(name = "BearerAuth")

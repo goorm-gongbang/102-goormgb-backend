@@ -1,114 +1,56 @@
 package com.goormgb.be.seat.common.service;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Objects;
 
 import org.redisson.api.RLock;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.common.service.lock.SeatHoldLockManager;
-import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
-import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
-import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
 import com.goormgb.be.seat.redis.SeatSession;
-import com.goormgb.be.seat.seatHold.entity.SeatHold;
-import com.goormgb.be.seat.seatHold.repository.SeatHoldRepository;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 직접 선택 좌석 선점(Hold) 서비스.
+ *
+ * <p>유저가 좌석맵에서 직접 클릭한 좌석들을 선점한다.
+ * 입력 검증과 Redisson 분산 락 관리를 담당하며,
+ * 실제 트랜잭션 처리는 {@link SeatHoldTransactionalService}에 위임하여
+ * 트랜잭션 커밋이 락 해제보다 먼저 완료되도록 보장한다.</p>
+ *
+ * <h3>처리 흐름</h3>
+ * <ol>
+ *   <li>seatIds 정규화 및 검증 (중복, null, 티켓 수 일치)</li>
+ *   <li>좌석 단위 Redisson 분산 락 획득 (정렬 순서로 데드락 방지)</li>
+ *   <li>트랜잭션 서비스에서 Hold 생성/갱신 + 커밋</li>
+ *   <li>락 해제</li>
+ * </ol>
+ */
 @Service
 @RequiredArgsConstructor
 public class SeatHoldService {
 
-	private static final Duration HOLD_TTL = Duration.ofMinutes(5);
-
 	private final SeatPreferenceRedisRepository seatPreferenceRedisRepository;
-	private final MatchSeatRepository matchSeatRepository;
-	private final SeatHoldRepository seatHoldRepository;
 	private final SeatHoldLockManager seatHoldLockManager;
-	private final Clock clock;
+	private final SeatHoldTransactionalService seatHoldTransactionalService;
 
-	@Transactional
 	public SeatHoldCreateResponse createOrRefreshHold(Long userId, Long matchId, List<Long> seatIds) {
 		List<Long> normalizedSeatIds = normalizeSeatIds(seatIds);
 		validateSeatCount(userId, matchId, normalizedSeatIds.size());
 
 		List<RLock> locks = seatHoldLockManager.lockAll(matchId, normalizedSeatIds);
 		try {
-			return createOrRefreshHoldTx(userId, matchId, normalizedSeatIds);
+			return seatHoldTransactionalService.createOrRefreshHold(userId, matchId, normalizedSeatIds);
 		} finally {
 			seatHoldLockManager.unlockAll(locks);
 		}
-	}
-
-	private SeatHoldCreateResponse createOrRefreshHoldTx(Long userId, Long matchId, List<Long> seatIds) {
-		Instant now = clock.instant();
-		Instant expiresAt = now.plus(HOLD_TTL);
-
-		List<MatchSeat> requestedSeats = matchSeatRepository.findAllByMatchIdAndSeatIdIn(matchId, seatIds);
-
-		Preconditions.validate(requestedSeats.size() == seatIds.size(), ErrorCode.MATCH_SEAT_NOT_FOUND);
-		Preconditions.validate(
-			requestedSeats.stream().noneMatch(seat -> seat.getSaleStatus() == MatchSeatSaleStatus.SOLD),
-			ErrorCode.SEAT_ALREADY_SOLD
-		);
-
-		List<SeatHold> activeRequestedHolds = seatHoldRepository
-			.findAllByMatchIdAndSeatIdInAndExpiresAtAfter(matchId, seatIds, now);
-
-		boolean hasOtherUserHold = activeRequestedHolds.stream().anyMatch(hold -> !hold.isOwnedBy(userId));
-		Preconditions.validate(!hasOtherUserHold, ErrorCode.SEAT_ALREADY_HELD_BY_OTHER);
-
-		List<SeatHold> userActiveHolds = seatHoldRepository.findAllByUserIdAndMatchIdAndExpiresAtAfter(userId, matchId,
-			now);
-		Set<Long> currentHeldSeatIds = userActiveHolds.stream()
-			.map(SeatHold::getSeatId)
-			.collect(java.util.stream.Collectors.toSet());
-		Set<Long> requestedSeatSet = new HashSet<>(seatIds);
-
-		if (currentHeldSeatIds.equals(requestedSeatSet) && !userActiveHolds.isEmpty()) {
-			userActiveHolds.forEach(hold -> hold.extendHold(expiresAt));
-			requestedSeats.forEach(MatchSeat::markBlocked);
-			return SeatHoldCreateResponse.of(matchId, seatIds, expiresAt);
-		}
-
-		releaseUserActiveHolds(userActiveHolds);
-
-		List<SeatHold> newHolds = requestedSeats.stream()
-			.map(seat -> SeatHold.builder()
-				.matchSeatId(seat.getId())
-				.matchId(matchId)
-				.seatId(seat.getSeatId())
-				.userId(userId)
-				.expiresAt(expiresAt)
-				.build())
-			.toList();
-
-		requestedSeats.forEach(MatchSeat::markBlocked);
-		seatHoldRepository.saveAll(newHolds);
-
-		return SeatHoldCreateResponse.of(matchId, seatIds, expiresAt);
-	}
-
-	private void releaseUserActiveHolds(List<SeatHold> userActiveHolds) {
-		if (userActiveHolds.isEmpty()) {
-			return;
-		}
-
-		List<Long> matchSeatIds = userActiveHolds.stream().map(SeatHold::getMatchSeatId).toList();
-		List<MatchSeat> seatsToRelease = matchSeatRepository.findAllById(matchSeatIds);
-		seatsToRelease.forEach(MatchSeat::markAvailable);
-		seatHoldRepository.deleteAllByMatchSeatIdIn(matchSeatIds);
 	}
 
 	private List<Long> normalizeSeatIds(List<Long> seatIds) {
@@ -118,7 +60,7 @@ public class SeatHoldService {
 		);
 
 		Preconditions.validate(
-			seatIds.stream().noneMatch(java.util.Objects::isNull),
+			seatIds.stream().noneMatch(Objects::isNull),
 			ErrorCode.INVALID_SEAT_HOLD_REQUEST
 		);
 
@@ -142,4 +84,3 @@ public class SeatHoldService {
 		);
 	}
 }
-
