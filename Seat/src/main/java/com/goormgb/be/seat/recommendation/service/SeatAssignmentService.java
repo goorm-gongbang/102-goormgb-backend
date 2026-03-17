@@ -2,8 +2,8 @@ package com.goormgb.be.seat.recommendation.service;
 
 import org.springframework.stereotype.Service;
 
-import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.recommendation.dto.response.SeatAssignmentResponse;
@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
  * <h3>처리 흐름</h3>
  * <ol>
  *   <li>SeatSession에서 ticketCount 조회</li>
- *   <li>Redis 분산 락 획득 (block_lock:{blockId})</li>
+ *   <li>Redis 분산 락 획득 (seat:recommendation:match:{matchId}:block:{blockId})</li>
  *   <li>트랜잭션 내에서 좌석 배정 + Hold 생성</li>
  *   <li>트랜잭션 커밋 후 락 해제</li>
  * </ol>
@@ -42,15 +42,13 @@ public class SeatAssignmentService {
 
 		Block block = blockRepository.findByIdWithSectionOrThrow(blockId);
 
-		if (!seatBlockLock.tryLock(blockId)) {
-			throw new CustomException(ErrorCode.SEAT_LOCK_ACQUISITION_FAILED);
-		}
+		Preconditions.validate(seatBlockLock.tryLock(matchId, blockId), ErrorCode.SEAT_LOCK_ACQUISITION_FAILED);
 
 		try {
 			return seatAssignmentTransactionalService.assignAndHold(
 				userId, matchId, blockId, block, requiredSeats, nearAdjacentToggle);
 		} finally {
-			seatBlockLock.unlock(blockId);
+			seatBlockLock.unlock(matchId, blockId);
 		}
 	}
 }
