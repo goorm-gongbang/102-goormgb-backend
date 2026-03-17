@@ -161,12 +161,16 @@ public class SeatAssignmentTransactionalService {
 	}
 
 	/**
-	 * 충돌 감지 시 이미 BLOCKED로 변경한 좌석들을 AVAILABLE로 롤백한다.
+	 * 충돌 감지 시 이미 BLOCKED로 변경한 좌석들을 AVAILABLE로 일괄 롤백한다.
 	 */
 	private void rollbackBlockedSeats(List<MatchSeat> blockedSeats) {
-		for (MatchSeat seat : blockedSeats) {
-			matchSeatRepository.markAvailableIfBlocked(seat.getId());
+		if (blockedSeats.isEmpty()) {
+			return;
 		}
+		List<Long> idsToRollback = blockedSeats.stream()
+			.map(MatchSeat::getId)
+			.toList();
+		matchSeatRepository.markAvailableIfBlockedInBatch(idsToRollback);
 	}
 
 	/**

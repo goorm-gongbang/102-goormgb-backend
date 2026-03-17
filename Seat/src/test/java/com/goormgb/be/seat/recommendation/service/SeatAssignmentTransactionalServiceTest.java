@@ -189,10 +189,8 @@ class SeatAssignmentTransactionalServiceTest {
 		assertThat(response.assignedSeats()).hasSize(3);
 		assertThat(response.semiConsecutive()).isFalse();
 
-		// 1차 시도의 seat1, seat2 롤백 확인
-		verify(matchSeatRepository).markAvailableIfBlocked(101L);
-		verify(matchSeatRepository).markAvailableIfBlocked(102L);
-		verify(matchSeatRepository, never()).markAvailableIfBlocked(103L);
+		// 1차 시도의 seat1, seat2 일괄 롤백 확인
+		verify(matchSeatRepository).markAvailableIfBlockedInBatch(List.of(101L, 102L));
 
 		// finder가 2번 호출됨
 		verify(realConsecutiveFinder, times(2)).findBestRealConsecutive(1L, 1L, 3);
