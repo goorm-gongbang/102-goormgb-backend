@@ -31,6 +31,7 @@ import com.goormgb.be.seat.area.entity.Area;
 import com.goormgb.be.seat.area.enums.AreaCode;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
+import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.recommendation.dto.response.BlockRecommendationResponse;
 import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
 import com.goormgb.be.seat.redis.SeatSession;
@@ -47,6 +48,8 @@ class SeatRecommendationServiceTest {
 	private SeatPreferenceRedisRepository seatPreferenceRedisRepository;
 	@Mock
 	private BlockRepository blockRepository;
+	@Mock
+	private MatchSeatRepository matchSeatRepository;
 	@Mock
 	private OnboardingPreferenceRepository onboardingPreferenceRepository;
 	@Mock
@@ -123,6 +126,8 @@ class SeatRecommendationServiceTest {
 		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any())).willReturn(pref);
 		given(onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId)).willReturn(List.of());
 
+		given(matchSeatRepository.countRemainingSeatsByMatchIdAndBlockIdIn(eq(matchId), any())).willReturn(List.of());
+
 		// block206이 연석 더 많음 (차이 > 10)
 		given(consecutiveSeatCounter.countRealConsecutiveSeats(matchId, 205L, 5)).willReturn(5);
 		given(consecutiveSeatCounter.countRealConsecutiveSeats(matchId, 206L, 5)).willReturn(20);
@@ -167,6 +172,8 @@ class SeatRecommendationServiceTest {
 		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any())).willReturn(pref);
 		given(onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId)).willReturn(viewpoints);
 
+		given(matchSeatRepository.countRemainingSeatsByMatchIdAndBlockIdIn(eq(matchId), any())).willReturn(List.of());
+
 		// 연석 차이 10 이내
 		given(consecutiveSeatCounter.countRealConsecutiveSeats(matchId, 205L, 3)).willReturn(12);
 		given(consecutiveSeatCounter.countRealConsecutiveSeats(matchId, 408L, 3)).willReturn(15);
@@ -206,6 +213,8 @@ class SeatRecommendationServiceTest {
 		given(blockRepository.findAllByIdInWithSectionAndArea(List.of(205L))).willReturn(List.of(block205));
 		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any())).willReturn(pref);
 		given(onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId)).willReturn(List.of());
+
+		given(matchSeatRepository.countRemainingSeatsByMatchIdAndBlockIdIn(eq(matchId), any())).willReturn(List.of());
 
 		// 모든 블럭에 연석 없음
 		given(consecutiveSeatCounter.countRealConsecutiveSeats(matchId, 205L, 5)).willReturn(0);
