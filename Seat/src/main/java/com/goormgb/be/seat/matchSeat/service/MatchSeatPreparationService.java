@@ -4,7 +4,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -32,30 +31,18 @@ public class MatchSeatPreparationService {
 
 	public void prepareMatchSeats() {
 
-		// KST 기준 현재 시각
-		ZonedDateTime nowKst = ZonedDateTime.now(clock)
-			.withZoneSameInstant(KST);
+		Instant now = clock.instant();
+		LocalDate todayKst = now.atZone(KST).toLocalDate();
 
-		// 오늘 기준 +7일 날짜
-		LocalDate targetDate = nowKst.toLocalDate().plusDays(7);
-
-		// 7일 뒤 날짜의 00:00 ~ 다음날 00:00 범위
-		Instant targetStart = targetDate
-			.atStartOfDay(KST)
-			.toInstant();
-
-		Instant targetEnd = targetDate
-			.plusDays(1)
-			.atStartOfDay(KST)
-			.toInstant();
-
-		// 생성 대상 경기 조회
-		List<Match> matchesToPrepare =
-			matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
-				SaleStatus.UPCOMING,
-				targetStart,
-				targetEnd
-			);
+		List<Match> matchesToPrepare = matchRepository.findBySaleStatus(SaleStatus.UPCOMING)
+			.stream()
+			.filter(match ->
+				match.getMatchAt()
+					.atZone(KST)
+					.toLocalDate()
+					.equals(todayKst.plusDays(7))
+			)
+			.toList();
 
 		if (matchesToPrepare.isEmpty()) {
 			log.info("[MatchSeatPreparationService] 생성 대상 경기 없음");
