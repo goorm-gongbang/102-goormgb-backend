@@ -1,4 +1,4 @@
-# onboarding 테이블 재생성 테스트용 재배포
+# onboarding 테이블 DROP 후 DDL 재생성 확인용 재배포
 server:
   port: 8083
   servlet:
