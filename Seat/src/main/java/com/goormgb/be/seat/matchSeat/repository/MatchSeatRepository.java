@@ -3,6 +3,7 @@ package com.goormgb.be.seat.matchSeat.repository;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -48,4 +49,37 @@ public interface MatchSeatRepository extends JpaRepository<MatchSeat, Long> {
 	);
 
 	List<MatchSeat> findAllByMatchIdAndSeatIdIn(Long matchId, List<Long> seatIds);
+
+	/**
+	 * 좌석이 AVAILABLE 상태일 때만 BLOCKED로 변경한다.
+	 *
+	 * <p>DB row-level lock이 원자성을 보장하므로 동시 요청 시에도 1명만 성공한다.
+	 * 반환값이 0이면 다른 유저가 이미 선점한 것으로 판단한다.</p>
+	 *
+	 * @return 변경된 행 수 (0 또는 1)
+	 */
+	@Modifying(clearAutomatically = true)
+	@Query("""
+		UPDATE MatchSeat ms
+		SET ms.saleStatus = com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus.BLOCKED
+		WHERE ms.id = :matchSeatId
+		  AND ms.saleStatus = com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus.AVAILABLE
+		""")
+	int markBlockedIfAvailable(@Param("matchSeatId") Long matchSeatId);
+
+	/**
+	 * 좌석이 BLOCKED 상태일 때만 AVAILABLE로 복원한다.
+	 *
+	 * <p>충돌 감지 시 이미 BLOCKED로 변경한 좌석을 롤백하기 위해 사용한다.</p>
+	 *
+	 * @return 변경된 행 수 (0 또는 1)
+	 */
+	@Modifying(clearAutomatically = true)
+	@Query("""
+		UPDATE MatchSeat ms
+		SET ms.saleStatus = com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus.AVAILABLE
+		WHERE ms.id = :matchSeatId
+		  AND ms.saleStatus = com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus.BLOCKED
+		""")
+	int markAvailableIfBlocked(@Param("matchSeatId") Long matchSeatId);
 }
