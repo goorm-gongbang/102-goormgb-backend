@@ -31,10 +31,11 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class PaymentService {
 
-	// 무통장 입금 가상계좌 목업 정보
-	private static final String VIRTUAL_ACCOUNT_BANK = "국민은행";
-	private static final String VIRTUAL_ACCOUNT_HOLDER = "구름GB";
-	private static final int VIRTUAL_ACCOUNT_DEADLINE_DAYS = 3;
+	// 무통장 입금 목업 계좌 정보
+	private static final String ACCOUNT_BANK = "신한은행";
+	private static final String ACCOUNT_NUMBER = "110-123-456789";
+	private static final String ACCOUNT_HOLDER = "주식회사 구름공방";
+	private static final int DEPOSIT_DEADLINE_DAYS = 3;
 
 	private final OrderRepository orderRepository;
 	private final PaymentRepository paymentRepository;
@@ -42,32 +43,32 @@ public class PaymentService {
 
 	/**
 	 * 결제 처리.
-	 * - VIRTUAL_ACCOUNT: 가상계좌 발급(목업), 입금 대기 상태 유지
+	 * - BANK_TRANSFER: 무통장 입금 계좌 안내(목업), 입금 대기 상태 유지
 	 * - TOSS_PAY / KAKAO_PAY: 외부 PG 연동 없이 즉시 결제 완료 처리(목업)
 	 */
 	public PaymentProcessResponse processPayment(Long userId, Long orderId, PaymentProcessRequest request) {
 		Order order = findOrderAndValidateOwnership(userId, orderId);
 
 		Preconditions.validate(
-			order.getStatus() == OrderStatus.PAYMENT_PENDING,
-			ErrorCode.PAYMENT_ALREADY_COMPLETED
+				order.getStatus() == OrderStatus.PAYMENT_PENDING,
+				ErrorCode.PAYMENT_ALREADY_COMPLETED
 		);
 
 		Preconditions.validate(
-			!paymentRepository.findByOrderId(orderId).isPresent(),
-			ErrorCode.PAYMENT_ALREADY_COMPLETED
+				!paymentRepository.findByOrderId(orderId).isPresent(),
+				ErrorCode.PAYMENT_ALREADY_COMPLETED
 		);
 
 		Payment payment = buildPayment(order, request.paymentMethod());
 		paymentRepository.save(payment);
 
-		if (request.paymentMethod() != PaymentMethod.VIRTUAL_ACCOUNT) {
+		if (request.paymentMethod() != PaymentMethod.BANK_TRANSFER) {
 			// 간편결제(토스페이, 카카오페이) 목업 즉시 완료
 			payment.complete();
 			order.updateStatus(OrderStatus.PAID);
 			log.info("[PaymentService] 간편결제 완료(목업) - orderId={}, method={}", orderId, request.paymentMethod());
 		} else {
-			log.info("[PaymentService] 무통장 입금 가상계좌 발급 - orderId={}", orderId);
+			log.info("[PaymentService] 무통장 입금 계좌 안내 - orderId={}", orderId);
 		}
 
 		return PaymentProcessResponse.of(payment);
@@ -81,18 +82,18 @@ public class PaymentService {
 		Order order = findOrderAndValidateOwnership(userId, orderId);
 
 		Payment payment = paymentRepository.findByOrderId(orderId)
-			.orElseThrow(() -> new CustomException(ErrorCode.PAYMENT_NOT_FOUND));
+				.orElseThrow(() -> new CustomException(ErrorCode.PAYMENT_NOT_FOUND));
 
 		Preconditions.validate(
-			!cashReceiptRepository.findByPaymentId(payment.getId()).isPresent(),
-			ErrorCode.CASH_RECEIPT_ALREADY_EXISTS
+				!cashReceiptRepository.findByPaymentId(payment.getId()).isPresent(),
+				ErrorCode.CASH_RECEIPT_ALREADY_EXISTS
 		);
 
 		CashReceipt cashReceipt = CashReceipt.builder()
-			.payment(payment)
-			.purpose(request.purpose())
-			.number(request.number())
-			.build();
+				.payment(payment)
+				.purpose(request.purpose())
+				.number(request.number())
+				.build();
 
 		cashReceiptRepository.save(cashReceipt);
 
@@ -103,38 +104,33 @@ public class PaymentService {
 
 	private Order findOrderAndValidateOwnership(Long userId, Long orderId) {
 		Order order = orderRepository.findById(orderId)
-			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
+				.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
 		Preconditions.validate(
-			order.getUser().getId().equals(userId),
-			ErrorCode.ORDER_ACCESS_DENIED
+				order.getUser().getId().equals(userId),
+				ErrorCode.ORDER_ACCESS_DENIED
 		);
 
 		return order;
 	}
 
 	private Payment buildPayment(Order order, PaymentMethod method) {
-		if (method == PaymentMethod.VIRTUAL_ACCOUNT) {
-			String mockAccountNumber = generateMockAccountNumber(order.getId());
-			Instant depositDeadline = Instant.now().plus(VIRTUAL_ACCOUNT_DEADLINE_DAYS, ChronoUnit.DAYS);
+		if (method == PaymentMethod.BANK_TRANSFER) {
+			Instant depositDeadline = Instant.now().plus(DEPOSIT_DEADLINE_DAYS, ChronoUnit.DAYS);
 
 			return Payment.builder()
-				.order(order)
-				.paymentMethod(method)
-				.virtualAccountBank(VIRTUAL_ACCOUNT_BANK)
-				.virtualAccountNumber(mockAccountNumber)
-				.virtualAccountHolder(VIRTUAL_ACCOUNT_HOLDER)
-				.depositDeadline(depositDeadline)
-				.build();
+					.order(order)
+					.paymentMethod(method)
+					.accountBank(ACCOUNT_BANK)
+					.accountNumber(ACCOUNT_NUMBER)
+					.accountHolder(ACCOUNT_HOLDER)
+					.depositDeadline(depositDeadline)
+					.build();
 		}
 
 		return Payment.builder()
-			.order(order)
-			.paymentMethod(method)
-			.build();
-	}
-
-	private String generateMockAccountNumber(Long orderId) {
-		return String.format("047-000-%08d", orderId);
+				.order(order)
+				.paymentMethod(method)
+				.build();
 	}
 }

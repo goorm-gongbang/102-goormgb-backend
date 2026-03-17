@@ -19,16 +19,16 @@ class PaymentEntityTest {
 
 	private Order createOrder() {
 		return OrderFixture.createOrder(
-			OrderFixture.createUser(),
-			OrderFixture.createWeekdayMatch()
+				OrderFixture.createUser(),
+				OrderFixture.createWeekdayMatch()
 		);
 	}
 
 	private Payment createPendingPayment(PaymentMethod method) {
 		return Payment.builder()
-			.order(createOrder())
-			.paymentMethod(method)
-			.build();
+				.order(createOrder())
+				.paymentMethod(method)
+				.build();
 	}
 
 	@Nested
@@ -50,32 +50,32 @@ class PaymentEntityTest {
 		}
 
 		@Test
-		@DisplayName("간편결제 생성 시 가상계좌 정보는 null이다")
-		void 간편결제_생성시_가상계좌_null() {
+		@DisplayName("간편결제 생성 시 계좌 정보는 null이다")
+		void 간편결제_생성시_계좌_null() {
 			Payment payment = createPendingPayment(PaymentMethod.KAKAO_PAY);
-			assertThat(payment.getVirtualAccountBank()).isNull();
-			assertThat(payment.getVirtualAccountNumber()).isNull();
-			assertThat(payment.getVirtualAccountHolder()).isNull();
+			assertThat(payment.getAccountBank()).isNull();
+			assertThat(payment.getAccountNumber()).isNull();
+			assertThat(payment.getAccountHolder()).isNull();
 			assertThat(payment.getDepositDeadline()).isNull();
 		}
 
 		@Test
-		@DisplayName("가상계좌 생성 시 계좌 정보가 올바르게 설정된다")
-		void 가상계좌_생성시_계좌정보_설정() {
+		@DisplayName("무통장 입금 생성 시 계좌 정보가 올바르게 설정된다")
+		void 무통장입금_생성시_계좌정보_설정() {
 			Instant deadline = Instant.now().plus(3, ChronoUnit.DAYS);
 			Payment payment = Payment.builder()
-				.order(createOrder())
-				.paymentMethod(PaymentMethod.VIRTUAL_ACCOUNT)
-				.virtualAccountBank("국민은행")
-				.virtualAccountNumber("047-000-00000001")
-				.virtualAccountHolder("구름GB")
-				.depositDeadline(deadline)
-				.build();
+					.order(createOrder())
+					.paymentMethod(PaymentMethod.BANK_TRANSFER)
+					.accountBank("신한은행")
+					.accountNumber("110-123-456789")
+					.accountHolder("주식회사 구름공방")
+					.depositDeadline(deadline)
+					.build();
 
-			assertThat(payment.getPaymentMethod()).isEqualTo(PaymentMethod.VIRTUAL_ACCOUNT);
-			assertThat(payment.getVirtualAccountBank()).isEqualTo("국민은행");
-			assertThat(payment.getVirtualAccountNumber()).isEqualTo("047-000-00000001");
-			assertThat(payment.getVirtualAccountHolder()).isEqualTo("구름GB");
+			assertThat(payment.getPaymentMethod()).isEqualTo(PaymentMethod.BANK_TRANSFER);
+			assertThat(payment.getAccountBank()).isEqualTo("신한은행");
+			assertThat(payment.getAccountNumber()).isEqualTo("110-123-456789");
+			assertThat(payment.getAccountHolder()).isEqualTo("주식회사 구름공방");
 			assertThat(payment.getDepositDeadline()).isEqualTo(deadline);
 			assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PENDING);
 		}
@@ -85,11 +85,11 @@ class PaymentEntityTest {
 		void 결제수단_저장() {
 			Payment tossPay = createPendingPayment(PaymentMethod.TOSS_PAY);
 			Payment kakaoPay = createPendingPayment(PaymentMethod.KAKAO_PAY);
-			Payment virtualAccount = createPendingPayment(PaymentMethod.VIRTUAL_ACCOUNT);
+			Payment bankTransfer = createPendingPayment(PaymentMethod.BANK_TRANSFER);
 
 			assertThat(tossPay.getPaymentMethod()).isEqualTo(PaymentMethod.TOSS_PAY);
 			assertThat(kakaoPay.getPaymentMethod()).isEqualTo(PaymentMethod.KAKAO_PAY);
-			assertThat(virtualAccount.getPaymentMethod()).isEqualTo(PaymentMethod.VIRTUAL_ACCOUNT);
+			assertThat(bankTransfer.getPaymentMethod()).isEqualTo(PaymentMethod.BANK_TRANSFER);
 		}
 	}
 
@@ -116,9 +116,9 @@ class PaymentEntityTest {
 		}
 
 		@Test
-		@DisplayName("가상계좌 결제도 complete() 호출 시 COMPLETED 상태가 된다")
-		void 가상계좌_complete() {
-			Payment payment = createPendingPayment(PaymentMethod.VIRTUAL_ACCOUNT);
+		@DisplayName("무통장 입금 결제도 complete() 호출 시 COMPLETED 상태가 된다")
+		void 무통장입금_complete() {
+			Payment payment = createPendingPayment(PaymentMethod.BANK_TRANSFER);
 			payment.complete();
 			assertThat(payment.getStatus()).isEqualTo(PaymentStatus.COMPLETED);
 		}
@@ -131,7 +131,7 @@ class PaymentEntityTest {
 		@Test
 		@DisplayName("cancel() 호출 시 상태가 CANCELLED로 변경된다")
 		void cancel_상태가_CANCELLED() {
-			Payment payment = createPendingPayment(PaymentMethod.VIRTUAL_ACCOUNT);
+			Payment payment = createPendingPayment(PaymentMethod.BANK_TRANSFER);
 			payment.cancel();
 			assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELLED);
 		}
@@ -162,7 +162,7 @@ class PaymentEntityTest {
 		@Test
 		@DisplayName("PENDING 상태에서도 refund() 호출 가능하다")
 		void refund_PENDING_상태에서_호출가능() {
-			Payment payment = createPendingPayment(PaymentMethod.VIRTUAL_ACCOUNT);
+			Payment payment = createPendingPayment(PaymentMethod.BANK_TRANSFER);
 			payment.refund();
 			assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
 		}

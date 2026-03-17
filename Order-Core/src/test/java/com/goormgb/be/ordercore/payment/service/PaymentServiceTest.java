@@ -82,7 +82,7 @@ class PaymentServiceTest {
 			assertThat(response.paymentStatus()).isEqualTo(PaymentStatus.COMPLETED);
 			assertThat(response.orderStatus()).isEqualTo(OrderStatus.PAID);
 			assertThat(response.paidAt()).isNotNull();
-			assertThat(response.virtualAccount()).isNull();
+			assertThat(response.account()).isNull();
 		}
 
 		@Test
@@ -105,13 +105,13 @@ class PaymentServiceTest {
 		}
 
 		@Test
-		@DisplayName("가상계좌 결제 시 PENDING 상태를 유지하고 가상계좌 정보를 반환한다")
-		void processPayment_VIRTUAL_ACCOUNT_대기상태() {
+		@DisplayName("무통장 입금 시 PENDING 상태를 유지하고 계좌 정보를 반환한다")
+		void processPayment_BANK_TRANSFER_대기상태() {
 			Long userId = 1L;
 			Long orderId = 1L;
 			Order order = createOrderWithUser(orderId, userId);
 			ReflectionTestUtils.setField(order, "id", orderId);
-			PaymentProcessRequest request = PaymentFixture.createVirtualAccountRequest();
+			PaymentProcessRequest request = PaymentFixture.createBankTransferRequest();
 
 			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
@@ -119,31 +119,14 @@ class PaymentServiceTest {
 
 			PaymentProcessResponse response = paymentService.processPayment(userId, orderId, request);
 
-			assertThat(response.paymentMethod()).isEqualTo(PaymentMethod.VIRTUAL_ACCOUNT);
+			assertThat(response.paymentMethod()).isEqualTo(PaymentMethod.BANK_TRANSFER);
 			assertThat(response.paymentStatus()).isEqualTo(PaymentStatus.PENDING);
 			assertThat(response.orderStatus()).isEqualTo(OrderStatus.PAYMENT_PENDING);
-			assertThat(response.virtualAccount()).isNotNull();
-			assertThat(response.virtualAccount().bank()).isEqualTo("국민은행");
-			assertThat(response.virtualAccount().holder()).isEqualTo("구름GB");
-			assertThat(response.virtualAccount().accountNumber()).startsWith("047-000-");
-			assertThat(response.virtualAccount().depositDeadline()).isNotNull();
-		}
-
-		@Test
-		@DisplayName("가상계좌 번호는 orderId 기반으로 생성된다")
-		void processPayment_가상계좌번호_orderId_기반() {
-			Long userId = 1L;
-			Long orderId = 42L;
-			Order order = createOrderWithUser(orderId, userId);
-			PaymentProcessRequest request = PaymentFixture.createVirtualAccountRequest();
-
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
-			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
-			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
-
-			PaymentProcessResponse response = paymentService.processPayment(userId, orderId, request);
-
-			assertThat(response.virtualAccount().accountNumber()).isEqualTo("047-000-00000042");
+			assertThat(response.account()).isNotNull();
+			assertThat(response.account().bank()).isEqualTo("신한은행");
+			assertThat(response.account().holder()).isEqualTo("주식회사 구름공방");
+			assertThat(response.account().accountNumber()).isEqualTo("110-123-456789");
+			assertThat(response.account().depositDeadline()).isNotNull();
 		}
 
 		@Test
@@ -152,10 +135,10 @@ class PaymentServiceTest {
 			given(orderRepository.findById(99L)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
-				() -> paymentService.processPayment(1L, 99L, PaymentFixture.createTossPayRequest())
+					() -> paymentService.processPayment(1L, 99L, PaymentFixture.createTossPayRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
 		}
 
 		@Test
@@ -168,10 +151,10 @@ class PaymentServiceTest {
 			given(orderRepository.findById(1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(
-				() -> paymentService.processPayment(attackerId, 1L, PaymentFixture.createTossPayRequest())
+					() -> paymentService.processPayment(attackerId, 1L, PaymentFixture.createTossPayRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
 		}
 
 		@Test
@@ -184,10 +167,10 @@ class PaymentServiceTest {
 			given(orderRepository.findById(1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(
-				() -> paymentService.processPayment(userId, 1L, PaymentFixture.createTossPayRequest())
+					() -> paymentService.processPayment(userId, 1L, PaymentFixture.createTossPayRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
 		}
 
 		@Test
@@ -196,16 +179,16 @@ class PaymentServiceTest {
 			Long userId = 1L;
 			Long orderId = 1L;
 			Order order = createOrderWithUser(orderId, userId);
-			Payment existingPayment = PaymentFixture.createVirtualAccountPayment(order);
+			Payment existingPayment = PaymentFixture.createBankTransferPayment(order);
 
 			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.of(existingPayment));
 
 			assertThatThrownBy(
-				() -> paymentService.processPayment(userId, orderId, PaymentFixture.createTossPayRequest())
+					() -> paymentService.processPayment(userId, orderId, PaymentFixture.createTossPayRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
 		}
 	}
 
@@ -265,10 +248,11 @@ class PaymentServiceTest {
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
-				() -> paymentService.createCashReceipt(userId, orderId, PaymentFixture.createPersonalDeductionRequest())
+					() -> paymentService.createCashReceipt(userId, orderId,
+							PaymentFixture.createPersonalDeductionRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.PAYMENT_NOT_FOUND.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.PAYMENT_NOT_FOUND.getMessage());
 		}
 
 		@Test
@@ -285,10 +269,11 @@ class PaymentServiceTest {
 			given(cashReceiptRepository.findByPaymentId(payment.getId())).willReturn(Optional.of(existing));
 
 			assertThatThrownBy(
-				() -> paymentService.createCashReceipt(userId, orderId, PaymentFixture.createPersonalDeductionRequest())
+					() -> paymentService.createCashReceipt(userId, orderId,
+							PaymentFixture.createPersonalDeductionRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.CASH_RECEIPT_ALREADY_EXISTS.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.CASH_RECEIPT_ALREADY_EXISTS.getMessage());
 		}
 
 		@Test
@@ -301,10 +286,11 @@ class PaymentServiceTest {
 			given(orderRepository.findById(1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(
-				() -> paymentService.createCashReceipt(attackerId, 1L, PaymentFixture.createPersonalDeductionRequest())
+					() -> paymentService.createCashReceipt(attackerId, 1L,
+							PaymentFixture.createPersonalDeductionRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
 		}
 
 		@Test
@@ -313,10 +299,10 @@ class PaymentServiceTest {
 			given(orderRepository.findById(99L)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
-				() -> paymentService.createCashReceipt(1L, 99L, PaymentFixture.createPersonalDeductionRequest())
+					() -> paymentService.createCashReceipt(1L, 99L, PaymentFixture.createPersonalDeductionRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
 		}
 	}
 }

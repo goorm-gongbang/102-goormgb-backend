@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum PaymentMethod {
 
-	VIRTUAL_ACCOUNT("무통장 입금"),
+	BANK_TRANSFER("무통장 입금"),
 	TOSS_PAY("토스페이"),
 	KAKAO_PAY("카카오페이");
 
