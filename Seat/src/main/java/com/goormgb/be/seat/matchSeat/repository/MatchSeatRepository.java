@@ -82,4 +82,17 @@ public interface MatchSeatRepository extends JpaRepository<MatchSeat, Long> {
 		  AND ms.saleStatus = com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus.BLOCKED
 		""")
 	int markAvailableIfBlockedInBatch(@Param("matchSeatIds") List<Long> matchSeatIds);
+
+	@Query("""
+		SELECT ms.blockId AS blockId, COUNT(ms) AS remainingSeatCount
+		FROM MatchSeat ms
+		WHERE ms.matchId = :matchId
+		  AND ms.blockId IN :blockIds
+		  AND ms.saleStatus = com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus.AVAILABLE
+		GROUP BY ms.blockId
+		""")
+	List<BlockRemainingSeatProjection> countRemainingSeatsByMatchIdAndBlockIdIn(
+		@Param("matchId") Long matchId,
+		@Param("blockIds") List<Long> blockIds
+	);
 }
