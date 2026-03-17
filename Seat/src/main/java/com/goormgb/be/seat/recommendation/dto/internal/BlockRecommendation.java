@@ -4,6 +4,7 @@ import com.goormgb.be.seat.block.entity.Block;
 
 public record BlockRecommendation(
 	Block block,
-	int realConsecutiveCount
+	int realConsecutiveCount,
+	long remainingSeatCount
 ) {
 }
