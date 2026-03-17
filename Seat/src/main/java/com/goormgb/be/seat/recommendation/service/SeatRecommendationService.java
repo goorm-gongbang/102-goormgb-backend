@@ -12,8 +12,8 @@ import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
 import com.goormgb.be.domain.onboarding.entity.OnboardingViewpointPriority;
 import com.goormgb.be.domain.onboarding.repository.OnboardingPreferenceRepository;
 import com.goormgb.be.domain.onboarding.repository.OnboardingViewpointPriorityRepository;
-import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.recommendation.dto.internal.BlockRecommendation;
@@ -60,9 +60,7 @@ public class SeatRecommendationService {
 
 		List<BlockRecommendation> recommendations = buildRecommendations(matchId, ticketCount, preferredBlocks);
 
-		if (recommendations.isEmpty()) {
-			throw new CustomException(ErrorCode.NO_AVAILABLE_BLOCK);
-		}
+		Preconditions.validate(!recommendations.isEmpty(), ErrorCode.NO_AVAILABLE_BLOCK);
 
 		sortRecommendations(recommendations, pref, viewpoints, match);
 

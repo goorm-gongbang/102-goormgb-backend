@@ -41,7 +41,7 @@ class SeatAssignmentServiceTest {
 		SeatSession session = new SeatSession(1L, 1L, true, 3, List.of(1L));
 		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(1L, 1L)).willReturn(session);
 		given(blockRepository.findByIdWithSectionOrThrow(1L)).willReturn(BlockFixture.cpBlock());
-		given(seatBlockLock.tryLock(1L)).willReturn(true);
+		given(seatBlockLock.tryLock(1L, 1L)).willReturn(true);
 	}
 
 	@Test
@@ -61,7 +61,7 @@ class SeatAssignmentServiceTest {
 		// then
 		assertThat(response).isNotNull();
 		then(seatAssignmentTransactionalService).should().assignAndHold(eq(1L), eq(1L), eq(1L), any(Block.class), eq(3), eq(false));
-		then(seatBlockLock).should().unlock(1L);
+		then(seatBlockLock).should().unlock(1L, 1L);
 	}
 
 	@Test
@@ -71,7 +71,7 @@ class SeatAssignmentServiceTest {
 		SeatSession session = new SeatSession(1L, 1L, true, 3, List.of(1L));
 		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(1L, 1L)).willReturn(session);
 		given(blockRepository.findByIdWithSectionOrThrow(1L)).willReturn(BlockFixture.cpBlock());
-		given(seatBlockLock.tryLock(1L)).willReturn(false);
+		given(seatBlockLock.tryLock(1L, 1L)).willReturn(false);
 
 		// when & then
 		assertThatThrownBy(() -> seatAssignmentService.assignAndHoldSeats(1L, 1L, 1L, false))
@@ -94,6 +94,6 @@ class SeatAssignmentServiceTest {
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.NO_CONSECUTIVE_SEAT_AVAILABLE);
 
-		then(seatBlockLock).should().unlock(1L);
+		then(seatBlockLock).should().unlock(1L, 1L);
 	}
 }
