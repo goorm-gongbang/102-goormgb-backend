@@ -18,6 +18,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   # 1. 기존 캐시용 레디스 (6379)
   local-redis:
     image: redis:7
@@ -47,7 +48,6 @@ services:
       timeout: 5s
       retries: 5
 
-  
   api-gateway:
     build:
       context: ..
