@@ -46,16 +46,6 @@ public class MatchSeatPreparationService {
 			endOfDay
 		);
 
-		// List<Match> matchesToPrepare = matchRepository.findBySaleStatus(SaleStatus.UPCOMING)
-		// 	.stream()
-		// 	.filter(match ->
-		// 		match.getMatchAt()
-		// 			.atZone(KST)
-		// 			.toLocalDate()
-		// 			.equals(todayKst.plusDays(7))
-		// 	)
-		// 	.toList();
-
 		if (matchesToPrepare.isEmpty()) {
 			log.info("[MatchSeatPreparationService] 생성 대상 경기 없음");
 			return;
