@@ -27,8 +27,8 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
+      host: ${REDIS_QUEUE_HOST}
+      port: ${REDIS_QUEUE_PORT}
 
 springdoc:
   swagger-ui:
