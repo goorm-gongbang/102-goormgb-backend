@@ -18,9 +18,9 @@ import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.fixture.BlockFixture;
+import com.goormgb.be.seat.fixture.SeatSessionFixture;
 import com.goormgb.be.seat.recommendation.dto.response.SeatAssignmentResponse;
 import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
-import com.goormgb.be.seat.redis.SeatSession;
 
 @ExtendWith(MockitoExtension.class)
 class SeatAssignmentServiceTest {
@@ -38,8 +38,8 @@ class SeatAssignmentServiceTest {
 	private SeatAssignmentService seatAssignmentService;
 
 	private void setupCommon() {
-		SeatSession session = new SeatSession(1L, 1L, true, 3, List.of(1L));
-		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(1L, 1L)).willReturn(session);
+		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(1L, 1L))
+			.willReturn(SeatSessionFixture.defaultSession(3));
 		given(blockRepository.findByIdWithSectionOrThrow(1L)).willReturn(BlockFixture.cpBlock());
 		given(seatBlockLock.tryLock(1L, 1L)).willReturn(true);
 	}
@@ -68,8 +68,8 @@ class SeatAssignmentServiceTest {
 	@DisplayName("락 획득 실패 시 예외가 발생한다")
 	void 락_획득_실패_예외() {
 		// given
-		SeatSession session = new SeatSession(1L, 1L, true, 3, List.of(1L));
-		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(1L, 1L)).willReturn(session);
+		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(1L, 1L))
+			.willReturn(SeatSessionFixture.defaultSession(3));
 		given(blockRepository.findByIdWithSectionOrThrow(1L)).willReturn(BlockFixture.cpBlock());
 		given(seatBlockLock.tryLock(1L, 1L)).willReturn(false);
 

@@ -22,6 +22,7 @@ import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.common.dto.response.SectionBlocksResponse;
 import com.goormgb.be.seat.common.service.SeatCommonService;
 import com.goormgb.be.seat.common.service.SeatHoldService;
+import com.goormgb.be.seat.security.AdmissionTokenValidator;
 import com.goormgb.be.seat.support.WebMvcTestSupport;
 
 @WebMvcTest(SeatCommonController.class)
@@ -33,6 +34,9 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 
 	@MockitoBean
 	private SeatHoldService seatHoldService;
+
+	@MockitoBean
+	private AdmissionTokenValidator admissionTokenValidator;
 
 	private void setAuthentication(Long userId) {
 		SecurityContextHolder.getContext().setAuthentication(
@@ -78,7 +82,8 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 		given(seatCommonService.getSeatGroupsEntry(eq(matchId), eq(userId))).willReturn(response);
 
 		// when & then
-		mockMvc.perform(get("/matches/{matchId}/seat-groups", matchId))
+		mockMvc.perform(get("/matches/{matchId}/seat-groups", matchId)
+				.cookie(new jakarta.servlet.http.Cookie("admissionToken", "test-token")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("OK"))
 			.andExpect(jsonPath("$.message").value("성공"))
@@ -159,7 +164,8 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 		given(seatCommonService.getSectionBlocks(eq(matchId), eq(sectionId), eq(userId))).willReturn(response);
 
 		// when & then
-		mockMvc.perform(get("/matches/{matchId}/sections/{sectionId}/blocks", matchId, sectionId))
+		mockMvc.perform(get("/matches/{matchId}/sections/{sectionId}/blocks", matchId, sectionId)
+				.cookie(new jakarta.servlet.http.Cookie("admissionToken", "test-token")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("OK"))
 			.andExpect(jsonPath("$.message").value("성공"))
