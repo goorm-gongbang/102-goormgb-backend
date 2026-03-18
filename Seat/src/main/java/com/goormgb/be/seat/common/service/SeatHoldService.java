@@ -10,10 +10,10 @@ import org.springframework.stereotype.Service;
 
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
+import com.goormgb.be.seat.booking.model.BookingOptions;
+import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.common.service.lock.SeatHoldLockManager;
-import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
-import com.goormgb.be.seat.redis.SeatSession;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,7 +37,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SeatHoldService {
 
-	private final SeatPreferenceRedisRepository seatPreferenceRedisRepository;
+	private final BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	private final SeatHoldLockManager seatHoldLockManager;
 	private final SeatHoldTransactionalService seatHoldTransactionalService;
 
@@ -75,11 +75,11 @@ public class SeatHoldService {
 	}
 
 	private void validateSeatCount(Long userId, Long matchId, int requestedCount) {
-		SeatSession seatSession =
-			seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+		BookingOptions bookingOptions =
+			bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
 
 		Preconditions.validate(
-			seatSession.getTicketCount() == requestedCount,
+			bookingOptions.ticketCount() == requestedCount,
 			ErrorCode.INVALID_SEAT_HOLD_REQUEST
 		);
 	}

@@ -30,8 +30,9 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
-queue:
-  preference-key-prefix: seat:preference
+booking:
+  options-key-prefix: seat:booking-options
+  options-ttl-seconds: 900
 
 management:
   endpoint:

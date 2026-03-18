@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.global.util.RsaKeyUtils;
 import com.goormgb.be.queue.config.QueueJwtProperties;
 
@@ -70,9 +71,9 @@ public class AdmissionTokenProvider {
 			Long matchId = claims.get(CLAIM_MATCH_ID, Long.class);
 			String type = claims.get(CLAIM_TYPE, String.class);
 
-			if (!TOKEN_TYPE.equals(type) || !expectedUserId.equals(userId) || !expectedMatchId.equals(matchId)) {
-				throw new CustomException(ErrorCode.INVALID_TOKEN);
-			}
+			Preconditions.validate(
+				TOKEN_TYPE.equals(type) && expectedUserId.equals(userId) && expectedMatchId.equals(matchId),
+				ErrorCode.INVALID_TOKEN);
 
 			return new AdmissionTokenClaims(
 				userId,

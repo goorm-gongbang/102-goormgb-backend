@@ -6,9 +6,9 @@ import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
+import com.goormgb.be.seat.booking.model.BookingOptions;
+import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 import com.goormgb.be.seat.recommendation.dto.response.SeatAssignmentResponse;
-import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
-import com.goormgb.be.seat.redis.SeatSession;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
  *
  * <h3>처리 흐름</h3>
  * <ol>
- *   <li>SeatSession에서 ticketCount 조회</li>
+ *   <li>BookingOptions에서 ticketCount, nearAdjacentToggle 조회</li>
  *   <li>Redis 분산 락 획득 (seat:recommendation:match:{matchId}:block:{blockId})</li>
  *   <li>트랜잭션 내에서 좌석 배정 + Hold 생성</li>
  *   <li>트랜잭션 커밋 후 락 해제</li>
@@ -29,16 +29,16 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SeatAssignmentService {
 
-	private final SeatPreferenceRedisRepository seatPreferenceRedisRepository;
+	private final BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	private final BlockRepository blockRepository;
 	private final SeatBlockLock seatBlockLock;
 	private final SeatAssignmentTransactionalService seatAssignmentTransactionalService;
 
-	public SeatAssignmentResponse assignAndHoldSeats(Long userId, Long matchId, Long blockId,
-		boolean nearAdjacentToggle) {
+	public SeatAssignmentResponse assignAndHoldSeats(Long userId, Long matchId, Long blockId) {
 
-		SeatSession seatSession = seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
-		int requiredSeats = seatSession.getTicketCount();
+		BookingOptions bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+		int requiredSeats = bookingOptions.ticketCount();
+		boolean nearAdjacentToggle = bookingOptions.nearAdjacentToggle();
 
 		Block block = blockRepository.findByIdWithSectionOrThrow(blockId);
 

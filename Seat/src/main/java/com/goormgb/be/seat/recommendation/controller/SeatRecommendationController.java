@@ -4,12 +4,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.goormgb.be.global.response.ApiResult;
-import com.goormgb.be.seat.recommendation.dto.request.SeatAssignmentRequest;
 import com.goormgb.be.seat.recommendation.dto.response.BlockRecommendationResponse;
 import com.goormgb.be.seat.recommendation.dto.response.SeatAssignmentResponse;
 import com.goormgb.be.seat.recommendation.dto.response.SeatEntryResponse;
@@ -76,11 +74,10 @@ public class SeatRecommendationController {
 	public ApiResult<SeatAssignmentResponse> assignSeats(
 		@PathVariable Long matchId,
 		@PathVariable Long blockId,
-		@RequestBody SeatAssignmentRequest request,
 		@AuthenticationPrincipal Long userId
 	) {
 		return ApiResult.ok(
-			seatAssignmentService.assignAndHoldSeats(userId, matchId, blockId, request.nearAdjacentToggle())
+			seatAssignmentService.assignAndHoldSeats(userId, matchId, blockId)
 		);
 	}
 }
