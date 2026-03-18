@@ -145,10 +145,9 @@ public class OnboardingPreferenceService {
 
 	@Transactional
 	public void updatePreferredBlocks(Long userId, List<Long> preferredBlockIds) {
-		userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		validatePreferredBlocks(preferredBlockIds);
 
-		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		preferredBlockRepository.deleteAllByUserId(userId);
 		savePreferredBlocks(user, preferredBlockIds);
 	}
