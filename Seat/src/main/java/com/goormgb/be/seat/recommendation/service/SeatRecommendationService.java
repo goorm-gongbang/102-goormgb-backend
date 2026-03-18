@@ -10,8 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.repository.MatchRepository;
+import com.goormgb.be.domain.onboarding.entity.OnboardingPreferredBlock;
 import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
 import com.goormgb.be.domain.onboarding.entity.OnboardingViewpointPriority;
+import com.goormgb.be.domain.onboarding.repository.OnboardingPreferredBlockRepository;
 import com.goormgb.be.domain.onboarding.repository.OnboardingPreferenceRepository;
 import com.goormgb.be.domain.onboarding.repository.OnboardingViewpointPriorityRepository;
 import com.goormgb.be.global.exception.ErrorCode;
@@ -38,6 +40,7 @@ public class SeatRecommendationService {
 	private final SeatPreferenceRedisRepository seatPreferenceRedisRepository;
 	private final BlockRepository blockRepository;
 	private final MatchSeatRepository matchSeatRepository;
+	private final OnboardingPreferredBlockRepository onboardingPreferredBlockRepository;
 	private final OnboardingPreferenceRepository onboardingPreferenceRepository;
 	private final OnboardingViewpointPriorityRepository onboardingViewpointPriorityRepository;
 	private final ConsecutiveSeatCounter consecutiveSeatCounter;
@@ -54,7 +57,10 @@ public class SeatRecommendationService {
 	public BlockRecommendationResponse getRecommendedBlocks(Long matchId, Long userId) {
 		SeatSession seatSession = seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
 		int ticketCount = seatSession.getTicketCount();
-		List<Long> preferredBlockIds = seatSession.getPreferredBlockIds();
+		List<Long> preferredBlockIds = onboardingPreferredBlockRepository.findAllByUserId(userId)
+			.stream()
+			.map(OnboardingPreferredBlock::getBlockId)
+			.toList();
 
 		Match match = matchRepository.findDetailByIdOrThrow(matchId);
 		List<Block> preferredBlocks = blockRepository.findAllByIdInWithSectionAndArea(preferredBlockIds);

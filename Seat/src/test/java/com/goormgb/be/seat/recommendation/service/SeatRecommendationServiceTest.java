@@ -3,7 +3,6 @@ package com.goormgb.be.seat.recommendation.service;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
-import java.time.Instant;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -12,31 +11,28 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import com.goormgb.be.domain.club.entity.Club;
 import com.goormgb.be.domain.match.entity.Match;
-import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.domain.match.repository.MatchRepository;
-import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
-import com.goormgb.be.domain.onboarding.entity.OnboardingViewpointPriority;
 import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
 import com.goormgb.be.domain.onboarding.enums.Viewpoint;
+import com.goormgb.be.domain.onboarding.repository.OnboardingPreferredBlockRepository;
 import com.goormgb.be.domain.onboarding.repository.OnboardingPreferenceRepository;
 import com.goormgb.be.domain.onboarding.repository.OnboardingViewpointPriorityRepository;
-import com.goormgb.be.domain.stadium.entity.Stadium;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.seat.area.entity.Area;
 import com.goormgb.be.seat.area.enums.AreaCode;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
+import com.goormgb.be.seat.fixture.BlockFixture;
+import com.goormgb.be.seat.fixture.CommonFixture;
+import com.goormgb.be.seat.fixture.OnboardingFixture;
+import com.goormgb.be.seat.fixture.SeatSessionFixture;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.recommendation.dto.response.BlockRecommendationResponse;
 import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
 import com.goormgb.be.seat.redis.SeatSession;
-import com.goormgb.be.seat.section.entity.Section;
-import com.goormgb.be.seat.section.enums.SectionCode;
 import com.goormgb.be.user.entity.User;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +47,8 @@ class SeatRecommendationServiceTest {
 	@Mock
 	private MatchSeatRepository matchSeatRepository;
 	@Mock
+	private OnboardingPreferredBlockRepository onboardingPreferredBlockRepository;
+	@Mock
 	private OnboardingPreferenceRepository onboardingPreferenceRepository;
 	@Mock
 	private OnboardingViewpointPriorityRepository onboardingViewpointPriorityRepository;
@@ -62,68 +60,30 @@ class SeatRecommendationServiceTest {
 	@InjectMocks
 	private SeatRecommendationService seatRecommendationService;
 
-	private Club createClub(Long id, String name) {
-		Club club = Club.builder()
-			.koName(name).enName(name).logoImg("logo.png").clubColor("#000").build();
-		ReflectionTestUtils.setField(club, "id", id);
-		return club;
-	}
-
-	private User createUser(Long id) {
-		User user = User.builder().build();
-		ReflectionTestUtils.setField(user, "id", id);
-		return user;
-	}
-
-	private Block createBlock(Long id, String blockCode, AreaCode areaCode, Viewpoint viewpoint) {
-		Area area = Area.builder().code(areaCode).name(areaCode.getDescription()).build();
-		Section section = Section.builder().area(area).code(SectionCode.ORANGE).name("오렌지석").build();
-		Block block = Block.builder()
-			.area(area).section(section).blockCode(blockCode)
-			.viewpoint(viewpoint).homeCheerRank(1).awayCheerRank(81).build();
-		ReflectionTestUtils.setField(block, "id", id);
-		return block;
-	}
-
-	private SeatSession createSeatSession(int ticketCount, List<Long> blockIds) {
-		SeatSession session = new SeatSession();
-		ReflectionTestUtils.setField(session, "userId", 1L);
-		ReflectionTestUtils.setField(session, "matchId", 1L);
-		ReflectionTestUtils.setField(session, "recommendationEnabled", true);
-		ReflectionTestUtils.setField(session, "ticketCount", ticketCount);
-		ReflectionTestUtils.setField(session, "preferredBlockIds", blockIds);
-		return session;
-	}
-
-	private Match createMatch(Club home, Club away) {
-		Stadium stadium = Stadium.builder()
-			.region("서울").koName("잠실").enName("Jamsil").address("서울시").build();
-		return Match.create(Instant.now(), home, away, stadium, SaleStatus.ON_SALE);
-	}
-
 	@Test
 	@DisplayName("추천 블럭 리스트를 연석 개수 기준으로 정렬하여 반환한다")
 	void 추천_블럭_리스트_연석개수_정렬() {
 		// given
 		Long userId = 1L;
 		Long matchId = 1L;
-		Club lgClub = createClub(1L, "LG 트윈스");
-		Club doosanClub = createClub(2L, "두산 베어스");
-		User user = createUser(userId);
+		Club lgClub = CommonFixture.lgClub();
+		Club doosanClub = CommonFixture.doosanClub();
+		User user = CommonFixture.user(userId);
 
-		Block block205 = createBlock(205L, "205", AreaCode.HOME, Viewpoint.INFIELD_1B);
-		Block block206 = createBlock(206L, "206", AreaCode.HOME, Viewpoint.INFIELD_1B);
+		Block block205 = BlockFixture.block(205L, "205", AreaCode.HOME, Viewpoint.INFIELD_1B);
+		Block block206 = BlockFixture.block(206L, "206", AreaCode.HOME, Viewpoint.INFIELD_1B);
 
-		SeatSession session = createSeatSession(5, List.of(205L, 206L));
-		Match match = createMatch(lgClub, doosanClub);
-		OnboardingPreference pref = OnboardingPreference.builder()
-			.user(user).favoriteClub(lgClub).cheerProximityPref(CheerProximityPref.ANY).build();
+		SeatSession session = SeatSessionFixture.defaultSession(5);
+		Match match = CommonFixture.match(lgClub, doosanClub);
 
 		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId)).willReturn(session);
+		given(onboardingPreferredBlockRepository.findAllByUserId(userId))
+			.willReturn(OnboardingFixture.preferredBlocks(user, 205L, 206L));
 		given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
 		given(blockRepository.findAllByIdInWithSectionAndArea(List.of(205L, 206L)))
 			.willReturn(List.of(block205, block206));
-		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any())).willReturn(pref);
+		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any()))
+			.willReturn(OnboardingFixture.preference(user, lgClub, CheerProximityPref.ANY));
 		given(onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId)).willReturn(List.of());
 
 		given(matchSeatRepository.countRemainingSeatsByMatchIdAndBlockIdIn(eq(matchId), any())).willReturn(List.of());
@@ -150,27 +110,26 @@ class SeatRecommendationServiceTest {
 		// given
 		Long userId = 1L;
 		Long matchId = 1L;
-		Club lgClub = createClub(1L, "LG 트윈스");
-		Club doosanClub = createClub(2L, "두산 베어스");
-		User user = createUser(userId);
+		Club lgClub = CommonFixture.lgClub();
+		Club doosanClub = CommonFixture.doosanClub();
+		User user = CommonFixture.user(userId);
 
-		Block block205 = createBlock(205L, "205", AreaCode.HOME, Viewpoint.INFIELD_1B);
-		Block block408 = createBlock(408L, "408", AreaCode.OUTFIELD, Viewpoint.OUTFIELD_C);
+		Block block205 = BlockFixture.block(205L, "205", AreaCode.HOME, Viewpoint.INFIELD_1B);
+		Block block408 = BlockFixture.block(408L, "408", AreaCode.OUTFIELD, Viewpoint.OUTFIELD_C);
 
-		SeatSession session = createSeatSession(3, List.of(205L, 408L));
-		Match match = createMatch(lgClub, doosanClub);
-		OnboardingPreference pref = OnboardingPreference.builder()
-			.user(user).favoriteClub(lgClub).cheerProximityPref(CheerProximityPref.NEAR).build();
-		List<OnboardingViewpointPriority> viewpoints = List.of(
-			OnboardingViewpointPriority.builder().user(user).viewpoint(Viewpoint.INFIELD_1B).priority(1).build()
-		);
+		SeatSession session = SeatSessionFixture.defaultSession(3);
+		Match match = CommonFixture.match(lgClub, doosanClub);
 
 		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId)).willReturn(session);
+		given(onboardingPreferredBlockRepository.findAllByUserId(userId))
+			.willReturn(OnboardingFixture.preferredBlocks(user, 205L, 408L));
 		given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
 		given(blockRepository.findAllByIdInWithSectionAndArea(List.of(205L, 408L)))
 			.willReturn(List.of(block205, block408));
-		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any())).willReturn(pref);
-		given(onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId)).willReturn(viewpoints);
+		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any()))
+			.willReturn(OnboardingFixture.preference(user, lgClub, CheerProximityPref.NEAR));
+		given(onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId))
+			.willReturn(List.of(OnboardingFixture.viewpointPriority(user, Viewpoint.INFIELD_1B, 1)));
 
 		given(matchSeatRepository.countRemainingSeatsByMatchIdAndBlockIdIn(eq(matchId), any())).willReturn(List.of());
 
@@ -197,21 +156,22 @@ class SeatRecommendationServiceTest {
 		// given
 		Long userId = 1L;
 		Long matchId = 1L;
-		Club lgClub = createClub(1L, "LG 트윈스");
-		Club doosanClub = createClub(2L, "두산 베어스");
-		User user = createUser(userId);
+		Club lgClub = CommonFixture.lgClub();
+		Club doosanClub = CommonFixture.doosanClub();
+		User user = CommonFixture.user(userId);
 
-		Block block205 = createBlock(205L, "205", AreaCode.HOME, Viewpoint.INFIELD_1B);
+		Block block205 = BlockFixture.block(205L, "205", AreaCode.HOME, Viewpoint.INFIELD_1B);
 
-		SeatSession session = createSeatSession(5, List.of(205L));
-		Match match = createMatch(lgClub, doosanClub);
-		OnboardingPreference pref = OnboardingPreference.builder()
-			.user(user).favoriteClub(lgClub).cheerProximityPref(CheerProximityPref.ANY).build();
+		SeatSession session = SeatSessionFixture.defaultSession(5);
+		Match match = CommonFixture.match(lgClub, doosanClub);
 
 		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId)).willReturn(session);
+		given(onboardingPreferredBlockRepository.findAllByUserId(userId))
+			.willReturn(OnboardingFixture.preferredBlocks(user, 205L));
 		given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
 		given(blockRepository.findAllByIdInWithSectionAndArea(List.of(205L))).willReturn(List.of(block205));
-		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any())).willReturn(pref);
+		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any()))
+			.willReturn(OnboardingFixture.preference(user, lgClub, CheerProximityPref.ANY));
 		given(onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId)).willReturn(List.of());
 
 		given(matchSeatRepository.countRemainingSeatsByMatchIdAndBlockIdIn(eq(matchId), any())).willReturn(List.of());

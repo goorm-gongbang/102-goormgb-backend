@@ -2,6 +2,8 @@ package com.goormgb.be.seat.fixture;
 
 import java.util.List;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import com.goormgb.be.domain.onboarding.enums.Viewpoint;
 import com.goormgb.be.seat.area.entity.Area;
 import com.goormgb.be.seat.area.enums.AreaCode;
@@ -114,5 +116,20 @@ public final class BlockFixture {
 
 	public static BlockItemDto cpBlockItemDto() {
 		return new BlockItemDto(null, "CP", "테라존(중앙 프리미엄석)", "중앙", Viewpoint.CENTER);
+	}
+
+	public static Block block(Long id, String blockCode, AreaCode areaCode, Viewpoint viewpoint,
+		Integer homeCheerRank, Integer awayCheerRank) {
+		Area area = Area.builder().code(areaCode).name(areaCode.getDescription()).build();
+		Section section = Section.builder().area(area).code(SectionCode.ORANGE).name("오렌지석").build();
+		Block block = Block.builder()
+			.area(area).section(section).blockCode(blockCode)
+			.viewpoint(viewpoint).homeCheerRank(homeCheerRank).awayCheerRank(awayCheerRank).build();
+		ReflectionTestUtils.setField(block, "id", id);
+		return block;
+	}
+
+	public static Block block(Long id, String blockCode, AreaCode areaCode, Viewpoint viewpoint) {
+		return block(id, blockCode, areaCode, viewpoint, 1, 81);
 	}
 }

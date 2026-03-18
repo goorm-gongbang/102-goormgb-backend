@@ -19,8 +19,8 @@ import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.common.service.lock.SeatHoldLockManager;
+import com.goormgb.be.seat.fixture.SeatSessionFixture;
 import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
-import com.goormgb.be.seat.redis.SeatSession;
 
 @ExtendWith(MockitoExtension.class)
 class SeatHoldServiceTest {
@@ -40,7 +40,7 @@ class SeatHoldServiceTest {
 
 	private void setupSession(int ticketCount) {
 		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(USER_ID, MATCH_ID))
-			.willReturn(new SeatSession(USER_ID, MATCH_ID, true, ticketCount, List.of(1L)));
+			.willReturn(SeatSessionFixture.of(USER_ID, MATCH_ID, true, ticketCount));
 	}
 
 	@Test
