@@ -112,8 +112,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: queue-redis
       REDIS_PORT: 6379
-      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
-      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      ADMISSION_PRIVATE_KEY: ${ADMISSION_PRIVATE_KEY}
+      ADMISSION_PUBLIC_KEY: ${ADMISSION_PUBLIC_KEY}
     depends_on:
       local-postgres:
         condition: service_healthy

@@ -30,6 +30,13 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
+queue:
+  security:
+    jwt:
+      private-key: ${ADMISSION_PRIVATE_KEY}
+      public-key: ${ADMISSION_PUBLIC_KEY}
+      issuer: queue-service
+
 
 management:
   endpoints:
