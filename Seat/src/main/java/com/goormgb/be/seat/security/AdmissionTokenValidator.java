@@ -49,11 +49,11 @@ public class AdmissionTokenValidator {
 			Preconditions.validate(expectedUserId.equals(userId), ErrorCode.INVALID_TOKEN);
 			Preconditions.validate(expectedMatchId.equals(matchId), ErrorCode.INVALID_TOKEN);
 		} catch (ExpiredJwtException e) {
-			throw new CustomException(ErrorCode.ADMISSION_TOKEN_EXPIRED);
+			throw new CustomException(ErrorCode.ADMISSION_TOKEN_EXPIRED, e);
 		} catch (CustomException e) {
 			throw e;
 		} catch (Exception e) {
-			throw new CustomException(ErrorCode.INVALID_TOKEN);
+			throw new CustomException(ErrorCode.INVALID_TOKEN, e);
 		}
 	}
 }
