@@ -51,8 +51,7 @@ public class SeatPreferenceRedisRepository {
 				cache.userId(),
 				cache.matchId(),
 				cache.recommendationEnabled(),
-				cache.ticketCount(),
-				cache.preferredBlockIds()
+				cache.ticketCount()
 			);
 		} catch (IOException e) {
 			throw new IllegalStateException("Failed to deserialize redis seat preference for key: " + key, e);
