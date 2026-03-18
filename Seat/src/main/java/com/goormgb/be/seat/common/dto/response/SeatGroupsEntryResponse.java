@@ -72,13 +72,15 @@ public record SeatGroupsEntryResponse(
 
 	public record SeatSessionInfo(
 		boolean recommendationEnabled,
-		int ticketCount
+		int ticketCount,
+		boolean nearAdjacentToggle
 	) {
 
 		public static SeatSessionInfo from(SeatSession seatPreferenceCache) {
 			return new SeatSessionInfo(
 				seatPreferenceCache.isRecommendationEnabled(),
-				seatPreferenceCache.getTicketCount()
+				seatPreferenceCache.getTicketCount(),
+				seatPreferenceCache.isNearAdjacentToggle()
 			);
 		}
 	}

@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.repository.MatchRepository;
-import com.goormgb.be.domain.onboarding.entity.OnboardingPreferredBlock;
 import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
 import com.goormgb.be.domain.onboarding.entity.OnboardingViewpointPriority;
 import com.goormgb.be.domain.onboarding.repository.OnboardingPreferredBlockRepository;
@@ -20,12 +19,12 @@ import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
+import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 import com.goormgb.be.seat.matchSeat.repository.BlockRemainingSeatProjection;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.recommendation.dto.internal.BlockRecommendation;
 import com.goormgb.be.seat.recommendation.dto.response.BlockRecommendationResponse;
 import com.goormgb.be.seat.recommendation.dto.response.SeatEntryResponse;
-import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
 import com.goormgb.be.seat.redis.SeatSession;
 
 import lombok.RequiredArgsConstructor;
@@ -37,7 +36,7 @@ public class SeatRecommendationService {
 	private static final int CONSECUTIVE_COUNT_THRESHOLD = 10;
 
 	private final MatchRepository matchRepository;
-	private final SeatPreferenceRedisRepository seatPreferenceRedisRepository;
+	private final BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	private final BlockRepository blockRepository;
 	private final MatchSeatRepository matchSeatRepository;
 	private final OnboardingPreferredBlockRepository onboardingPreferredBlockRepository;
@@ -48,19 +47,18 @@ public class SeatRecommendationService {
 
 	public SeatEntryResponse getRecommendationSeatEntry(Long matchId, Long userId) {
 		var match = matchRepository.findDetailByIdOrThrow(matchId);
-		var seatSession = seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+		var bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+		var seatSession = SeatSession.from(bookingOptions);
 
 		return SeatEntryResponse.of(match, seatSession);
 	}
 
 	@Transactional(readOnly = true)
 	public BlockRecommendationResponse getRecommendedBlocks(Long matchId, Long userId) {
-		SeatSession seatSession = seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+		var bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+		SeatSession seatSession = SeatSession.from(bookingOptions);
 		int ticketCount = seatSession.getTicketCount();
-		List<Long> preferredBlockIds = onboardingPreferredBlockRepository.findAllByUserId(userId)
-			.stream()
-			.map(OnboardingPreferredBlock::getBlockId)
-			.toList();
+		List<Long> preferredBlockIds = onboardingPreferredBlockRepository.findBlockIdsByUserId(userId);
 
 		Match match = matchRepository.findDetailByIdOrThrow(matchId);
 		List<Block> preferredBlocks = blockRepository.findAllByIdInWithSectionAndArea(preferredBlockIds);
