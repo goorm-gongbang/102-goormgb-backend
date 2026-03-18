@@ -11,11 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.domain.match.repository.MatchRepository;
-import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.global.model.SeatPreferenceCache;
+import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.queue.config.QueueProperties;
-import com.goormgb.be.queue.queue.dto.request.QueueEnterRequest;
 import com.goormgb.be.queue.queue.dto.response.QueueEnterResponse;
 import com.goormgb.be.queue.queue.dto.response.QueueStatusResponse;
 import com.goormgb.be.queue.queue.model.ReadyTokenPayload;
@@ -47,32 +45,16 @@ public class QueueService {
 	}
 
 	@Transactional
-	public QueueEnterResponse enter(Long matchId, Long userId, QueueEnterRequest request) {
+	public QueueEnterResponse enter(Long matchId, Long userId) {
 		requireAuthenticated(userId);
 
 		Match match = matchRepository.findByIdOrThrow(matchId, ErrorCode.MATCH_NOT_FOUND);
 		validateQueueOpen(match);
-		validateEnterRequest(request);
 
-		if (queueRedisRepository.isAlreadyQueued(matchId, userId)) {
-			throw new CustomException(ErrorCode.QUEUE_ALREADY_ENTERED);
-		}
+		Preconditions.validate(!queueRedisRepository.isAlreadyQueued(matchId, userId),
+			ErrorCode.QUEUE_ALREADY_ENTERED);
 
-		// 재진입 성공 시 이전 EXPIRED 흔적은 제거한다.
 		queueRedisRepository.deleteExpiredMarker(matchId, userId);
-
-		SeatPreferenceCache preference = new SeatPreferenceCache(
-			userId,
-			matchId,
-			request.recommendationEnabled(),
-			request.ticketCount(),
-			Instant.now()
-		);
-
-		queueRedisRepository.saveSeatPreference(
-			preference,
-			Duration.ofSeconds(queueProperties.preferenceTtlSeconds())
-		);
 		queueRedisRepository.addToWaitingQueue(matchId, userId, Instant.now().toEpochMilli());
 		queueRedisRepository.addActiveMatch(matchId);
 
@@ -102,14 +84,11 @@ public class QueueService {
 			);
 		}
 
-		if (queueRedisRepository.isExpired(matchId, userId)) {
-			throw new CustomException(ErrorCode.ADMISSION_TOKEN_EXPIRED);
-		}
+		Preconditions.validate(!queueRedisRepository.isExpired(matchId, userId),
+			ErrorCode.ADMISSION_TOKEN_EXPIRED);
 
 		long rank = queueRedisRepository.getWaitingRank(matchId, userId);
-		if (rank <= 0) {
-			throw new CustomException(ErrorCode.QUEUE_ENTRY_NOT_FOUND);
-		}
+		Preconditions.validate(rank > 0, ErrorCode.QUEUE_ENTRY_NOT_FOUND);
 
 		return QueueStatusResponse.waiting(
 			rank,
@@ -119,20 +98,13 @@ public class QueueService {
 	}
 
 	private void validateQueueOpen(Match match) {
-		if (match.getSaleStatus() != SaleStatus.ON_SALE) {
-			throw new CustomException(ErrorCode.MATCH_NOT_AVAILABLE_FOR_QUEUE);
-		}
-	}
-
-	private void validateEnterRequest(QueueEnterRequest request) {
-		if (request.ticketCount() < 1 || request.ticketCount() > 10) {
-			throw new CustomException(ErrorCode.INVALID_TICKET_COUNT);
-		}
+		Preconditions.validate(match.getSaleStatus() == SaleStatus.ON_SALE,
+			ErrorCode.MATCH_NOT_AVAILABLE_FOR_QUEUE);
 	}
 
 	private void requireAuthenticated(Long userId) {
-		if (userId == null || SecurityContextHolder.getContext().getAuthentication() == null) {
-			throw new CustomException(ErrorCode.UNAUTHORIZED);
-		}
+		Preconditions.validate(
+			userId != null && SecurityContextHolder.getContext().getAuthentication() != null,
+			ErrorCode.UNAUTHORIZED);
 	}
 }

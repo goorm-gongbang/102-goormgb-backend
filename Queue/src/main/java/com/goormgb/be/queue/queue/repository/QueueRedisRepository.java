@@ -11,7 +11,6 @@ import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.goormgb.be.global.model.SeatPreferenceCache;
 import com.goormgb.be.queue.config.QueueProperties;
 import com.goormgb.be.queue.queue.model.ReadyTokenPayload;
 
@@ -30,25 +29,6 @@ public class QueueRedisRepository {
 		this.redisTemplate = redisTemplate;
 		this.queueProperties = queueProperties;
 		this.redisObjectMapper = redisObjectMapper;
-	}
-
-	public void saveSeatPreference(SeatPreferenceCache preference) {
-		setJson(
-			queueProperties.preferenceKey(preference.matchId(), preference.userId()),
-			preference
-		);
-	}
-
-	public void saveSeatPreference(SeatPreferenceCache preference, Duration ttl) {
-		setJson(
-			queueProperties.preferenceKey(preference.matchId(), preference.userId()),
-			preference,
-			ttl
-		);
-	}
-
-	public SeatPreferenceCache getSeatPreference(Long matchId, Long userId) {
-		return getJson(queueProperties.preferenceKey(matchId, userId), SeatPreferenceCache.class);
 	}
 
 	public void addToWaitingQueue(Long matchId, Long userId, long enteredAtMillis) {

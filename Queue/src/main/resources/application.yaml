@@ -33,14 +33,12 @@ spring:
 
 queue:
   ready-ttl-seconds: 30
-  preference-ttl-seconds: 900
   expired-marker-ttl-seconds: 300
   promotion-batch-size: 100
   promotion-interval-ms: 1000
   active-match-key: queue:match
   wait-key-prefix: queue:wait
   ready-key-prefix: queue:ready
-  preference-key-prefix: seat:preference
   expired-key-prefix: queue:expired
   ready-index-key-prefix: queue:ready:index
   polling:
