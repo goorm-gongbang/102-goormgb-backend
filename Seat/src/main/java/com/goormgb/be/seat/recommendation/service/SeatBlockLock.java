@@ -1,10 +1,13 @@
 package com.goormgb.be.seat.recommendation.service;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
+
+import com.goormgb.be.seat.metrics.SeatMetricsService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SeatBlockLock {
 
+	private final SeatMetricsService seatMetricsService;
+
 	private static final String LOCK_KEY_FORMAT = "seat:recommendation:match:%d:block:%d";
 	private static final long WAIT_TIME_SECONDS = 3;
 
@@ -34,11 +39,18 @@ public class SeatBlockLock {
 
 	public boolean tryLock(Long matchId, Long blockId) {
 		RLock lock = redissonClient.getLock(buildKey(matchId, blockId));
+		long start = System.nanoTime();
+
 		try {
 			return lock.tryLock(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			return false;
+		} finally {
+			// 분산락 획득 대기 시간 기록 (락 경합 및 대기 지연 분석용)
+			seatMetricsService.recordLockWaitTime(
+				Duration.ofNanos(System.nanoTime() - start)
+			);
 		}
 	}
 

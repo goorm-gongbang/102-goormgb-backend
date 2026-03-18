@@ -1,5 +1,6 @@
 package com.goormgb.be.seat.recommendation.service;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,9 +13,10 @@ import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
 import com.goormgb.be.domain.onboarding.entity.OnboardingViewpointPriority;
-import com.goormgb.be.domain.onboarding.repository.OnboardingPreferredBlockRepository;
 import com.goormgb.be.domain.onboarding.repository.OnboardingPreferenceRepository;
+import com.goormgb.be.domain.onboarding.repository.OnboardingPreferredBlockRepository;
 import com.goormgb.be.domain.onboarding.repository.OnboardingViewpointPriorityRepository;
+import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.block.entity.Block;
@@ -22,6 +24,7 @@ import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 import com.goormgb.be.seat.matchSeat.repository.BlockRemainingSeatProjection;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
+import com.goormgb.be.seat.metrics.SeatMetricsService;
 import com.goormgb.be.seat.recommendation.dto.internal.BlockRecommendation;
 import com.goormgb.be.seat.recommendation.dto.response.BlockRecommendationResponse;
 import com.goormgb.be.seat.recommendation.dto.response.SeatEntryResponse;
@@ -44,6 +47,7 @@ public class SeatRecommendationService {
 	private final OnboardingViewpointPriorityRepository onboardingViewpointPriorityRepository;
 	private final ConsecutiveSeatCounter consecutiveSeatCounter;
 	private final PreferenceScoreCalculator preferenceScoreCalculator;
+	private final SeatMetricsService seatMetricsService;
 
 	public SeatEntryResponse getRecommendationSeatEntry(Long matchId, Long userId) {
 		var match = matchRepository.findDetailByIdOrThrow(matchId);
@@ -55,25 +59,43 @@ public class SeatRecommendationService {
 
 	@Transactional(readOnly = true)
 	public BlockRecommendationResponse getRecommendedBlocks(Long matchId, Long userId) {
-		var bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
-		SeatSession seatSession = SeatSession.from(bookingOptions);
-		int ticketCount = seatSession.getTicketCount();
-		List<Long> preferredBlockIds = onboardingPreferredBlockRepository.findBlockIdsByUserId(userId);
+		long start = System.nanoTime();
 
-		Match match = matchRepository.findDetailByIdOrThrow(matchId);
-		List<Block> preferredBlocks = blockRepository.findAllByIdInWithSectionAndArea(preferredBlockIds);
-		OnboardingPreference pref = onboardingPreferenceRepository.findByUserIdOrThrow(
-			userId, ErrorCode.PREFERENCE_NOT_FOUND);
-		List<OnboardingViewpointPriority> viewpoints =
-			onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId);
+		// 추천 좌석 요청 총 횟수 증가 (유입 트래픽 추적)
+		seatMetricsService.increaseRecommendTotal();
 
-		List<BlockRecommendation> recommendations = buildRecommendations(matchId, ticketCount, preferredBlocks);
+		try {
+			var bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+			SeatSession seatSession = SeatSession.from(bookingOptions);
+			int ticketCount = seatSession.getTicketCount();
+			List<Long> preferredBlockIds = onboardingPreferredBlockRepository.findBlockIdsByUserId(userId);
 
-		Preconditions.validate(!recommendations.isEmpty(), ErrorCode.NO_AVAILABLE_BLOCK);
+			Match match = matchRepository.findDetailByIdOrThrow(matchId);
+			List<Block> preferredBlocks = blockRepository.findAllByIdInWithSectionAndArea(preferredBlockIds);
+			OnboardingPreference pref = onboardingPreferenceRepository.findByUserIdOrThrow(
+				userId, ErrorCode.PREFERENCE_NOT_FOUND);
+			List<OnboardingViewpointPriority> viewpoints =
+				onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId);
 
-		sortRecommendations(recommendations, pref, viewpoints, match);
+			List<BlockRecommendation> recommendations = buildRecommendations(matchId, ticketCount, preferredBlocks);
 
-		return BlockRecommendationResponse.of(matchId, ticketCount, recommendations);
+			Preconditions.validate(!recommendations.isEmpty(), ErrorCode.NO_AVAILABLE_BLOCK);
+
+			sortRecommendations(recommendations, pref, viewpoints, match);
+
+			// 추천 좌석 탐색 성공 횟수 증가
+			seatMetricsService.increaseRecommendSuccess();
+
+			return BlockRecommendationResponse.of(matchId, ticketCount, recommendations);
+		} catch (CustomException e) {
+			// 추천 좌석 탐색 실패 횟수 증가 (예외 발생, 조건 불일치 등 실패 케이스 추적)
+			seatMetricsService.increaseRecommendFail();
+			throw e;
+		} finally {
+			// 추천 알고리즘 전체 실행 시간 기록 (성능 및 병목 분석용)
+			seatMetricsService.recordProcessTime(Duration.ofNanos(System.nanoTime() - start));
+		}
+
 	}
 
 	private List<BlockRecommendation> buildRecommendations(Long matchId, int ticketCount, List<Block> blocks) {
