@@ -3,6 +3,7 @@ package com.goormgb.be.domain.onboarding.repository;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -17,5 +18,7 @@ public interface OnboardingPreferredBlockRepository extends JpaRepository<Onboar
 
 	long countByUserId(Long userId);
 
-	void deleteAllByUserId(Long userId);
+	@Modifying
+	@Query("DELETE FROM OnboardingPreferredBlock opb WHERE opb.user.id = :userId")
+	void deleteAllByUserId(@Param("userId") Long userId);
 }
