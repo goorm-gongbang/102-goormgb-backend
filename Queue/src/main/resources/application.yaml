@@ -51,8 +51,8 @@ queue:
 
   security:
     jwt:
-      private-key: ${JWT_PRIVATE_KEY}
-      public-key: ${JWT_PUBLIC_KEY}
+      private-key: ${ADMISSION_PRIVATE_KEY}
+      public-key: ${ADMISSION_PUBLIC_KEY}
       issuer: queue-service
 
 management:
