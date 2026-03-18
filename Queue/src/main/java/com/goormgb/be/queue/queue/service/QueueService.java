@@ -2,7 +2,6 @@ package com.goormgb.be.queue.queue.service;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -67,7 +66,6 @@ public class QueueService {
 			matchId,
 			request.recommendationEnabled(),
 			request.ticketCount(),
-			normalizePreferredBlockIds(request.preferredBlockIds()),
 			Instant.now()
 		);
 
@@ -130,15 +128,6 @@ public class QueueService {
 		if (request.ticketCount() < 1 || request.ticketCount() > 10) {
 			throw new CustomException(ErrorCode.INVALID_TICKET_COUNT);
 		}
-
-		List<Long> blockIds = normalizePreferredBlockIds(request.preferredBlockIds());
-		if (blockIds.size() != blockIds.stream().distinct().count()) {
-			throw new CustomException(ErrorCode.DUPLICATE_PREFERRED_BLOCK);
-		}
-	}
-
-	private List<Long> normalizePreferredBlockIds(List<Long> preferredBlockIds) {
-		return preferredBlockIds == null ? List.of() : preferredBlockIds;
 	}
 
 	private void requireAuthenticated(Long userId) {
