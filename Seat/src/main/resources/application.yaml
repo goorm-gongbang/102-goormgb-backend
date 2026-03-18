@@ -34,6 +34,11 @@ booking:
   options-key-prefix: seat:booking-options
   options-ttl-seconds: 900
 
+admission:
+  jwt:
+    public-key: ${ADMISSION_PUBLIC_KEY}
+    issuer: ${ADMISSION_JWT_ISSUER:queue-service}
+
 management:
   endpoint:
     health:
