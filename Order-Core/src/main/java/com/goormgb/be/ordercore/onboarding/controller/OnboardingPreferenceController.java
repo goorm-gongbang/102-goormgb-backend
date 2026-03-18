@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.goormgb.be.global.response.ApiResult;
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceCreateRequest;
 import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceUpdateRequest;
+import com.goormgb.be.ordercore.onboarding.dto.request.PreferredBlockUpdateRequest;
+
+import jakarta.validation.Valid;
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingPreferenceCreateResponse;
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingPreferenceGetResponse;
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingStatusGetResponse;
@@ -162,6 +165,25 @@ public class OnboardingPreferenceController {
 		@RequestBody OnboardingPreferenceUpdateRequest request
 	) {
 		onboardingPreferenceService.updatePreferences(userId, request);
+		return ApiResult.ok();
+	}
+
+	@Operation(
+		summary = "선호 블럭 수정",
+		description = "선호 블럭만 별도로 수정합니다. 기존 선호 블럭을 전체 교체합니다.",
+		security = @SecurityRequirement(name = "BearerAuth")
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "수정 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content)
+	})
+	@PutMapping("/preferred-blocks")
+	@ResponseStatus(HttpStatus.OK)
+	public ApiResult<Void> updatePreferredBlocks(
+		@AuthenticationPrincipal Long userId,
+		@Valid @RequestBody PreferredBlockUpdateRequest request
+	) {
+		onboardingPreferenceService.updatePreferredBlocks(userId, request.preferredBlockIds());
 		return ApiResult.ok();
 	}
 
