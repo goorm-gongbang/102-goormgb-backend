@@ -78,8 +78,9 @@ public class SeatHoldService {
 		BookingOptions bookingOptions =
 			bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
 
+		Integer ticketCount = bookingOptions.ticketCount();
 		Preconditions.validate(
-			bookingOptions.ticketCount() == requestedCount,
+			ticketCount != null && ticketCount == requestedCount,
 			ErrorCode.INVALID_SEAT_HOLD_REQUEST
 		);
 	}
