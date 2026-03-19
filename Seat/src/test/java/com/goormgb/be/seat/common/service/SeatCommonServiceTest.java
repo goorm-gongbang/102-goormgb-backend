@@ -24,7 +24,7 @@ import com.goormgb.be.seat.common.dto.response.SectionBlocksResponse;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
-import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
+import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 import com.goormgb.be.seat.seat.enums.SeatZone;
 import com.goormgb.be.seat.seatHold.entity.SeatHold;
 import com.goormgb.be.seat.seatHold.repository.SeatHoldRepository;
@@ -38,7 +38,7 @@ class SeatCommonServiceTest {
 	@Mock
 	private MatchRepository matchRepository;
 	@Mock
-	private SeatPreferenceRedisRepository seatPreferenceRedisRepository;
+	private BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	@Mock
 	private SectionRepository sectionRepository;
 	@Mock

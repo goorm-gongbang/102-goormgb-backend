@@ -85,7 +85,7 @@ public class AdmissionTokenProvider {
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Exception e) {
-			throw new CustomException(ErrorCode.INVALID_TOKEN);
+			throw new CustomException(ErrorCode.INVALID_TOKEN, e);
 		}
 	}
 }

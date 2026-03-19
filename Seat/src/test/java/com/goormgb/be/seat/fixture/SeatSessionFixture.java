@@ -8,10 +8,10 @@ public final class SeatSessionFixture {
 	}
 
 	public static SeatSession of(Long userId, Long matchId, boolean recommendationEnabled, int ticketCount) {
-		return new SeatSession(userId, matchId, recommendationEnabled, ticketCount);
+		return new SeatSession(userId, matchId, recommendationEnabled, ticketCount, false);
 	}
 
 	public static SeatSession defaultSession(int ticketCount) {
-		return new SeatSession(1L, 1L, true, ticketCount);
+		return new SeatSession(1L, 1L, true, ticketCount, false);
 	}
 }

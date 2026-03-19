@@ -41,7 +41,7 @@ public class SeatHoldLockManager {
 		} catch (InterruptedException e) {
 			unlockAll(acquired);
 			Thread.currentThread().interrupt();
-			throw new CustomException(ErrorCode.SEAT_LOCK_ACQUISITION_FAILED);
+			throw new CustomException(ErrorCode.SEAT_LOCK_ACQUISITION_FAILED, e);
 		}
 	}
 

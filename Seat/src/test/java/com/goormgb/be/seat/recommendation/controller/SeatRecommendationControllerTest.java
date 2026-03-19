@@ -64,7 +64,8 @@ class SeatRecommendationControllerTest {
 			),
 			new SeatEntryResponse.SeatSessionInfo(
 				true,
-				2
+				2,
+				false
 			)
 		);
 

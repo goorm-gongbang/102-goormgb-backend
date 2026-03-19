@@ -90,10 +90,10 @@ public class JwtTokenProvider {
 			return true;
 		} catch (ExpiredJwtException e) {
 			log.warn("Expired JWT token: {}", e.getMessage());
-			throw new CustomException(ErrorCode.EXPIRED_TOKEN);
+			throw new CustomException(ErrorCode.EXPIRED_TOKEN, e);
 		} catch (JwtException | IllegalArgumentException e) {
 			log.warn("Invalid JWT token: {}", e.getMessage());
-			throw new CustomException(ErrorCode.INVALID_TOKEN);
+			throw new CustomException(ErrorCode.INVALID_TOKEN, e);
 		}
 	}
 
@@ -145,7 +145,7 @@ public class JwtTokenProvider {
 			return e.getClaims();
 		} catch (JwtException | IllegalArgumentException e) {
 			log.warn("Invalid JWT token: {}", e.getMessage());
-			throw new CustomException(ErrorCode.INVALID_TOKEN);
+			throw new CustomException(ErrorCode.INVALID_TOKEN, e);
 		}
 	}
 }
