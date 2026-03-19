@@ -63,17 +63,12 @@ public class SeatRecommendationService {
 
 		// 추천 좌석 요청 총 횟수 증가 (유입 트래픽 추적)
 		seatMetricsService.increaseRecommendTotal();
-		var bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
-
-		Preconditions.validate(bookingOptions.recommendationEnabled(), ErrorCode.BAD_REQUEST);
-		Preconditions.validate(bookingOptions.ticketCount() != null, ErrorCode.INVALID_TICKET_COUNT);
-
-		SeatSession seatSession = SeatSession.from(bookingOptions);
-		int ticketCount = seatSession.getTicketCount();
-		List<Long> preferredBlockIds = onboardingPreferredBlockRepository.findBlockIdsByUserId(userId);
-
 		try {
 			var bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+
+			Preconditions.validate(bookingOptions.recommendationEnabled(), ErrorCode.BAD_REQUEST);
+			Preconditions.validate(bookingOptions.ticketCount() != null, ErrorCode.INVALID_TICKET_COUNT);
+
 			SeatSession seatSession = SeatSession.from(bookingOptions);
 			int ticketCount = seatSession.getTicketCount();
 			List<Long> preferredBlockIds = onboardingPreferredBlockRepository.findBlockIdsByUserId(userId);
