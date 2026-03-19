@@ -18,7 +18,7 @@ public interface OnboardingPreferredBlockRepository extends JpaRepository<Onboar
 
 	long countByUserId(Long userId);
 
-	@Modifying
+	@Modifying(clearAutomatically = true)
 	@Query("DELETE FROM OnboardingPreferredBlock opb WHERE opb.user.id = :userId")
 	void deleteAllByUserId(@Param("userId") Long userId);
 }

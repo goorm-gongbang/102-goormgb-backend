@@ -60,7 +60,7 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 				Instant.parse("2026-04-15T18:30:00Z"),
 				new SeatGroupsEntryResponse.StadiumInfo(2L, "잠실 야구장")
 			),
-			new SeatGroupsEntryResponse.SeatSessionInfo(true, 2),
+			new SeatGroupsEntryResponse.SeatSessionInfo(true, 2, false),
 			List.of(
 				new SeatGroupsEntryResponse.SeatGroupInfo(
 					11L,
@@ -117,6 +117,7 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 			.willReturn(response);
 
 		mockMvc.perform(post("/matches/{matchId}/seat-holds", matchId)
+				.cookie(new jakarta.servlet.http.Cookie("admissionToken", "test-token"))
 				.contentType("application/json")
 				.content("""
 					{"seatIds":[206313,206314]}

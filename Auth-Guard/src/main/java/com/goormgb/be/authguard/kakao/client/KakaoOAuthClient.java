@@ -85,12 +85,12 @@ public class KakaoOAuthClient {
 			log.warn("카카오 토큰 요청 실패: {}", body);
 
 			if (body.contains("KOE320")) {
-				throw new CustomException(ErrorCode.OAUTH_CODE_EXPIRED);
+				throw new CustomException(ErrorCode.OAUTH_CODE_EXPIRED, e);
 			}
 			if (body.contains("KOE303")) {
-				throw new CustomException(ErrorCode.OAUTH_REDIRECT_URI_MISMATCH);
+				throw new CustomException(ErrorCode.OAUTH_REDIRECT_URI_MISMATCH, e);
 			}
-			throw new CustomException(ErrorCode.OAUTH_PROVIDER_ERROR);
+			throw new CustomException(ErrorCode.OAUTH_PROVIDER_ERROR, e);
 		}
 	}
 

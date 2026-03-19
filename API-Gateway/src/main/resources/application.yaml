@@ -54,3 +54,15 @@ springdoc:
         url: /seat/v3/api-docs
       - name: Order-Core
         url: /order/v3/api-docs
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState
+
+logging:
+  config: classpath:logback-spring.xml

@@ -19,7 +19,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         jdbc:
@@ -34,6 +34,11 @@ booking:
   options-key-prefix: seat:booking-options
   options-ttl-seconds: 900
 
+admission:
+  jwt:
+    public-key: ${ADMISSION_PUBLIC_KEY}
+    issuer: ${ADMISSION_JWT_ISSUER:queue-service}
+
 management:
   endpoint:
     health:
@@ -42,7 +47,6 @@ management:
       group:
         readiness:
           include: readinessState, db
-  endpoints:
-    web:
-      exposure:
-        include: health
+
+logging:
+  config: classpath:logback-spring.xml

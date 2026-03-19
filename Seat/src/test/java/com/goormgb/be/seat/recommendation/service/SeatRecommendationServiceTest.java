@@ -3,6 +3,7 @@ package com.goormgb.be.seat.recommendation.service;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -28,11 +29,10 @@ import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.fixture.BlockFixture;
 import com.goormgb.be.seat.fixture.CommonFixture;
 import com.goormgb.be.seat.fixture.OnboardingFixture;
-import com.goormgb.be.seat.fixture.SeatSessionFixture;
+import com.goormgb.be.seat.booking.model.BookingOptions;
+import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.recommendation.dto.response.BlockRecommendationResponse;
-import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
-import com.goormgb.be.seat.redis.SeatSession;
 import com.goormgb.be.user.entity.User;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +41,7 @@ class SeatRecommendationServiceTest {
 	@Mock
 	private MatchRepository matchRepository;
 	@Mock
-	private SeatPreferenceRedisRepository seatPreferenceRedisRepository;
+	private BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	@Mock
 	private BlockRepository blockRepository;
 	@Mock
@@ -73,12 +73,12 @@ class SeatRecommendationServiceTest {
 		Block block205 = BlockFixture.block(205L, "205", AreaCode.HOME, Viewpoint.INFIELD_1B);
 		Block block206 = BlockFixture.block(206L, "206", AreaCode.HOME, Viewpoint.INFIELD_1B);
 
-		SeatSession session = SeatSessionFixture.defaultSession(5);
+		BookingOptions bookingOptions = new BookingOptions(userId, matchId, true, 5, false, Instant.now());
 		Match match = CommonFixture.match(lgClub, doosanClub);
 
-		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId)).willReturn(session);
-		given(onboardingPreferredBlockRepository.findAllByUserId(userId))
-			.willReturn(OnboardingFixture.preferredBlocks(user, 205L, 206L));
+		given(bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId)).willReturn(bookingOptions);
+		given(onboardingPreferredBlockRepository.findBlockIdsByUserId(userId))
+			.willReturn(List.of(205L, 206L));
 		given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
 		given(blockRepository.findAllByIdInWithSectionAndArea(List.of(205L, 206L)))
 			.willReturn(List.of(block205, block206));
@@ -117,12 +117,12 @@ class SeatRecommendationServiceTest {
 		Block block205 = BlockFixture.block(205L, "205", AreaCode.HOME, Viewpoint.INFIELD_1B);
 		Block block408 = BlockFixture.block(408L, "408", AreaCode.OUTFIELD, Viewpoint.OUTFIELD_C);
 
-		SeatSession session = SeatSessionFixture.defaultSession(3);
+		BookingOptions bookingOptions = new BookingOptions(userId, matchId, true, 3, false, Instant.now());
 		Match match = CommonFixture.match(lgClub, doosanClub);
 
-		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId)).willReturn(session);
-		given(onboardingPreferredBlockRepository.findAllByUserId(userId))
-			.willReturn(OnboardingFixture.preferredBlocks(user, 205L, 408L));
+		given(bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId)).willReturn(bookingOptions);
+		given(onboardingPreferredBlockRepository.findBlockIdsByUserId(userId))
+			.willReturn(List.of(205L, 408L));
 		given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
 		given(blockRepository.findAllByIdInWithSectionAndArea(List.of(205L, 408L)))
 			.willReturn(List.of(block205, block408));
@@ -162,12 +162,12 @@ class SeatRecommendationServiceTest {
 
 		Block block205 = BlockFixture.block(205L, "205", AreaCode.HOME, Viewpoint.INFIELD_1B);
 
-		SeatSession session = SeatSessionFixture.defaultSession(5);
+		BookingOptions bookingOptions = new BookingOptions(userId, matchId, true, 5, false, Instant.now());
 		Match match = CommonFixture.match(lgClub, doosanClub);
 
-		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId)).willReturn(session);
-		given(onboardingPreferredBlockRepository.findAllByUserId(userId))
-			.willReturn(OnboardingFixture.preferredBlocks(user, 205L));
+		given(bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId)).willReturn(bookingOptions);
+		given(onboardingPreferredBlockRepository.findBlockIdsByUserId(userId))
+			.willReturn(List.of(205L));
 		given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
 		given(blockRepository.findAllByIdInWithSectionAndArea(List.of(205L))).willReturn(List.of(block205));
 		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any()))
