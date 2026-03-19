@@ -109,10 +109,11 @@ public class SeatMetricsService {
 	/**
 	 * 좌석 hold TTL 만료 횟수를 mode 라벨과 함께 증가시킨다.
 	 */
-	public void increaseHoldExpired(SeatHoldMode mode) {
+	public void increaseHoldExpired() {
 		meterRegistry.counter(
 			METRIC_HOLD_EXPIRED_TOTAL,
-			"mode", mode.getValue()
+			// "mode", mode.getValue()
+			"mode", "common"
 		).increment();
 	}
 
