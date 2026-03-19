@@ -1,7 +1,6 @@
 package com.goormgb.be.seat.recommendation.dto.response;
 
 import java.time.Instant;
-import java.util.List;
 
 import com.goormgb.be.domain.club.entity.Club;
 import com.goormgb.be.domain.match.entity.Match;
@@ -69,15 +68,15 @@ public record SeatEntryResponse(
 
 	public record SeatSessionInfo(
 		boolean recommendationEnabled,
-		int ticketCount,
-		List<Long> preferredBlockIds
+		Integer ticketCount,
+		boolean nearAdjacentToggle
 	) {
 
 		public static SeatSessionInfo from(SeatSession seatPreferenceCache) {
 			return new SeatSessionInfo(
 				seatPreferenceCache.isRecommendationEnabled(),
 				seatPreferenceCache.getTicketCount(),
-				seatPreferenceCache.getPreferredBlockIds()
+				seatPreferenceCache.isNearAdjacentToggle()
 			);
 		}
 	}

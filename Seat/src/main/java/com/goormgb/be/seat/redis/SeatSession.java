@@ -1,7 +1,8 @@
 package com.goormgb.be.seat.redis;
 
 import java.io.Serializable;
-import java.util.List;
+
+import com.goormgb.be.seat.booking.model.BookingOptions;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,22 +16,31 @@ public class SeatSession implements Serializable {
 
 	private boolean recommendationEnabled;
 
-	private int ticketCount;
+	private Integer ticketCount;
 
-	private List<Long> preferredBlockIds;
+	private boolean nearAdjacentToggle;
 
 	public SeatSession(
 		Long userId,
 		Long matchId,
 		boolean recommendationEnabled,
-		int ticketCount,
-		List<Long> preferredBlockIds
+		Integer ticketCount,
+		boolean nearAdjacentToggle
 	) {
 		this.userId = userId;
 		this.matchId = matchId;
 		this.recommendationEnabled = recommendationEnabled;
 		this.ticketCount = ticketCount;
-		this.preferredBlockIds = preferredBlockIds;
+		this.nearAdjacentToggle = nearAdjacentToggle;
 	}
 
+	public static SeatSession from(BookingOptions options) {
+		return new SeatSession(
+			options.userId(),
+			options.matchId(),
+			options.recommendationEnabled(),
+			options.ticketCount(),
+			options.nearAdjacentToggle()
+		);
+	}
 }

@@ -1,5 +1,6 @@
 package com.goormgb.be.ordercore.payment.service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -9,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
+import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
@@ -31,46 +33,65 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class PaymentService {
 
-	// 무통장 입금 가상계좌 목업 정보
-	private static final String VIRTUAL_ACCOUNT_BANK = "국민은행";
-	private static final String VIRTUAL_ACCOUNT_HOLDER = "구름GB";
-	private static final int VIRTUAL_ACCOUNT_DEADLINE_DAYS = 3;
+	// 무통장 입금 목업 계좌 정보
+	private static final String ACCOUNT_BANK = "신한은행";
+	private static final String ACCOUNT_NUMBER = "110-123-456789";
+	private static final String ACCOUNT_HOLDER = "주식회사 구름공방";
+	private static final int DEPOSIT_DEADLINE_DAYS = 3;
 
+	private final OrderMetricsService orderMetricsService;
 	private final OrderRepository orderRepository;
 	private final PaymentRepository paymentRepository;
 	private final CashReceiptRepository cashReceiptRepository;
 
 	/**
 	 * 결제 처리.
-	 * - VIRTUAL_ACCOUNT: 가상계좌 발급(목업), 입금 대기 상태 유지
+	 * - BANK_TRANSFER: 무통장 입금 계좌 안내(목업), 입금 대기 상태 유지
 	 * - TOSS_PAY / KAKAO_PAY: 외부 PG 연동 없이 즉시 결제 완료 처리(목업)
 	 */
 	public PaymentProcessResponse processPayment(Long userId, Long orderId, PaymentProcessRequest request) {
+		long start = System.nanoTime();
+
+		// 결제 요청 유입 횟수 증가 (결제 프로세스 시작 시점)
+		orderMetricsService.increasePaymentAttempts();
+
 		Order order = findOrderAndValidateOwnership(userId, orderId);
 
-		Preconditions.validate(
-			order.getStatus() == OrderStatus.PAYMENT_PENDING,
-			ErrorCode.PAYMENT_ALREADY_COMPLETED
-		);
+		try {
+			Preconditions.validate(
+				order.getStatus() == OrderStatus.PAYMENT_PENDING,
+				ErrorCode.PAYMENT_ALREADY_COMPLETED
+			);
 
-		Preconditions.validate(
-			!paymentRepository.findByOrderId(orderId).isPresent(),
-			ErrorCode.PAYMENT_ALREADY_COMPLETED
-		);
+			Preconditions.validate(
+				!paymentRepository.findByOrderId(orderId).isPresent(),
+				ErrorCode.PAYMENT_ALREADY_COMPLETED
+			);
 
-		Payment payment = buildPayment(order, request.paymentMethod());
-		paymentRepository.save(payment);
+			Payment payment = buildPayment(order, request.paymentMethod());
+			paymentRepository.save(payment);
 
-		if (request.paymentMethod() != PaymentMethod.VIRTUAL_ACCOUNT) {
-			// 간편결제(토스페이, 카카오페이) 목업 즉시 완료
-			payment.complete();
-			order.updateStatus(OrderStatus.PAID);
-			log.info("[PaymentService] 간편결제 완료(목업) - orderId={}, method={}", orderId, request.paymentMethod());
-		} else {
-			log.info("[PaymentService] 무통장 입금 가상계좌 발급 - orderId={}", orderId);
+			if (request.paymentMethod() != PaymentMethod.BANK_TRANSFER) {
+				// 간편결제(토스페이, 카카오페이) 목업 즉시 완료
+				payment.complete();
+				order.updateStatus(OrderStatus.PAID);
+				log.info("[PaymentService] 간편결제 완료(목업) - orderId={}, method={}", orderId, request.paymentMethod());
+
+				// 즉시 결제 완료 건수 증가 (간편결제 목업 성공)
+				orderMetricsService.increasePaymentSuccess();
+			} else {
+				log.info("[PaymentService] 무통장 입금 계좌 안내 - orderId={}", orderId);
+			}
+
+			return PaymentProcessResponse.of(payment);
+		} catch (CustomException e) {
+			// 결제 처리 실패 건수 증가 (검증 실패, 중복 결제, 기타 예외)
+			orderMetricsService.increasePaymentFail();
+			throw e;
+		} finally {
+			// 주문 생성부터 결제 처리 완료까지 전체 실행 시간 기록 (엔드투엔드 처리 성능 및 병목 분석용)
+			orderMetricsService.recordOrderProcessTime(Duration.ofNanos(System.nanoTime() - start));
 		}
-
-		return PaymentProcessResponse.of(payment);
 	}
 
 	/**
@@ -114,16 +135,15 @@ public class PaymentService {
 	}
 
 	private Payment buildPayment(Order order, PaymentMethod method) {
-		if (method == PaymentMethod.VIRTUAL_ACCOUNT) {
-			String mockAccountNumber = generateMockAccountNumber(order.getId());
-			Instant depositDeadline = Instant.now().plus(VIRTUAL_ACCOUNT_DEADLINE_DAYS, ChronoUnit.DAYS);
+		if (method == PaymentMethod.BANK_TRANSFER) {
+			Instant depositDeadline = Instant.now().plus(DEPOSIT_DEADLINE_DAYS, ChronoUnit.DAYS);
 
 			return Payment.builder()
 				.order(order)
 				.paymentMethod(method)
-				.virtualAccountBank(VIRTUAL_ACCOUNT_BANK)
-				.virtualAccountNumber(mockAccountNumber)
-				.virtualAccountHolder(VIRTUAL_ACCOUNT_HOLDER)
+				.accountBank(ACCOUNT_BANK)
+				.accountNumber(ACCOUNT_NUMBER)
+				.accountHolder(ACCOUNT_HOLDER)
 				.depositDeadline(depositDeadline)
 				.build();
 		}
@@ -132,9 +152,5 @@ public class PaymentService {
 			.order(order)
 			.paymentMethod(method)
 			.build();
-	}
-
-	private String generateMockAccountNumber(Long orderId) {
-		return String.format("047-000-%08d", orderId);
 	}
 }

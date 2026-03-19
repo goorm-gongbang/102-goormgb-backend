@@ -24,13 +24,13 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(
-	name = "payments",
-	indexes = {
-		@Index(name = "idx_payments_status", columnList = "status")
-	},
-	uniqueConstraints = {
-		@UniqueConstraint(name = "uk_payments_order_id", columnNames = {"order_id"})
-	}
+		name = "payments",
+		indexes = {
+				@Index(name = "idx_payments_status", columnList = "status")
+		},
+		uniqueConstraints = {
+				@UniqueConstraint(name = "uk_payments_order_id", columnNames = {"order_id"})
+		}
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -51,34 +51,34 @@ public class Payment extends BaseEntity {
 	@Column(name = "paid_at")
 	private Instant paidAt;
 
-	// 무통장 입금 전용 필드 (VIRTUAL_ACCOUNT 선택 시에만 값 존재)
-	@Column(name = "virtual_account_bank", length = 50)
-	private String virtualAccountBank;
+	// 무통장 입금 전용 필드 (BANK_TRANSFER 선택 시에만 값 존재)
+	@Column(name = "account_bank", length = 50)
+	private String accountBank;
 
-	@Column(name = "virtual_account_number", length = 50)
-	private String virtualAccountNumber;
+	@Column(name = "account_number", length = 50)
+	private String accountNumber;
 
-	@Column(name = "virtual_account_holder", length = 50)
-	private String virtualAccountHolder;
+	@Column(name = "account_holder", length = 50)
+	private String accountHolder;
 
 	@Column(name = "deposit_deadline")
 	private Instant depositDeadline;
 
 	@Builder
 	public Payment(
-		Order order,
-		PaymentMethod paymentMethod,
-		String virtualAccountBank,
-		String virtualAccountNumber,
-		String virtualAccountHolder,
-		Instant depositDeadline
+			Order order,
+			PaymentMethod paymentMethod,
+			String accountBank,
+			String accountNumber,
+			String accountHolder,
+			Instant depositDeadline
 	) {
 		this.order = order;
 		this.paymentMethod = paymentMethod;
 		this.status = PaymentStatus.PENDING;
-		this.virtualAccountBank = virtualAccountBank;
-		this.virtualAccountNumber = virtualAccountNumber;
-		this.virtualAccountHolder = virtualAccountHolder;
+		this.accountBank = accountBank;
+		this.accountNumber = accountNumber;
+		this.accountHolder = accountHolder;
 		this.depositDeadline = depositDeadline;
 	}
 

@@ -18,24 +18,24 @@ public final class PaymentFixture {
 	private PaymentFixture() {
 	}
 
-	public static Payment createVirtualAccountPayment(Order order) {
+	public static Payment createBankTransferPayment(Order order) {
 		Payment payment = Payment.builder()
-			.order(order)
-			.paymentMethod(PaymentMethod.VIRTUAL_ACCOUNT)
-			.virtualAccountBank("국민은행")
-			.virtualAccountNumber("047-000-00000001")
-			.virtualAccountHolder("구름GB")
-			.depositDeadline(Instant.now().plus(3, ChronoUnit.DAYS))
-			.build();
+				.order(order)
+				.paymentMethod(PaymentMethod.BANK_TRANSFER)
+				.accountBank("신한은행")
+				.accountNumber("110-123-456789")
+				.accountHolder("주식회사 구름공방")
+				.depositDeadline(Instant.now().plus(3, ChronoUnit.DAYS))
+				.build();
 		ReflectionTestUtils.setField(payment, "id", 1L);
 		return payment;
 	}
 
 	public static Payment createCompletedTossPayPayment(Order order) {
 		Payment payment = Payment.builder()
-			.order(order)
-			.paymentMethod(PaymentMethod.TOSS_PAY)
-			.build();
+				.order(order)
+				.paymentMethod(PaymentMethod.TOSS_PAY)
+				.build();
 		ReflectionTestUtils.setField(payment, "id", 2L);
 		payment.complete();
 		return payment;
@@ -43,9 +43,9 @@ public final class PaymentFixture {
 
 	public static Payment createCompletedKakaoPayPayment(Order order) {
 		Payment payment = Payment.builder()
-			.order(order)
-			.paymentMethod(PaymentMethod.KAKAO_PAY)
-			.build();
+				.order(order)
+				.paymentMethod(PaymentMethod.KAKAO_PAY)
+				.build();
 		ReflectionTestUtils.setField(payment, "id", 3L);
 		payment.complete();
 		return payment;
@@ -53,26 +53,26 @@ public final class PaymentFixture {
 
 	public static CashReceipt createPersonalDeductionReceipt(Payment payment) {
 		CashReceipt cashReceipt = CashReceipt.builder()
-			.payment(payment)
-			.purpose(CashReceiptPurpose.PERSONAL_DEDUCTION)
-			.number("010-1234-5678")
-			.build();
+				.payment(payment)
+				.purpose(CashReceiptPurpose.PERSONAL_DEDUCTION)
+				.number("010-1234-5678")
+				.build();
 		ReflectionTestUtils.setField(cashReceipt, "id", 1L);
 		return cashReceipt;
 	}
 
 	public static CashReceipt createBusinessExpenseReceipt(Payment payment) {
 		CashReceipt cashReceipt = CashReceipt.builder()
-			.payment(payment)
-			.purpose(CashReceiptPurpose.BUSINESS_EXPENSE)
-			.number("123-45-67890")
-			.build();
+				.payment(payment)
+				.purpose(CashReceiptPurpose.BUSINESS_EXPENSE)
+				.number("123-45-67890")
+				.build();
 		ReflectionTestUtils.setField(cashReceipt, "id", 2L);
 		return cashReceipt;
 	}
 
-	public static PaymentProcessRequest createVirtualAccountRequest() {
-		return new PaymentProcessRequest(PaymentMethod.VIRTUAL_ACCOUNT);
+	public static PaymentProcessRequest createBankTransferRequest() {
+		return new PaymentProcessRequest(PaymentMethod.BANK_TRANSFER);
 	}
 
 	public static PaymentProcessRequest createTossPayRequest() {

@@ -143,6 +143,15 @@ public class OnboardingPreferenceService {
 		user.completeOnboarding();
 	}
 
+	@Transactional
+	public void updatePreferredBlocks(Long userId, List<Long> preferredBlockIds) {
+		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+		validatePreferredBlocks(preferredBlockIds);
+
+		preferredBlockRepository.deleteAllByUserId(userId);
+		savePreferredBlocks(user, preferredBlockIds);
+	}
+
 	// ── 저장 헬퍼 ──
 
 	private void savePreference(User user, Club club, CheerProximityPref cheerProximityPref,

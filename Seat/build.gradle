@@ -5,6 +5,9 @@ dependencies {
     implementation project(':common-core')
     testImplementation(testFixtures(project(':common-core')))
 
+    // Redisson 분산 락 (Spring Boot 4 버전 호환: starter 대신 core 라이브러리 직접 사용)
+    implementation 'org.redisson:redisson:3.44.0'
+
     // 필수: Actuator & Prometheus
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'

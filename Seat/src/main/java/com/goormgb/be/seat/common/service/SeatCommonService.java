@@ -21,7 +21,8 @@ import com.goormgb.be.seat.common.dto.response.SectionBlocksResponse;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
-import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
+import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
+import com.goormgb.be.seat.redis.SeatSession;
 import com.goormgb.be.seat.seatHold.entity.SeatHold;
 import com.goormgb.be.seat.seatHold.repository.SeatHoldRepository;
 import com.goormgb.be.seat.section.entity.Section;
@@ -34,7 +35,7 @@ import lombok.RequiredArgsConstructor;
 public class SeatCommonService {
 
 	private final MatchRepository matchRepository;
-	private final SeatPreferenceRedisRepository seatPreferenceRedisRepository;
+	private final BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	private final SectionRepository sectionRepository;
 	private final BlockRepository blockRepository;
 	private final MatchSeatRepository matchSeatRepository;
@@ -43,7 +44,8 @@ public class SeatCommonService {
 	@Transactional(readOnly = true)
 	public SeatGroupsEntryResponse getSeatGroupsEntry(Long matchId, Long userId) {
 		var match = matchRepository.findDetailByIdOrThrow(matchId);
-		var seatSession = seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+		var bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+		var seatSession = SeatSession.from(bookingOptions);
 
 		List<Section> sections = sectionRepository.findAllWithAreaOrderByAreaIdAscSectionIdAsc();
 		List<Long> sectionIds = sections.stream().map(Section::getId).toList();
@@ -77,7 +79,7 @@ public class SeatCommonService {
 	@Transactional(readOnly = true)
 	public SectionBlocksResponse getSectionBlocks(Long matchId, Long sectionId, Long userId) {
 		matchRepository.findDetailByIdOrThrow(matchId);
-		seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+		bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
 		sectionRepository.findByIdOrThrow(sectionId, ErrorCode.SECTION_NOT_FOUND);
 
 		List<Block> blocks = blockRepository.findBySectionIdOrderByBlockCodeAsc(sectionId);

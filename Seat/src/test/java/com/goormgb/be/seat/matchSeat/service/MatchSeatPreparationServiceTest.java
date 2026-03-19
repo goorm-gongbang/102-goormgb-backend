@@ -33,15 +33,14 @@ class MatchSeatPreparationServiceTest {
 	@Mock
 	private MatchSeatPreparationTransactionalService transactionalService;
 
-	private Clock clock;
-
 	private MatchSeatPreparationService matchSeatPreparationService;
 
 	@BeforeEach
 	void setUp() {
-		clock = Clock.fixed(
-			Instant.parse("2026-03-13T00:00:00Z"),
-			ZoneId.of("UTC")
+		// 테스트 기준 시각: KST 2026-03-17 00:00
+		Clock clock = Clock.fixed(
+			Instant.parse("2026-03-16T15:00:00Z"),
+			ZoneId.of("Asia/Seoul")
 		);
 
 		matchSeatPreparationService = new MatchSeatPreparationService(
@@ -54,10 +53,12 @@ class MatchSeatPreparationServiceTest {
 
 	@Test
 	@DisplayName("생성 대상 경기가 없으면 종료한다")
-	void prepareMatchSeats_noMatches() {
+	void 생성_대상_경기가_없으면_종료한다() {
 		// given
 		when(matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
-			eq(SaleStatus.UPCOMING), any(), any()
+			eq(SaleStatus.UPCOMING),
+			any(Instant.class),
+			any(Instant.class)
 		)).thenReturn(List.of());
 
 		// when
@@ -69,12 +70,46 @@ class MatchSeatPreparationServiceTest {
 	}
 
 	@Test
-	@DisplayName("좌석 템플릿이 없으면 종료한다")
-	void prepareMatchSeats_noTemplates() {
+	@DisplayName("오늘 KST 기준 7일 뒤 날짜 범위의 경기만 조회한다")
+	void 오늘_KST_기준_7일_뒤_날짜_범위의_경기만_조회한다() {
 		// given
-		Match match = org.mockito.Mockito.mock(Match.class);
+		Match targetMatch = mock(Match.class);
+		when(targetMatch.getId()).thenReturn(1L);
+
+		SeatTemplateProjection template = mock(SeatTemplateProjection.class);
+		when(seatRepository.findAllSeatTemplates()).thenReturn(List.of(template));
+
 		when(matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
-			eq(SaleStatus.UPCOMING), any(), any()
+			eq(SaleStatus.UPCOMING),
+			any(Instant.class),
+			any(Instant.class)
+		)).thenReturn(List.of(targetMatch));
+
+		// when
+		matchSeatPreparationService.prepareMatchSeats();
+
+		// then
+		Instant expectedStart = Instant.parse("2026-03-23T15:00:00Z"); // KST 2026-03-24 00:00
+		Instant expectedEnd = Instant.parse("2026-03-24T15:00:00Z");   // KST 2026-03-25 00:00
+
+		verify(matchRepository).findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
+			eq(SaleStatus.UPCOMING),
+			eq(expectedStart),
+			eq(expectedEnd)
+		);
+		verify(transactionalService, times(1)).prepareSingleMatchSeats(eq(1L), any());
+	}
+
+	@Test
+	@DisplayName("좌석 템플릿이 없으면 종료한다")
+	void 좌석_템플릿이_없으면_종료한다() {
+		// given
+		Match match = mock(Match.class);
+
+		when(matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
+			eq(SaleStatus.UPCOMING),
+			any(Instant.class),
+			any(Instant.class)
 		)).thenReturn(List.of(match));
 
 		when(seatRepository.findAllSeatTemplates()).thenReturn(List.of());
@@ -87,48 +122,22 @@ class MatchSeatPreparationServiceTest {
 	}
 
 	@Test
-	@DisplayName("대상 경기마다 match seat 생성을 시도한다")
-	void prepareMatchSeats_callsTransactionalServiceForEachMatch() {
-		// given
-		Match match1 = org.mockito.Mockito.mock(Match.class);
-		Match match2 = org.mockito.Mockito.mock(Match.class);
-
-		when(match1.getId()).thenReturn(1L);
-		when(match2.getId()).thenReturn(2L);
-
-		when(matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
-			eq(SaleStatus.UPCOMING), any(), any()
-		)).thenReturn(List.of(match1, match2));
-
-		SeatTemplateProjection template = org.mockito.Mockito.mock(SeatTemplateProjection.class);
-		when(seatRepository.findAllSeatTemplates()).thenReturn(List.of(template));
-
-		when(transactionalService.prepareSingleMatchSeats(eq(1L), any())).thenReturn(true);
-		when(transactionalService.prepareSingleMatchSeats(eq(2L), any())).thenReturn(true);
-
-		// when
-		matchSeatPreparationService.prepareMatchSeats();
-
-		// then
-		verify(transactionalService, times(1)).prepareSingleMatchSeats(eq(1L), any());
-		verify(transactionalService, times(1)).prepareSingleMatchSeats(eq(2L), any());
-	}
-
-	@Test
 	@DisplayName("한 경기 생성 실패해도 다음 경기는 계속 처리한다")
-	void prepareMatchSeats_continueWhenOneMatchFails() {
+	void 한_경기_생성에_실패해도_다음_경기는_계속_처리한다() {
 		// given
-		Match match1 = org.mockito.Mockito.mock(Match.class);
-		Match match2 = org.mockito.Mockito.mock(Match.class);
+		Match match1 = mock(Match.class);
+		Match match2 = mock(Match.class);
 
 		when(match1.getId()).thenReturn(1L);
 		when(match2.getId()).thenReturn(2L);
 
 		when(matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
-			eq(SaleStatus.UPCOMING), any(), any()
+			eq(SaleStatus.UPCOMING),
+			any(Instant.class),
+			any(Instant.class)
 		)).thenReturn(List.of(match1, match2));
 
-		SeatTemplateProjection template = org.mockito.Mockito.mock(SeatTemplateProjection.class);
+		SeatTemplateProjection template = mock(SeatTemplateProjection.class);
 		when(seatRepository.findAllSeatTemplates()).thenReturn(List.of(template));
 
 		doThrow(new RuntimeException("DB 오류"))
@@ -142,5 +151,29 @@ class MatchSeatPreparationServiceTest {
 		// then
 		verify(transactionalService, times(1)).prepareSingleMatchSeats(eq(1L), any());
 		verify(transactionalService, times(1)).prepareSingleMatchSeats(eq(2L), any());
+	}
+
+	@Test
+	@DisplayName("대상 경기이고 템플릿이 있으면 생성에 성공한다")
+	void 대상_경기이고_템플릿이_있으면_생성에_성공한다() {
+		// given
+		Match match = mock(Match.class);
+		when(match.getId()).thenReturn(100L);
+
+		when(matchRepository.findBySaleStatusAndMatchAtGreaterThanEqualAndMatchAtLessThan(
+			eq(SaleStatus.UPCOMING),
+			any(Instant.class),
+			any(Instant.class)
+		)).thenReturn(List.of(match));
+
+		SeatTemplateProjection template = mock(SeatTemplateProjection.class);
+		when(seatRepository.findAllSeatTemplates()).thenReturn(List.of(template));
+		when(transactionalService.prepareSingleMatchSeats(eq(100L), any())).thenReturn(true);
+
+		// when
+		matchSeatPreparationService.prepareMatchSeats();
+
+		// then
+		verify(transactionalService, times(1)).prepareSingleMatchSeats(eq(100L), any());
 	}
 }

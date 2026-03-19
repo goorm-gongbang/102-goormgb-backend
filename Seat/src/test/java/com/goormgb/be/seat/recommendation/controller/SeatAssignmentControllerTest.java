@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.goormgb.be.seat.recommendation.dto.response.SeatAssignmentResponse;
 import com.goormgb.be.seat.recommendation.service.SeatAssignmentService;
 import com.goormgb.be.seat.recommendation.service.SeatRecommendationService;
+import com.goormgb.be.seat.security.AdmissionTokenValidator;
 
 @WebMvcTest(SeatRecommendationController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -36,6 +37,9 @@ class SeatAssignmentControllerTest {
 
 	@MockitoBean
 	private SeatAssignmentService seatAssignmentService;
+
+	@MockitoBean
+	private AdmissionTokenValidator admissionTokenValidator;
 
 	private void setAuthentication(Long userId) {
 		SecurityContextHolder.getContext().setAuthentication(

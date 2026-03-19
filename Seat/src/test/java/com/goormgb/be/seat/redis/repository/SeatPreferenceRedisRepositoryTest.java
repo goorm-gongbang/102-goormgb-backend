@@ -38,7 +38,6 @@ class SeatPreferenceRedisRepositoryTest {
 			  "matchId": 10,
 			  "recommendationEnabled": false,
 			  "ticketCount": 2,
-			  "preferredBlockIds": [220, 221],
 			  "enteredAt": "2026-03-29T05:00:00Z"
 			}
 			""";
@@ -53,7 +52,6 @@ class SeatPreferenceRedisRepositoryTest {
 		assertThat(session.getMatchId()).isEqualTo(10L);
 		assertThat(session.isRecommendationEnabled()).isFalse();
 		assertThat(session.getTicketCount()).isEqualTo(2);
-		assertThat(session.getPreferredBlockIds()).containsExactly(220L, 221L);
 	}
 
 	@Test

@@ -11,7 +11,6 @@ import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.goormgb.be.global.model.SeatPreferenceCache;
 import com.goormgb.be.queue.config.QueueProperties;
 import com.goormgb.be.queue.queue.model.ReadyTokenPayload;
 
@@ -30,25 +29,6 @@ public class QueueRedisRepository {
 		this.redisTemplate = redisTemplate;
 		this.queueProperties = queueProperties;
 		this.redisObjectMapper = redisObjectMapper;
-	}
-
-	public void saveSeatPreference(SeatPreferenceCache preference) {
-		setJson(
-			queueProperties.preferenceKey(preference.matchId(), preference.userId()),
-			preference
-		);
-	}
-
-	public void saveSeatPreference(SeatPreferenceCache preference, Duration ttl) {
-		setJson(
-			queueProperties.preferenceKey(preference.matchId(), preference.userId()),
-			preference,
-			ttl
-		);
-	}
-
-	public SeatPreferenceCache getSeatPreference(Long matchId, Long userId) {
-		return getJson(queueProperties.preferenceKey(matchId, userId), SeatPreferenceCache.class);
 	}
 
 	public void addToWaitingQueue(Long matchId, Long userId, long enteredAtMillis) {
@@ -96,6 +76,7 @@ public class QueueRedisRepository {
 			payload,
 			Duration.ofSeconds(queueProperties.readyTtlSeconds())
 		);
+		addReadyIndex(payload.matchId(), payload.userId());
 	}
 
 	public ReadyTokenPayload getReadyToken(Long matchId, Long userId) {
@@ -121,6 +102,7 @@ public class QueueRedisRepository {
 
 	public void deleteReadyToken(Long matchId, Long userId) {
 		redisTemplate.delete(queueProperties.readyKey(matchId, userId));
+		removeReadyIndex(matchId, userId);
 	}
 
 	public void addActiveMatch(Long matchId) {
@@ -144,11 +126,35 @@ public class QueueRedisRepository {
 
 	public void markExpired(Long matchId, Long userId, Duration ttl) {
 		redisTemplate.opsForValue().set(queueProperties.expiredKey(matchId, userId), "1", ttl);
+		removeReadyIndex(matchId, userId);
 	}
 
 	public boolean isExpired(Long matchId, Long userId) {
 		Boolean exists = redisTemplate.hasKey(queueProperties.expiredKey(matchId, userId));
 		return Boolean.TRUE.equals(exists);
+	}
+
+	public void deleteExpiredMarker(Long matchId, Long userId) {
+		redisTemplate.delete(queueProperties.expiredKey(matchId, userId));
+	}
+
+	public void addReadyIndex(Long matchId, Long userId) {
+		redisTemplate.opsForSet().add(queueProperties.readyIndexKey(matchId), String.valueOf(userId));
+	}
+
+	public void removeReadyIndex(Long matchId, Long userId) {
+		redisTemplate.opsForSet().remove(queueProperties.readyIndexKey(matchId), String.valueOf(userId));
+	}
+
+	public Set<Long> getReadyUserIds(Long matchId) {
+		Set<String> userIds = redisTemplate.opsForSet().members(queueProperties.readyIndexKey(matchId));
+		if (userIds == null || userIds.isEmpty()) {
+			return Set.of();
+		}
+
+		return userIds.stream()
+			.map(Long::valueOf)
+			.collect(java.util.stream.Collectors.toUnmodifiableSet());
 	}
 
 	private void setJson(String key, Object value) {

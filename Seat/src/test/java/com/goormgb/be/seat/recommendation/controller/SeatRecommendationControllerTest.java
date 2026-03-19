@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.goormgb.be.seat.recommendation.dto.response.SeatEntryResponse;
 import com.goormgb.be.seat.recommendation.service.SeatAssignmentService;
 import com.goormgb.be.seat.recommendation.service.SeatRecommendationService;
+import com.goormgb.be.seat.security.AdmissionTokenValidator;
 
 @WebMvcTest(SeatRecommendationController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -35,6 +36,9 @@ class SeatRecommendationControllerTest {
 
 	@MockitoBean
 	private SeatAssignmentService seatAssignmentService;
+
+	@MockitoBean
+	private AdmissionTokenValidator admissionTokenValidator;
 
 	private void setAuthentication(Long userId) {
 		SecurityContextHolder.getContext().setAuthentication(
@@ -60,8 +64,7 @@ class SeatRecommendationControllerTest {
 			),
 			new SeatEntryResponse.SeatSessionInfo(
 				true,
-				2,
-				List.of(206L, 208L, 105L)
+				2
 			)
 		);
 
@@ -69,7 +72,8 @@ class SeatRecommendationControllerTest {
 			.willReturn(response);
 
 		// when & then
-		mockMvc.perform(get("/matches/{matchId}/recommendations/seat-entry", matchId))
+		mockMvc.perform(get("/matches/{matchId}/recommendations/seat-entry", matchId)
+				.cookie(new jakarta.servlet.http.Cookie("admissionToken", "test-token")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.code").value("OK"))
 			.andExpect(jsonPath("$.data.match.matchId").value(10))
@@ -80,9 +84,6 @@ class SeatRecommendationControllerTest {
 			.andExpect(jsonPath("$.data.match.stadium.stadiumId").value(3))
 			.andExpect(jsonPath("$.data.match.stadium.koName").value("잠실 야구장"))
 			.andExpect(jsonPath("$.data.seatSession.recommendationEnabled").value(true))
-			.andExpect(jsonPath("$.data.seatSession.ticketCount").value(2))
-			.andExpect(jsonPath("$.data.seatSession.preferredBlockIds[0]").value(206))
-			.andExpect(jsonPath("$.data.seatSession.preferredBlockIds[1]").value(208))
-			.andExpect(jsonPath("$.data.seatSession.preferredBlockIds[2]").value(105));
+			.andExpect(jsonPath("$.data.seatSession.ticketCount").value(2));
 	}
 }
