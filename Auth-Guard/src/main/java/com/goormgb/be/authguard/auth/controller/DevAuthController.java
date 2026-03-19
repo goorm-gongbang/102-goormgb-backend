@@ -17,6 +17,8 @@ import com.goormgb.be.authguard.jwt.util.CookieUtils;
 import com.goormgb.be.authguard.metrics.AuthMetricsService;
 import com.goormgb.be.global.response.ApiResult;
 
+import org.springframework.web.bind.annotation.GetMapping;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -54,6 +56,13 @@ public class DevAuthController {
 
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(ApiResult.ok("회원가입 성공", null));
+	}
+
+	@Operation(summary = "500 에러 테스트", description = "모니터링 알람 테스트용 500 에러를 발생시킵니다.")
+	@ApiResponse(responseCode = "500", description = "의도적 서버 에러")
+	@GetMapping("/test/500")
+	public void trigger500() {
+		throw new RuntimeException("모니터링 알람 테스트용 의도적 500 에러");
 	}
 
 	@Operation(summary = "개발용 로그인", description = "ID/PW 기반 개발용 로그인 후 Access Token을 반환하고 Refresh Token을 쿠키로 설정합니다. local/dev/test 프로필에서만 사용 가능합니다.")
