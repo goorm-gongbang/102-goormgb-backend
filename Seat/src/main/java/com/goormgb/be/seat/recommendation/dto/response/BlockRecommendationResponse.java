@@ -6,13 +6,13 @@ import com.goormgb.be.seat.recommendation.dto.internal.BlockRecommendation;
 
 public record BlockRecommendationResponse(
 	Long matchId,
-	int ticketCount,
+	Integer ticketCount,
 	List<RecommendedBlock> blocks
 ) {
 
 	public static BlockRecommendationResponse of(
 		Long matchId,
-		int ticketCount,
+		Integer ticketCount,
 		List<BlockRecommendation> recommendations
 	) {
 		List<RecommendedBlock> blocks = new java.util.ArrayList<>();

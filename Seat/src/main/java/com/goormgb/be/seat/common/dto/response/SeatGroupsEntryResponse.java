@@ -72,7 +72,7 @@ public record SeatGroupsEntryResponse(
 
 	public record SeatSessionInfo(
 		boolean recommendationEnabled,
-		int ticketCount,
+		Integer ticketCount,
 		boolean nearAdjacentToggle
 	) {
 
