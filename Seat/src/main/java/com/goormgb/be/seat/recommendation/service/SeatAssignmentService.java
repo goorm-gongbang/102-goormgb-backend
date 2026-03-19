@@ -37,7 +37,11 @@ public class SeatAssignmentService {
 	public SeatAssignmentResponse assignAndHoldSeats(Long userId, Long matchId, Long blockId) {
 
 		BookingOptions bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
-		int requiredSeats = bookingOptions.ticketCount();
+
+		Preconditions.validate(bookingOptions.recommendationEnabled(), ErrorCode.BAD_REQUEST);
+		Preconditions.validate(bookingOptions.ticketCount() != null, ErrorCode.INVALID_TICKET_COUNT);
+
+		Integer requiredSeats = bookingOptions.ticketCount();
 		boolean nearAdjacentToggle = bookingOptions.nearAdjacentToggle();
 
 		Block block = blockRepository.findByIdWithSectionOrThrow(blockId);
