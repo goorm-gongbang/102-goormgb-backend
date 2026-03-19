@@ -62,7 +62,7 @@ management:
         enabled: true
       group:
         readiness:
-          include: readinessState, db
+          include: readinessState
 
 logging:
   config: classpath:logback-spring.xml
