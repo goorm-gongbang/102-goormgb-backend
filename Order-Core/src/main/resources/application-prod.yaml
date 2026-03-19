@@ -1,11 +1,11 @@
 server:
-  port: 8082
+  port: 8083
   servlet:
-    context-path: /seat
+    context-path: /order
 
 spring:
   application:
-    name: seat
+    name: order-core
   jackson:
     time-zone: UTC
     data-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
@@ -30,10 +30,6 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
-booking:
-  options-key-prefix: seat:booking-options
-  options-ttl-seconds: 900
-
 management:
   endpoints:
     web:
@@ -41,7 +37,7 @@ management:
         include: health, info, metrics, prometheus
   endpoint:
     health:
-      show-details: always
+      show-details: never
   prometheus:
     metrics:
       export:
@@ -50,4 +46,4 @@ management:
 logging:
   level:
     root: INFO
-    com.goormgb.be: DEBUG
+    com.goormgb.be: INFO

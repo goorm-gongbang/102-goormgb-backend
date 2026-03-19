@@ -53,13 +53,19 @@ kakao:
   user-info-url: https://kapi.kakao.com/v2/user/me
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
   endpoint:
     health:
-      probes:
+      show-details: never
+  prometheus:
+    metrics:
+      export:
         enabled: true
-      group:
-        readiness:
-          include: readinessState, db
 
 logging:
-  config: classpath:logback-spring.xml
+  level:
+    root: INFO
+    com.goormgb.be: INFO

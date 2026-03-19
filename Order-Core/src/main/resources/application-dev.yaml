@@ -33,26 +33,17 @@ spring:
 management:
   endpoints:
     web:
-      base-path: /actuator
       exposure:
         include: health, info, metrics, prometheus
   endpoint:
     health:
       show-details: always
-      probes:
-        enabled: true
-      group:
-        readiness:
-          include: readinessState, db
-    prometheus:
-      enabled: true
   prometheus:
     metrics:
       export:
         enabled: true
 
 logging:
-  config: classpath:logback-spring.xml
   level:
     root: INFO
     com.goormgb.be: DEBUG
