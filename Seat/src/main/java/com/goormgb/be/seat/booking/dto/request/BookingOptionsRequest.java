@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Min;
 
 public record BookingOptionsRequest(
 	boolean recommendationEnabled,
-	@Min(1) @Max(10) int ticketCount,
+	@Min(1) @Max(10) Integer ticketCount,
 	boolean nearAdjacentToggle
 ) {
 }

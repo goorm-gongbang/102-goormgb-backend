@@ -56,6 +56,10 @@ public class SeatRecommendationService {
 	@Transactional(readOnly = true)
 	public BlockRecommendationResponse getRecommendedBlocks(Long matchId, Long userId) {
 		var bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+
+		Preconditions.validate(bookingOptions.recommendationEnabled(), ErrorCode.BAD_REQUEST);
+		Preconditions.validate(bookingOptions.ticketCount() != null, ErrorCode.INVALID_TICKET_COUNT);
+
 		SeatSession seatSession = SeatSession.from(bookingOptions);
 		int ticketCount = seatSession.getTicketCount();
 		List<Long> preferredBlockIds = onboardingPreferredBlockRepository.findBlockIdsByUserId(userId);
