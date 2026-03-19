@@ -6,7 +6,7 @@ public record BookingOptions(
 	Long userId,
 	Long matchId,
 	boolean recommendationEnabled,
-	int ticketCount,
+	Integer ticketCount,
 	boolean nearAdjacentToggle,
 	Instant createdAt
 ) {

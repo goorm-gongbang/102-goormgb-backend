@@ -16,7 +16,7 @@ public class SeatSession implements Serializable {
 
 	private boolean recommendationEnabled;
 
-	private int ticketCount;
+	private Integer ticketCount;
 
 	private boolean nearAdjacentToggle;
 
@@ -24,7 +24,7 @@ public class SeatSession implements Serializable {
 		Long userId,
 		Long matchId,
 		boolean recommendationEnabled,
-		int ticketCount,
+		Integer ticketCount,
 		boolean nearAdjacentToggle
 	) {
 		this.userId = userId;

@@ -68,7 +68,7 @@ public record SeatEntryResponse(
 
 	public record SeatSessionInfo(
 		boolean recommendationEnabled,
-		int ticketCount,
+		Integer ticketCount,
 		boolean nearAdjacentToggle
 	) {
 
