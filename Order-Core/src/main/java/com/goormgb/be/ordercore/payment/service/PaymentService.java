@@ -79,10 +79,11 @@ public class PaymentService {
 				log.info("[PaymentService] 간편결제 완료(목업) - orderId={}, method={}", orderId, request.paymentMethod());
 
 				// 즉시 결제 완료 건수 증가 (간편결제 목업 성공)
-				if (request.paymentMethod() == PaymentMethod.KAKAO_PAY) {
-					orderMetricsService.increasePaymentSuccess(PaymentMethodType.KAKAOPAY);
-				} else if (request.paymentMethod() == PaymentMethod.TOSS_PAY) {
-					orderMetricsService.increasePaymentSuccess(PaymentMethodType.TOSSPAY);
+				switch (request.paymentMethod()) {
+					case KAKAO_PAY -> orderMetricsService.increasePaymentSuccess(PaymentMethodType.KAKAOPAY);
+					case TOSS_PAY -> orderMetricsService.increasePaymentSuccess(PaymentMethodType.TOSSPAY);
+					// 다른 간편결제 수단이 추가될 경우 여기에 case를 추가할 수 있습니다.
+					default -> log.warn("[PaymentService] 알 수 없는 간편결제 타입에 대한 성공 메트릭이 누락되었습니다. - method={}", request.paymentMethod());
 				}
 			} else {
 				log.info("[PaymentService] 무통장 입금 계좌 안내 - orderId={}", orderId);
