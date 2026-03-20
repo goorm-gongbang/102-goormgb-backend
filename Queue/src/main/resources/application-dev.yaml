@@ -31,6 +31,23 @@ spring:
       port: ${REDIS_PORT}
 
 queue:
+  ready-ttl-seconds: 360
+  expired-marker-ttl-seconds: 300
+  promotion-batch-size: 100
+  promotion-interval-ms: 1000
+  active-match-key: queue:match
+  wait-key-prefix: queue:wait
+  ready-key-prefix: queue:ready
+  expired-key-prefix: queue:expired
+  ready-index-key-prefix: queue:ready:index
+  polling:
+    ready-ms: 1000
+    fast-ms: 1500
+    medium-ms: 3000
+    slow-ms: 5000
+    fast-rank-threshold: 100
+    medium-rank-threshold: 1000
+
   security:
     jwt:
       private-key: ${ADMISSION_PRIVATE_KEY}
