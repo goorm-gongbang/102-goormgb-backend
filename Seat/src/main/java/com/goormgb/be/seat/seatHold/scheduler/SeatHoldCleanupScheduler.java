@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
+import com.goormgb.be.seat.metrics.SeatMetricsService;
 import com.goormgb.be.seat.seatHold.repository.SeatHoldRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SeatHoldCleanupScheduler {
 
+	private final SeatMetricsService seatMetricsService;
 	private final SeatHoldRepository seatHoldRepository;
 	private final MatchSeatRepository matchSeatRepository;
 	private final Clock clock;
@@ -42,6 +44,12 @@ public class SeatHoldCleanupScheduler {
 
 		int restoredCount = matchSeatRepository.markAvailableIfBlockedInBatch(expiredMatchSeatIds);
 		int deletedCount = seatHoldRepository.deleteByMatchSeatIdIn(expiredMatchSeatIds);
+
+		if (deletedCount > 0) {
+			// TTL 만료 횟수 증가 (mode 구분 x)
+			// TODO: mode 구분 가능하도록 수정
+			seatMetricsService.increaseHoldExpired();
+		}
 
 		log.info("만료 Hold 정리 완료 - 좌석 복원: {}건, Hold 삭제: {}건", restoredCount, deletedCount);
 	}
