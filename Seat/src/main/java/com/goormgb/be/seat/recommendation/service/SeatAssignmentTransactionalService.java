@@ -122,7 +122,7 @@ public class SeatAssignmentTransactionalService {
 		}
 
 		// TODO: 실패 횟수 매트릭 추가
-		// seatMetricsService.increaseHoldFail(SeatHoldMode.RECOMMEND, SeatHoldFailReason.);
+		seatMetricsService.increaseHoldFail(SeatHoldMode.RECOMMEND, SeatHoldFailReason.VALIDATION);
 		throw new CustomException(ErrorCode.NO_CONSECUTIVE_SEAT_AVAILABLE);
 	}
 
