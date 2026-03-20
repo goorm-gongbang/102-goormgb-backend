@@ -15,6 +15,9 @@ import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
+import com.goormgb.be.seat.metrics.SeatMetricsService;
+import com.goormgb.be.seat.metrics.enums.SeatHoldFailReason;
+import com.goormgb.be.seat.metrics.enums.SeatHoldMode;
 import com.goormgb.be.seat.recommendation.dto.internal.SeatGroup;
 import com.goormgb.be.seat.recommendation.dto.internal.SemiGroup;
 import com.goormgb.be.seat.recommendation.dto.response.SeatAssignmentResponse;
@@ -48,6 +51,7 @@ public class SeatAssignmentTransactionalService {
 	private static final Duration HOLD_TTL = Duration.ofMinutes(5);
 	private static final int MAX_RETRY = 3;
 
+	private final SeatMetricsService seatMetricsService;
 	private final MatchSeatRepository matchSeatRepository;
 	private final SeatHoldRepository seatHoldRepository;
 	private final RealConsecutiveFinder realConsecutiveFinder;
@@ -117,6 +121,8 @@ public class SeatAssignmentTransactionalService {
 			}
 		}
 
+		// TODO: 실패 횟수 매트릭 추가
+		seatMetricsService.increaseHoldFail(SeatHoldMode.RECOMMEND, SeatHoldFailReason.VALIDATION);
 		throw new CustomException(ErrorCode.NO_CONSECUTIVE_SEAT_AVAILABLE);
 	}
 
@@ -133,12 +139,18 @@ public class SeatAssignmentTransactionalService {
 		Long userId, Long matchId, Block block,
 		List<MatchSeat> seats, boolean semiConsecutive
 	) {
+		// 추천 좌석 hold 시도 횟수 증가
+		seatMetricsService.increaseHoldAttempt(SeatHoldMode.RECOMMEND);
+
 		Instant expiresAt = clock.instant().plus(HOLD_TTL);
 
 		List<MatchSeat> blockedSeats = new ArrayList<>();
 		for (MatchSeat seat : seats) {
 			int updated = matchSeatRepository.markBlockedIfAvailable(seat.getId());
 			if (updated == 0) {
+				// 좌석 hold 실패 횟수 증가
+				seatMetricsService.increaseHoldFail(SeatHoldMode.RECOMMEND, SeatHoldFailReason.CONFLICT);
+
 				rollbackBlockedSeats(blockedSeats);
 				return Optional.empty();
 			}
@@ -156,6 +168,9 @@ public class SeatAssignmentTransactionalService {
 			.toList();
 
 		seatHoldRepository.saveAll(holds);
+
+		// hold 성공 횟수 증가
+		seatMetricsService.increaseHoldSuccess(SeatHoldMode.RECOMMEND);
 
 		return Optional.of(SeatAssignmentResponse.of(matchId, block, seats, expiresAt, semiConsecutive));
 	}
