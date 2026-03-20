@@ -11,6 +11,7 @@ import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.ordercore.metrics.OrderMetricsService;
+import com.goormgb.be.ordercore.metrics.enums.PaymentMethodType;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
@@ -78,7 +79,11 @@ public class PaymentService {
 				log.info("[PaymentService] 간편결제 완료(목업) - orderId={}, method={}", orderId, request.paymentMethod());
 
 				// 즉시 결제 완료 건수 증가 (간편결제 목업 성공)
-				orderMetricsService.increasePaymentSuccess();
+				if (request.paymentMethod() == PaymentMethod.KAKAO_PAY) {
+					orderMetricsService.increasePaymentSuccess(PaymentMethodType.KAKAOPAY);
+				} else if (request.paymentMethod() == PaymentMethod.TOSS_PAY) {
+					orderMetricsService.increasePaymentSuccess(PaymentMethodType.TOSSPAY);
+				}
 			} else {
 				log.info("[PaymentService] 무통장 입금 계좌 안내 - orderId={}", orderId);
 			}
