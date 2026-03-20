@@ -18,15 +18,15 @@ import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.fixture.BlockFixture;
-import com.goormgb.be.seat.fixture.SeatSessionFixture;
+import com.goormgb.be.seat.booking.model.BookingOptions;
+import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 import com.goormgb.be.seat.recommendation.dto.response.SeatAssignmentResponse;
-import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
 
 @ExtendWith(MockitoExtension.class)
 class SeatAssignmentServiceTest {
 
 	@Mock
-	private SeatPreferenceRedisRepository seatPreferenceRedisRepository;
+	private BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	@Mock
 	private BlockRepository blockRepository;
 	@Mock
@@ -38,8 +38,8 @@ class SeatAssignmentServiceTest {
 	private SeatAssignmentService seatAssignmentService;
 
 	private void setupCommon() {
-		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(1L, 1L))
-			.willReturn(SeatSessionFixture.defaultSession(3));
+		given(bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(1L, 1L))
+			.willReturn(new BookingOptions(1L, 1L, true, 3, false, Instant.now()));
 		given(blockRepository.findByIdWithSectionOrThrow(1L)).willReturn(BlockFixture.cpBlock());
 		given(seatBlockLock.tryLock(1L, 1L)).willReturn(true);
 	}
@@ -56,7 +56,7 @@ class SeatAssignmentServiceTest {
 			.willReturn(expectedResponse);
 
 		// when
-		SeatAssignmentResponse response = seatAssignmentService.assignAndHoldSeats(1L, 1L, 1L, false);
+		SeatAssignmentResponse response = seatAssignmentService.assignAndHoldSeats(1L, 1L, 1L);
 
 		// then
 		assertThat(response).isNotNull();
@@ -68,13 +68,13 @@ class SeatAssignmentServiceTest {
 	@DisplayName("락 획득 실패 시 예외가 발생한다")
 	void 락_획득_실패_예외() {
 		// given
-		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(1L, 1L))
-			.willReturn(SeatSessionFixture.defaultSession(3));
+		given(bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(1L, 1L))
+			.willReturn(new BookingOptions(1L, 1L, true, 3, false, Instant.now()));
 		given(blockRepository.findByIdWithSectionOrThrow(1L)).willReturn(BlockFixture.cpBlock());
 		given(seatBlockLock.tryLock(1L, 1L)).willReturn(false);
 
 		// when & then
-		assertThatThrownBy(() -> seatAssignmentService.assignAndHoldSeats(1L, 1L, 1L, false))
+		assertThatThrownBy(() -> seatAssignmentService.assignAndHoldSeats(1L, 1L, 1L))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.SEAT_LOCK_ACQUISITION_FAILED);
@@ -89,7 +89,7 @@ class SeatAssignmentServiceTest {
 			.willThrow(new CustomException(ErrorCode.NO_CONSECUTIVE_SEAT_AVAILABLE));
 
 		// when & then
-		assertThatThrownBy(() -> seatAssignmentService.assignAndHoldSeats(1L, 1L, 1L, false))
+		assertThatThrownBy(() -> seatAssignmentService.assignAndHoldSeats(1L, 1L, 1L))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.NO_CONSECUTIVE_SEAT_AVAILABLE);

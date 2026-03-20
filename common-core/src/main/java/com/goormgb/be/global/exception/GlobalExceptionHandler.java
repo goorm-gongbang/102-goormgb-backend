@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -47,6 +48,11 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ErrorResponse.ErrorData> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
 		log.warn("JSON parse error: {}", e.getMessage());
 		return ErrorResponse.error(HttpStatus.BAD_REQUEST, "요청 본문의 JSON 형식이 올바르지 않습니다.");
+	}
+
+	@ExceptionHandler(MissingRequestCookieException.class)
+	public ResponseEntity<ErrorResponse.ErrorData> handleMissingCookie(MissingRequestCookieException e) {
+		return ErrorResponse.error(HttpStatus.UNAUTHORIZED, ErrorCode.INVALID_TOKEN.getMessage());
 	}
 
 	@ExceptionHandler(MissingServletRequestParameterException.class)
