@@ -55,33 +55,33 @@ public class SeatHoldService {
 
 	private List<Long> normalizeSeatIds(List<Long> seatIds) {
 		Preconditions.validate(
-			seatIds != null && !seatIds.isEmpty(),
-			ErrorCode.INVALID_SEAT_HOLD_REQUEST
+				seatIds != null && !seatIds.isEmpty(),
+				ErrorCode.INVALID_SEAT_HOLD_REQUEST);
+
+		Preconditions.validate(
+				seatIds.stream().noneMatch(Objects::isNull),
+				ErrorCode.INVALID_SEAT_HOLD_REQUEST
 		);
 
 		Preconditions.validate(
-			seatIds.stream().noneMatch(Objects::isNull),
-			ErrorCode.INVALID_SEAT_HOLD_REQUEST
-		);
-
-		Preconditions.validate(
-			new HashSet<>(seatIds).size() == seatIds.size(),
-			ErrorCode.INVALID_SEAT_HOLD_REQUEST
+				new HashSet<>(seatIds).size() == seatIds.size(),
+				ErrorCode.INVALID_SEAT_HOLD_REQUEST
 		);
 
 		return seatIds.stream()
-			.sorted(Comparator.naturalOrder())
-			.toList();
+				.sorted(Comparator.naturalOrder())
+				.toList();
 	}
 
 	private void validateSeatCount(Long userId, Long matchId, int requestedCount) {
 		BookingOptions bookingOptions =
-			bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
+				bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
 
 		Integer ticketCount = bookingOptions.ticketCount();
-		Preconditions.validate(
-			ticketCount != null && ticketCount == requestedCount,
-			ErrorCode.INVALID_SEAT_HOLD_REQUEST
-		);
+		if (ticketCount != null) {
+			Preconditions.validate(
+					ticketCount == requestedCount,
+					ErrorCode.INVALID_SEAT_HOLD_REQUEST);
+		}
 	}
 }
