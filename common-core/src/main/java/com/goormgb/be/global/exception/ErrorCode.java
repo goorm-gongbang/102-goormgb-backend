@@ -8,6 +8,10 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {
+	// A004
+	// aop 가로채듯 404로 감싸버리는방법. 500 빼고는 전부다 감싸서 바꿔치기. (hotfix) 퇴근하다 일터졋을떄
+	// invalided parameter 하고, 메세지만 바꿔치는 구조 // 온보딩 완료, 이미 완료됨. 이런건 있어야하는데, 파라미터 잘못 입력한건 친절하게 줄 필요가 없다.
+
 	// Common
 	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 에러입니다. 백엔드팀에 문의하세요."),
 	BAD_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
@@ -65,6 +69,7 @@ public enum ErrorCode {
 	QUEUE_ENTRY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 경기의 대기열에 등록되어 있지 않습니다."),
 	ADMISSION_TOKEN_EXPIRED(HttpStatus.GONE, "입장 가능 시간이 만료되었습니다. 다시 대기열에 진입해주세요."),
 	INVALID_TICKET_COUNT(HttpStatus.BAD_REQUEST, "예매 티켓 수가 올바르지 않습니다."),
+	INVALID_BOOKING_OPTIONS(HttpStatus.BAD_REQUEST, "예매 옵션이 올바르지 않습니다."),
 	INVALID_PROMOTE_COUNT(HttpStatus.BAD_REQUEST, "승급 인원 수가 올바르지 않습니다."),
 	QUEUE_PROMOTION_NOT_ALLOWED(HttpStatus.CONFLICT, "현재 대기열 승급 처리가 불가능합니다."),
 

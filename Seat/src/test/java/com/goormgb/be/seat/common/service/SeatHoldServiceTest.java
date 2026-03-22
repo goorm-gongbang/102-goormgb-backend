@@ -6,7 +6,6 @@ import static org.mockito.BDDMockito.*;
 
 import java.time.Instant;
 import java.util.List;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,8 +18,8 @@ import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.common.service.lock.SeatHoldLockManager;
-import com.goormgb.be.seat.fixture.SeatSessionFixture;
-import com.goormgb.be.seat.redis.SeatPreferenceRedisRepository;
+import com.goormgb.be.seat.booking.model.BookingOptions;
+import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 
 @ExtendWith(MockitoExtension.class)
 class SeatHoldServiceTest {
@@ -29,7 +28,7 @@ class SeatHoldServiceTest {
 	private static final Long MATCH_ID = 10L;
 
 	@Mock
-	private SeatPreferenceRedisRepository seatPreferenceRedisRepository;
+	private BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	@Mock
 	private SeatHoldLockManager seatHoldLockManager;
 	@Mock
@@ -39,8 +38,8 @@ class SeatHoldServiceTest {
 	private SeatHoldService seatHoldService;
 
 	private void setupSession(int ticketCount) {
-		given(seatPreferenceRedisRepository.getByUserIdAndMatchIdOrThrow(USER_ID, MATCH_ID))
-			.willReturn(SeatSessionFixture.of(USER_ID, MATCH_ID, true, ticketCount));
+		given(bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(USER_ID, MATCH_ID))
+			.willReturn(new BookingOptions(USER_ID, MATCH_ID, true, ticketCount, false, Instant.now()));
 	}
 
 	@Test

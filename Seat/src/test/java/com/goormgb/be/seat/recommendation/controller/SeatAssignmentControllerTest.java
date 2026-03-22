@@ -70,11 +70,12 @@ class SeatAssignmentControllerTest {
 			false
 		);
 
-		given(seatAssignmentService.assignAndHoldSeats(eq(userId), eq(matchId), eq(blockId), eq(false)))
+		given(seatAssignmentService.assignAndHoldSeats(eq(userId), eq(matchId), eq(blockId)))
 			.willReturn(response);
 
 		// when & then
 		mockMvc.perform(post("/matches/{matchId}/recommendations/blocks/{blockId}/assign", matchId, blockId)
+				.cookie(new jakarta.servlet.http.Cookie("admissionToken", "test-token"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"nearAdjacentToggle\": false}"))
 			.andExpect(status().isOk())
