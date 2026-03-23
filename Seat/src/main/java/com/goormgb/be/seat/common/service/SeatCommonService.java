@@ -104,7 +104,7 @@ public class SeatCommonService {
 
 		Map<Long, BlockAccumulator> blockMap = new LinkedHashMap<>();
 		for (Block block : blocks) {
-			blockMap.put(block.getId(), new BlockAccumulator(block.getId(), block.getBlockCode()));
+			blockMap.put(block.getId(), new BlockAccumulator(block.getBlockNum(), block.getBlockCode()));
 		}
 
 		for (MatchSeat matchSeat : matchSeats) {
@@ -145,7 +145,7 @@ public class SeatCommonService {
 		Map<Long, List<Long>> blockIdsBySectionId = new LinkedHashMap<>();
 		for (Block block : blockRepository.findBySectionIdInOrderBySectionIdAscBlockCodeAsc(sectionIds)) {
 			blockIdsBySectionId.computeIfAbsent(block.getSection().getId(), ignored -> new ArrayList<>())
-				.add(block.getId());
+				.add(block.getBlockNum());
 		}
 		return blockIdsBySectionId;
 	}
@@ -194,17 +194,17 @@ public class SeatCommonService {
 	}
 
 	private record BlockAccumulator(
-		Long blockId,
+		Long blockNum,
 		String blockCode,
 		Map<Integer, RowAccumulator> rowsByRowNo
 	) {
-		private BlockAccumulator(Long blockId, String blockCode) {
-			this(blockId, blockCode, new LinkedHashMap<>());
+		private BlockAccumulator(Long blockNum, String blockCode) {
+			this(blockNum, blockCode, new LinkedHashMap<>());
 		}
 
 		private SectionBlocksResponse.BlockInfo toResponse() {
 			return SectionBlocksResponse.BlockInfo.of(
-				blockId,
+				blockNum,
 				blockCode,
 				rowsByRowNo.values().stream()
 					.map(RowAccumulator::toResponse)

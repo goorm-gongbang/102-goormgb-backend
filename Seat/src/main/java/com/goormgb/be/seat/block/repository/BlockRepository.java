@@ -30,4 +30,12 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
 		return findByIdWithSectionAndArea(blockId)
 			.orElseThrow(() -> new CustomException(ErrorCode.BLOCK_NOT_FOUND));
 	}
+
+	@Query("SELECT b FROM Block b JOIN FETCH b.section s JOIN FETCH b.area a WHERE b.blockNum = :blockNum")
+	Optional<Block> findByBlockNumWithSectionAndArea(@Param("blockNum") Long blockNum);
+
+	default Block findByBlockNumWithSectionOrThrow(Long blockNum) {
+		return findByBlockNumWithSectionAndArea(blockNum)
+			.orElseThrow(() -> new CustomException(ErrorCode.BLOCK_NOT_FOUND));
+	}
 }

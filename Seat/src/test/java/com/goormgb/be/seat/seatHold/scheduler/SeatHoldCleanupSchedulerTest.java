@@ -14,11 +14,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
+import com.goormgb.be.seat.metrics.SeatMetricsService;
 import com.goormgb.be.seat.seatHold.repository.SeatHoldRepository;
 
 @ExtendWith(MockitoExtension.class)
 class SeatHoldCleanupSchedulerTest {
 
+	@Mock
+	private SeatMetricsService seatMetricsService;
 	@Mock
 	private SeatHoldRepository seatHoldRepository;
 	@Mock
