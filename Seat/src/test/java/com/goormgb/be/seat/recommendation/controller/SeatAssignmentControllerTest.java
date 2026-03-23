@@ -52,7 +52,7 @@ class SeatAssignmentControllerTest {
 	void 좌석_배정_성공() throws Exception {
 		// given
 		Long matchId = 1L;
-		Long blockId = 10L;
+		String blockId = "CP";
 		Long userId = 1L;
 		setAuthentication(userId);
 

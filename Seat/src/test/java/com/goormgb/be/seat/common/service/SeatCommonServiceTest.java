@@ -109,6 +109,45 @@ class SeatCommonServiceTest {
 	}
 
 	@Test
+	@DisplayName("섹션 블럭 조회 시 blockId가 DB PK가 아닌 blockCode를 반환한다")
+	void 섹션_블럭_blockId는_blockCode를_반환한다() {
+		Long userId = 1L;
+		Long matchId = 10L;
+		Long sectionId = 20L;
+
+		Section section = createSection(sectionId);
+		// PK(48, 49)와 blockCode("205", "206")를 의도적으로 다르게 설정
+		Block block205 = createBlock(48L, "205", section);
+		Block block206 = createBlock(49L, "206", section);
+
+		MatchSeat s1 = createMatchSeat(1001L, matchId, 205001L, sectionId, 48L, 1, 1, MatchSeatSaleStatus.AVAILABLE);
+		MatchSeat s2 = createMatchSeat(1002L, matchId, 206001L, sectionId, 49L, 1, 1, MatchSeatSaleStatus.AVAILABLE);
+
+		lenient().when(sectionRepository.findById(sectionId)).thenReturn(Optional.of(section));
+		lenient().when(blockRepository.findBySectionIdOrderByBlockCodeAsc(sectionId))
+			.thenReturn(List.of(block205, block206));
+		lenient().when(
+				matchSeatRepository.findByMatchIdAndSectionIdOrderByBlockIdAscRowNoAscSeatNoAsc(matchId, sectionId))
+			.thenReturn(List.of(s1, s2));
+		lenient().when(
+			seatHoldRepository.findAllByMatchIdAndMatchSeatIdInAndExpiresAtAfter(
+				eq(matchId), anyList(), any(Instant.class)
+			)
+		).thenReturn(List.of());
+
+		SectionBlocksResponse result = seatCommonService.getSectionBlocks(matchId, sectionId, userId);
+
+		assertThat(result.blocks()).hasSize(2);
+		// blockId가 PK("48")가 아닌 blockCode("205")를 반환하는지 검증
+		assertThat(result.blocks().get(0).blockId()).isEqualTo("205");
+		assertThat(result.blocks().get(0).blockId()).isNotEqualTo("48");
+		assertThat(result.blocks().get(1).blockId()).isEqualTo("206");
+		assertThat(result.blocks().get(1).blockId()).isNotEqualTo("49");
+		// blockId와 blockCode가 동일한 값인지 검증
+		assertThat(result.blocks().get(0).blockId()).isEqualTo(result.blocks().get(0).blockCode());
+	}
+
+	@Test
 	@DisplayName("섹션 블럭 좌석 현황 조회 시 HELD 좌석을 반영하고 행별 남은 좌석 수를 계산한다")
 	void 섹션_블럭_좌석_현황_HELD_반영_성공() {
 		Long userId = 1L;

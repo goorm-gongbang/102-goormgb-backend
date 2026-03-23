@@ -66,14 +66,14 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 					11L,
 					"프리미엄",
 					List.of(
-						new SeatGroupsEntryResponse.SectionInfo(101L, "테라존", "테라존", List.of(1001L, 1002L), 25L)
+						new SeatGroupsEntryResponse.SectionInfo(101L, "테라존", "테라존", List.of("CP", "CP2"), 25L)
 					)
 				),
 				new SeatGroupsEntryResponse.SeatGroupInfo(
 					12L,
 					"1루 구역",
 					List.of(
-						new SeatGroupsEntryResponse.SectionInfo(201L, "내야", "1루 내야", List.of(2001L), 120L)
+						new SeatGroupsEntryResponse.SectionInfo(201L, "내야", "1루 내야", List.of("201"), 120L)
 					)
 				)
 			)
@@ -94,7 +94,7 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 			.andExpect(jsonPath("$.data.seatGroups.length()").value(2))
 			.andExpect(jsonPath("$.data.seatGroups[0].areaName").value("프리미엄"))
 			.andExpect(jsonPath("$.data.seatGroups[0].sections[0].sectionId").value(101))
-			.andExpect(jsonPath("$.data.seatGroups[0].sections[0].blockIds[0]").value(1001))
+			.andExpect(jsonPath("$.data.seatGroups[0].sections[0].blockIds[0]").value("CP"))
 			.andExpect(jsonPath("$.data.seatGroups[1].sections[0].displayName").value("1루 내야"))
 			.andExpect(jsonPath("$.data.seatGroups[1].sections[0].remainingSeatCount").value(120));
 
@@ -144,7 +144,7 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 		SectionBlocksResponse response = new SectionBlocksResponse(
 			List.of(
 				new SectionBlocksResponse.BlockInfo(
-					205L,
+					"205",
 					"205",
 					"205블럭",
 					List.of(
@@ -171,7 +171,7 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 			.andExpect(jsonPath("$.code").value("OK"))
 			.andExpect(jsonPath("$.message").value("성공"))
 			.andExpect(jsonPath("$.data.blocks.length()").value(1))
-			.andExpect(jsonPath("$.data.blocks[0].blockId").value(205))
+			.andExpect(jsonPath("$.data.blocks[0].blockId").value("205"))
 			.andExpect(jsonPath("$.data.blocks[0].displayName").value("205블럭"))
 			.andExpect(jsonPath("$.data.blocks[0].rows[0].rowNo").value(1))
 			.andExpect(jsonPath("$.data.blocks[0].rows[0].remainingSeatCount").value(2))

@@ -15,6 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.fixture.BlockFixture;
@@ -37,44 +39,54 @@ class SeatAssignmentServiceTest {
 	@InjectMocks
 	private SeatAssignmentService seatAssignmentService;
 
+	private static final Long MATCH_ID = 1L;
+	private static final Long USER_ID = 1L;
+	private static final String BLOCK_CODE = "CP";
+
+	private Block cpBlock;
+
 	private void setupCommon() {
-		given(bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(1L, 1L))
-			.willReturn(new BookingOptions(1L, 1L, true, 3, false, Instant.now()));
-		given(blockRepository.findByIdWithSectionOrThrow(1L)).willReturn(BlockFixture.cpBlock());
-		given(seatBlockLock.tryLock(1L, 1L)).willReturn(true);
+		cpBlock = BlockFixture.cpBlock();
+		ReflectionTestUtils.setField(cpBlock, "id", 1L);
+		given(bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(USER_ID, MATCH_ID))
+			.willReturn(new BookingOptions(USER_ID, MATCH_ID, true, 3, false, Instant.now()));
+		given(blockRepository.findByBlockCodeWithSectionOrThrow(BLOCK_CODE)).willReturn(cpBlock);
+		given(seatBlockLock.tryLock(MATCH_ID, 1L)).willReturn(true);
 	}
 
 	@Test
-	@DisplayName("정상 요청 시 락 획득 후 트랜잭션 서비스를 호출하고 락을 해제한다")
+	@DisplayName("정상 요청 시 blockCode로 Block을 조회하고 락 획득 후 트랜잭션 서비스를 호출한다")
 	void 정상_요청_락_트랜잭션_순서() {
 		// given
 		setupCommon();
-		Block block = BlockFixture.cpBlock();
 		SeatAssignmentResponse expectedResponse = SeatAssignmentResponse.of(
-			1L, block, List.of(), Instant.parse("2026-04-15T10:05:00Z"), false);
-		given(seatAssignmentTransactionalService.assignAndHold(eq(1L), eq(1L), eq(1L), any(Block.class), eq(3), eq(false)))
+			MATCH_ID, cpBlock, List.of(), Instant.parse("2026-04-15T10:05:00Z"), false);
+		given(seatAssignmentTransactionalService.assignAndHold(eq(USER_ID), eq(MATCH_ID), eq(1L), any(Block.class), eq(3), eq(false)))
 			.willReturn(expectedResponse);
 
 		// when
-		SeatAssignmentResponse response = seatAssignmentService.assignAndHoldSeats(1L, 1L, 1L);
+		SeatAssignmentResponse response = seatAssignmentService.assignAndHoldSeats(USER_ID, MATCH_ID, BLOCK_CODE);
 
 		// then
 		assertThat(response).isNotNull();
-		then(seatAssignmentTransactionalService).should().assignAndHold(eq(1L), eq(1L), eq(1L), any(Block.class), eq(3), eq(false));
-		then(seatBlockLock).should().unlock(1L, 1L);
+		then(blockRepository).should().findByBlockCodeWithSectionOrThrow(BLOCK_CODE);
+		then(seatAssignmentTransactionalService).should().assignAndHold(eq(USER_ID), eq(MATCH_ID), eq(1L), any(Block.class), eq(3), eq(false));
+		then(seatBlockLock).should().unlock(MATCH_ID, 1L);
 	}
 
 	@Test
 	@DisplayName("락 획득 실패 시 예외가 발생한다")
 	void 락_획득_실패_예외() {
 		// given
-		given(bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(1L, 1L))
-			.willReturn(new BookingOptions(1L, 1L, true, 3, false, Instant.now()));
-		given(blockRepository.findByIdWithSectionOrThrow(1L)).willReturn(BlockFixture.cpBlock());
-		given(seatBlockLock.tryLock(1L, 1L)).willReturn(false);
+		cpBlock = BlockFixture.cpBlock();
+		ReflectionTestUtils.setField(cpBlock, "id", 1L);
+		given(bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(USER_ID, MATCH_ID))
+			.willReturn(new BookingOptions(USER_ID, MATCH_ID, true, 3, false, Instant.now()));
+		given(blockRepository.findByBlockCodeWithSectionOrThrow(BLOCK_CODE)).willReturn(cpBlock);
+		given(seatBlockLock.tryLock(MATCH_ID, 1L)).willReturn(false);
 
 		// when & then
-		assertThatThrownBy(() -> seatAssignmentService.assignAndHoldSeats(1L, 1L, 1L))
+		assertThatThrownBy(() -> seatAssignmentService.assignAndHoldSeats(USER_ID, MATCH_ID, BLOCK_CODE))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.SEAT_LOCK_ACQUISITION_FAILED);
@@ -85,15 +97,15 @@ class SeatAssignmentServiceTest {
 	void 트랜잭션_예외시_락_해제() {
 		// given
 		setupCommon();
-		given(seatAssignmentTransactionalService.assignAndHold(eq(1L), eq(1L), eq(1L), any(), eq(3), eq(false)))
+		given(seatAssignmentTransactionalService.assignAndHold(eq(USER_ID), eq(MATCH_ID), eq(1L), any(), eq(3), eq(false)))
 			.willThrow(new CustomException(ErrorCode.NO_CONSECUTIVE_SEAT_AVAILABLE));
 
 		// when & then
-		assertThatThrownBy(() -> seatAssignmentService.assignAndHoldSeats(1L, 1L, 1L))
+		assertThatThrownBy(() -> seatAssignmentService.assignAndHoldSeats(USER_ID, MATCH_ID, BLOCK_CODE))
 			.isInstanceOf(CustomException.class)
 			.extracting("errorCode")
 			.isEqualTo(ErrorCode.NO_CONSECUTIVE_SEAT_AVAILABLE);
 
-		then(seatBlockLock).should().unlock(1L, 1L);
+		then(seatBlockLock).should().unlock(MATCH_ID, 1L);
 	}
 }

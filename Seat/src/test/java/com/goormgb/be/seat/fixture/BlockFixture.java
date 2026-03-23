@@ -115,7 +115,7 @@ public final class BlockFixture {
 	}
 
 	public static BlockItemDto cpBlockItemDto() {
-		return new BlockItemDto(null, "CP", "테라존(중앙 프리미엄석)", "중앙", Viewpoint.CENTER);
+		return new BlockItemDto("CP", "CP", "테라존(중앙 프리미엄석)", "중앙", Viewpoint.CENTER);
 	}
 
 	public static Block block(Long id, String blockCode, AreaCode areaCode, Viewpoint viewpoint,
