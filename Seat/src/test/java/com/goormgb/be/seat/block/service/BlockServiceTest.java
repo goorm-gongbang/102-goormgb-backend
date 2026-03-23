@@ -34,6 +34,7 @@ class BlockServiceTest {
 
 		// then
 		assertThat(result.blocks()).hasSize(3);
+		assertThat(result.blocks().get(0).blockId()).isEqualTo(1L); // blockNum = 1 (CP)
 		assertThat(result.blocks().get(0).blockCode()).isEqualTo("CP");
 		assertThat(result.blocks().get(0).sectionName()).isEqualTo("테라존(중앙 프리미엄석)");
 		assertThat(result.blocks().get(0).areaName()).isEqualTo("중앙");

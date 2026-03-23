@@ -21,6 +21,7 @@ import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
+import com.goormgb.be.seat.metrics.SeatMetricsService;
 import com.goormgb.be.seat.seat.enums.SeatZone;
 import com.goormgb.be.seat.seatHold.entity.SeatHold;
 import com.goormgb.be.seat.seatHold.repository.SeatHoldRepository;
@@ -32,6 +33,8 @@ class SeatHoldTransactionalServiceTest {
 	private static final Long MATCH_ID = 10L;
 	private static final Instant NOW = Instant.parse("2026-04-15T10:00:00Z");
 
+	@Mock
+	private SeatMetricsService seatMetricsService;
 	@Mock
 	private MatchSeatRepository matchSeatRepository;
 	@Mock
