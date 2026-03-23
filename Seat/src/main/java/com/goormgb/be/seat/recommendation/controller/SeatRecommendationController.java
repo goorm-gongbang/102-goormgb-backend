@@ -85,7 +85,7 @@ public class SeatRecommendationController {
 	@PostMapping("/blocks/{blockId}/assign")
 	public ApiResult<SeatAssignmentResponse> assignSeats(
 		@PathVariable Long matchId,
-		@PathVariable Long blockId,
+		@PathVariable String blockId,
 		@AuthenticationPrincipal Long userId,
 		@CookieValue(name = "admissionToken") String admissionToken
 	) {

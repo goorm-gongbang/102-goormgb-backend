@@ -34,7 +34,7 @@ public class SeatAssignmentService {
 	private final SeatBlockLock seatBlockLock;
 	private final SeatAssignmentTransactionalService seatAssignmentTransactionalService;
 
-	public SeatAssignmentResponse assignAndHoldSeats(Long userId, Long matchId, Long blockId) {
+	public SeatAssignmentResponse assignAndHoldSeats(Long userId, Long matchId, String blockCode) {
 
 		BookingOptions bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
 
@@ -44,7 +44,8 @@ public class SeatAssignmentService {
 		Integer requiredSeats = bookingOptions.ticketCount();
 		boolean nearAdjacentToggle = bookingOptions.nearAdjacentToggle();
 
-		Block block = blockRepository.findByIdWithSectionOrThrow(blockId);
+		Block block = blockRepository.findByBlockCodeWithSectionOrThrow(blockCode);
+		Long blockId = block.getId();
 
 		Preconditions.validate(seatBlockLock.tryLock(matchId, blockId), ErrorCode.SEAT_LOCK_ACQUISITION_FAILED);
 
