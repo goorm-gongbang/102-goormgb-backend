@@ -26,6 +26,9 @@ public class BookingOptionsService {
 
 		if (request.recommendationEnabled()) {
 			Preconditions.validate(request.ticketCount() != null, ErrorCode.INVALID_TICKET_COUNT);
+		} else {
+			Preconditions.validate(request.ticketCount() == null, ErrorCode.INVALID_BOOKING_OPTIONS);
+			Preconditions.validate(!request.nearAdjacentToggle(), ErrorCode.INVALID_BOOKING_OPTIONS);
 		}
 
 		BookingOptions options = new BookingOptions(
