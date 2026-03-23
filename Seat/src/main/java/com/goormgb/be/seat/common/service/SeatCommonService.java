@@ -50,7 +50,7 @@ public class SeatCommonService {
 		List<Section> sections = sectionRepository.findAllWithAreaOrderByAreaIdAscSectionIdAsc();
 		List<Long> sectionIds = sections.stream().map(Section::getId).toList();
 
-		Map<Long, List<Long>> blockIdsBySectionId = createBlockIdsBySectionId(sectionIds);
+		Map<Long, List<String>> blockIdsBySectionId = createBlockIdsBySectionId(sectionIds);
 		Map<Long, Long> remainingSeatCountBySectionId = createRemainingSeatCountBySectionId(matchId);
 
 		Map<Long, SeatGroupAccumulator> groupMap = new LinkedHashMap<>();
@@ -104,7 +104,7 @@ public class SeatCommonService {
 
 		Map<Long, BlockAccumulator> blockMap = new LinkedHashMap<>();
 		for (Block block : blocks) {
-			blockMap.put(block.getId(), new BlockAccumulator(block.getId(), block.getBlockCode()));
+			blockMap.put(block.getId(), new BlockAccumulator(block.getBlockCode()));
 		}
 
 		for (MatchSeat matchSeat : matchSeats) {
@@ -137,15 +137,15 @@ public class SeatCommonService {
 		return new SectionBlocksResponse(blockInfos);
 	}
 
-	private Map<Long, List<Long>> createBlockIdsBySectionId(List<Long> sectionIds) {
+	private Map<Long, List<String>> createBlockIdsBySectionId(List<Long> sectionIds) {
 		if (sectionIds.isEmpty()) {
 			return Map.of();
 		}
 
-		Map<Long, List<Long>> blockIdsBySectionId = new LinkedHashMap<>();
+		Map<Long, List<String>> blockIdsBySectionId = new LinkedHashMap<>();
 		for (Block block : blockRepository.findBySectionIdInOrderBySectionIdAscBlockCodeAsc(sectionIds)) {
 			blockIdsBySectionId.computeIfAbsent(block.getSection().getId(), ignored -> new ArrayList<>())
-				.add(block.getId());
+				.add(block.getBlockCode());
 		}
 		return blockIdsBySectionId;
 	}
@@ -194,17 +194,16 @@ public class SeatCommonService {
 	}
 
 	private record BlockAccumulator(
-		Long blockId,
 		String blockCode,
 		Map<Integer, RowAccumulator> rowsByRowNo
 	) {
-		private BlockAccumulator(Long blockId, String blockCode) {
-			this(blockId, blockCode, new LinkedHashMap<>());
+		private BlockAccumulator(String blockCode) {
+			this(blockCode, new LinkedHashMap<>());
 		}
 
 		private SectionBlocksResponse.BlockInfo toResponse() {
 			return SectionBlocksResponse.BlockInfo.of(
-				blockId,
+				blockCode,
 				blockCode,
 				rowsByRowNo.values().stream()
 					.map(RowAccumulator::toResponse)
