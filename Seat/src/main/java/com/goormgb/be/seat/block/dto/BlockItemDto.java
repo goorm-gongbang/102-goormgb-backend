@@ -4,7 +4,7 @@ import com.goormgb.be.domain.onboarding.enums.Viewpoint;
 import com.goormgb.be.seat.block.entity.Block;
 
 public record BlockItemDto(
-	Long blockId,
+	String blockId,
 	String blockCode,
 	String sectionName,
 	String areaName,
@@ -13,7 +13,7 @@ public record BlockItemDto(
 
 	public static BlockItemDto from(Block block) {
 		return new BlockItemDto(
-			block.getId(),
+			block.getBlockCode(),
 			block.getBlockCode(),
 			block.getSection().getName(),
 			block.getArea().getName(),

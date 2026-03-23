@@ -11,12 +11,12 @@ public record SectionBlocksResponse(
 	}
 
 	public record BlockInfo(
-		Long blockId,
+		String blockId,
 		String blockCode,
 		String displayName,
 		List<RowInfo> rows
 	) {
-		public static BlockInfo of(Long blockId, String blockCode, List<RowInfo> rows) {
+		public static BlockInfo of(String blockId, String blockCode, List<RowInfo> rows) {
 			return new BlockInfo(
 				blockId,
 				blockCode,

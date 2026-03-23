@@ -96,7 +96,7 @@ public record SeatGroupsEntryResponse(
 		Long sectionId,
 		String sectionName,
 		String displayName,
-		List<Long> blockIds,
+		List<String> blockIds,
 		long remainingSeatCount
 	) {
 	}

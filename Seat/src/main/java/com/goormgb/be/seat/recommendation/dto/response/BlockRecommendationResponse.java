@@ -23,7 +23,7 @@ public record BlockRecommendationResponse(
 	}
 
 	public record RecommendedBlock(
-		Long blockId,
+		String blockId,
 		String blockCode,
 		String sectionName,
 		String areaName,
@@ -36,7 +36,7 @@ public record BlockRecommendationResponse(
 		public static RecommendedBlock from(BlockRecommendation recommendation, int rank) {
 			var block = recommendation.block();
 			return new RecommendedBlock(
-				block.getId(),
+				block.getBlockCode(),
 				block.getBlockCode(),
 				block.getSection().getName(),
 				block.getArea().getName(),
