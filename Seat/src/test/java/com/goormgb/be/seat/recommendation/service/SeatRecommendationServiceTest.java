@@ -32,6 +32,7 @@ import com.goormgb.be.seat.fixture.OnboardingFixture;
 import com.goormgb.be.seat.booking.model.BookingOptions;
 import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
+import com.goormgb.be.seat.metrics.SeatMetricsService;
 import com.goormgb.be.seat.recommendation.dto.response.BlockRecommendationResponse;
 import com.goormgb.be.user.entity.User;
 
@@ -56,6 +57,9 @@ class SeatRecommendationServiceTest {
 	private ConsecutiveSeatCounter consecutiveSeatCounter;
 	@Mock
 	private PreferenceScoreCalculator preferenceScoreCalculator;
+
+	@Mock
+	private SeatMetricsService seatMetricsService;
 
 	@InjectMocks
 	private SeatRecommendationService seatRecommendationService;

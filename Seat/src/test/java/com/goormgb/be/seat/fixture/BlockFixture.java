@@ -70,6 +70,7 @@ public final class BlockFixture {
 			.area(area)
 			.section(section)
 			.blockCode("CP")
+			.blockNum(1L)
 			.viewpoint(Viewpoint.CENTER)
 			.homeCheerRank(50)
 			.awayCheerRank(50)
@@ -83,6 +84,7 @@ public final class BlockFixture {
 			.area(area)
 			.section(section)
 			.blockCode("205")
+			.blockNum(205L)
 			.viewpoint(Viewpoint.INFIELD_1B)
 			.homeCheerRank(1)
 			.awayCheerRank(81)
@@ -96,6 +98,7 @@ public final class BlockFixture {
 			.area(area)
 			.section(section)
 			.blockCode("408")
+			.blockNum(408L)
 			.viewpoint(Viewpoint.OUTFIELD_C)
 			.homeCheerRank(70)
 			.awayCheerRank(70)
@@ -115,15 +118,16 @@ public final class BlockFixture {
 	}
 
 	public static BlockItemDto cpBlockItemDto() {
-		return new BlockItemDto(null, "CP", "테라존(중앙 프리미엄석)", "중앙", Viewpoint.CENTER);
+		return new BlockItemDto(1L, "CP", "테라존(중앙 프리미엄석)", "중앙", Viewpoint.CENTER);
 	}
 
 	public static Block block(Long id, String blockCode, AreaCode areaCode, Viewpoint viewpoint,
 		Integer homeCheerRank, Integer awayCheerRank) {
 		Area area = Area.builder().code(areaCode).name(areaCode.getDescription()).build();
 		Section section = Section.builder().area(area).code(SectionCode.ORANGE).name("오렌지석").build();
+		Long blockNum = blockCode.matches("\\d+") ? Long.parseLong(blockCode) : id;
 		Block block = Block.builder()
-			.area(area).section(section).blockCode(blockCode)
+			.area(area).section(section).blockCode(blockCode).blockNum(blockNum)
 			.viewpoint(viewpoint).homeCheerRank(homeCheerRank).awayCheerRank(awayCheerRank).build();
 		ReflectionTestUtils.setField(block, "id", id);
 		return block;
