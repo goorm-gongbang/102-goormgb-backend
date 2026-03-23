@@ -185,4 +185,36 @@ public class QueueRedisRepository {
 			throw new IllegalStateException("Failed to deserialize Redis value for key: " + key, e);
 		}
 	}
+
+	public void leaveQueueAtomic(Long matchId, Long userId) {
+		String script =
+			// 1. 대기열(ZSET)에서 유저 삭제
+			"redis.call('ZREM', KEYS[1], ARGV[1]); " +
+				// 2. READY 토큰(String) 삭제
+				"redis.call('DEL', KEYS[2]); " +
+				// 3. 만료 마커(String) 삭제
+				"redis.call('DEL', KEYS[3]); " +
+				// 4. READY 인덱스(SET)에서 유저 삭제
+				"redis.call('SREM', KEYS[4], ARGV[1]); " +
+				// 5. 대기열과 READY 인덱스가 모두 비었는지 확인 (ZCARD, SCARD 사용)
+				"if redis.call('ZCARD', KEYS[1]) == 0 and redis.call('SCARD', KEYS[4]) == 0 then " +
+				// 활성 경기 목록에서 제거
+				"  redis.call('SREM', KEYS[5], ARGV[2]); " + "end";
+
+		List<String> keys = List.of(
+			queueProperties.waitKey(matchId),      // KEYS[1]
+			queueProperties.readyKey(matchId, userId), // KEYS[2]
+			queueProperties.expiredKey(matchId, userId), // KEYS[3]
+			queueProperties.readyIndexKey(matchId), // KEYS[4]
+			queueProperties.activeMatchKey()        // KEYS[5]
+		);
+
+		redisTemplate.execute(
+			new org.springframework.data.redis.core.script.DefaultRedisScript<>(script, Void.class),
+			keys,
+			String.valueOf(userId), // ARGV[1]
+			String.valueOf(matchId) // ARGV[2]
+		);
+	}
+
 }
