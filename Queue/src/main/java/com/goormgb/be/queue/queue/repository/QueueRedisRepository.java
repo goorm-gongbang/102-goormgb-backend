@@ -70,11 +70,11 @@ public class QueueRedisRepository {
 		redisTemplate.opsForZSet().remove(queueProperties.waitKey(matchId), String.valueOf(userId));
 	}
 
-	public void saveReadyToken(ReadyTokenPayload payload) {
+	public void saveReadyToken(ReadyTokenPayload payload, Duration ttl) {
 		setJson(
 			queueProperties.readyKey(payload.matchId(), payload.userId()),
 			payload,
-			Duration.ofSeconds(queueProperties.readyTtlSeconds())
+			ttl
 		);
 		addReadyIndex(payload.matchId(), payload.userId());
 	}
@@ -214,6 +214,41 @@ public class QueueRedisRepository {
 			keys,
 			String.valueOf(userId), // ARGV[1]
 			String.valueOf(matchId) // ARGV[2]
+		);
+	}
+
+	// 재진입 시 기존 WAITING/READY/EXPIRED 상태를 모두 정리한 뒤,
+	// 동일 요청 안에서 새 대기열 score로 다시 등록.
+	// 삭제와 재등록을 Lua 스크립트로 묶어 중간 상태 노출과 경쟁 조건을 방지.
+	public void reenterQueueAtomic(Long matchId, Long userId, long enteredAtMillis) {
+		String script =
+			// 1. 기존 WAITING 순번 제거
+			"redis.call('ZREM', KEYS[1], ARGV[1]); " +
+				// 2. 기존 READY admission token 제거
+				"redis.call('DEL', KEYS[2]); " +
+				// 3. 만료 마커 제거
+				"redis.call('DEL', KEYS[3]); " +
+				// 4. READY 인덱스에서 사용자 제거
+				"redis.call('SREM', KEYS[4], ARGV[1]); " +
+				// 5. 새 진입 시각으로 대기열 맨 뒤에 다시 등록
+				"redis.call('ZADD', KEYS[1], ARGV[2], ARGV[1]); " +
+				// 6. 활성 경기 목록에 현재 경기 보장
+				"redis.call('SADD', KEYS[5], ARGV[3]); ";
+
+		List<String> keys = List.of(
+			queueProperties.waitKey(matchId),
+			queueProperties.readyKey(matchId, userId),
+			queueProperties.expiredKey(matchId, userId),
+			queueProperties.readyIndexKey(matchId),
+			queueProperties.activeMatchKey()
+		);
+
+		redisTemplate.execute(
+			new org.springframework.data.redis.core.script.DefaultRedisScript<>(script, Void.class),
+			keys,
+			String.valueOf(userId),
+			String.valueOf(enteredAtMillis),
+			String.valueOf(matchId)
 		);
 	}
 
