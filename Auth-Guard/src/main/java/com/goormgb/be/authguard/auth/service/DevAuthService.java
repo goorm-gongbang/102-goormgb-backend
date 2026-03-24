@@ -79,8 +79,9 @@ public class DevAuthService {
 
 		user.updateLastLoginAt();
 
-		String accessToken = jwtTokenProvider.createAccessToken(user.getId(), DEFAULT_AUTHORITY);
-		String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
+		String sid = UUID.randomUUID().toString();
+		String accessToken = jwtTokenProvider.createAccessToken(user.getId(), DEFAULT_AUTHORITY, sid);
+		String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), sid);
 		String jti = jwtTokenProvider.getJtiFromToken(refreshToken);
 
 		Instant now = Instant.now();
@@ -90,7 +91,7 @@ public class DevAuthService {
 				.userId(user.getId())
 				.token(refreshToken)
 				.jti(jti)
-				.tokenFamily(UUID.randomUUID().toString())
+				.sid(sid)
 				.issuedAt(now)
 				.expiresAt(now.plus(Duration.ofDays(expirationDays)))
 				.userAgent(request.getHeader("User-Agent"))

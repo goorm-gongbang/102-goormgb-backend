@@ -73,15 +73,23 @@ public class AuthService {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
 
-		// 6. 새 토큰 발급
-		String newAccessToken = jwtTokenProvider.createAccessToken(userId, DEFAULT_AUTHORITY);
-		String newRefreshToken = jwtTokenProvider.createRefreshToken(userId);
+		// 6. 기존 sid 추출 (하위 호환: sid 없는 기존 토큰은 새로 생성)
+		String sid = jwtTokenProvider.getSidFromToken(refreshToken);
+		if (sid == null) {
+			sid = storedTokenInfo.getSid();
+		}
+		if (sid == null) {
+			sid = java.util.UUID.randomUUID().toString();
+		}
+
+		// 7. 새 토큰 발급 (동일 sid 유지)
+		String newAccessToken = jwtTokenProvider.createAccessToken(userId, DEFAULT_AUTHORITY, sid);
+		String newRefreshToken = jwtTokenProvider.createRefreshToken(userId, sid);
 		String newJti = jwtTokenProvider.getJtiFromToken(newRefreshToken);
 
-		// 7. Redis 갱신 (기존 토큰 삭제 + 새 토큰 저장)
+		// 8. Redis 갱신 (기존 토큰 삭제 + 새 토큰 저장)
 		refreshTokenRepository.deleteByJti(jti);
 
-		// LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
 		Instant now = Instant.now();
 		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
 
@@ -89,9 +97,8 @@ public class AuthService {
 				.userId(userId)
 				.token(newRefreshToken)
 				.jti(newJti)
-				.tokenFamily(storedTokenInfo.getTokenFamily()) // 기존 토큰 패밀리 유지
+				.sid(sid)
 				.issuedAt(now)
-				// .expiresAt(now.plusDays(expirationDays))
 				.expiresAt(now.plus(Duration.ofDays(expirationDays)))
 				.userAgent(request.getHeader("User-Agent"))
 				.ipAddress(getClientIp(request))

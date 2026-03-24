@@ -30,6 +30,7 @@ public class JwtTokenProvider {
 
 	private static final String CLAIM_TOKEN_TYPE = "tokenType";
 	private static final String CLAIM_AUTH = "auth";
+	private static final String CLAIM_SID = "sid";
 
 	private final JwtProperties jwtProperties;
 	private RSAPrivateKey privateKey;
@@ -41,7 +42,7 @@ public class JwtTokenProvider {
 		this.publicKey = RsaKeyUtils.parsePublicKey(jwtProperties.getPublicKey());
 	}
 
-	public String createAccessToken(Long userId, String authority) {
+	public String createAccessToken(Long userId, String authority, String sid) {
 		Instant now = Instant.now();
 		Instant expiration = now.plus(jwtProperties.getAccessToken().getExpirationMinutes(), ChronoUnit.MINUTES);
 
@@ -59,11 +60,12 @@ public class JwtTokenProvider {
 				.id(UUID.randomUUID().toString())
 				.claim(CLAIM_TOKEN_TYPE, TokenType.ACCESS.getValue())
 				.claim(CLAIM_AUTH, authority)
+				.claim(CLAIM_SID, sid)
 				.signWith(privateKey, Jwts.SIG.RS256)
 				.compact();
 	}
 
-	public String createRefreshToken(Long userId) {
+	public String createRefreshToken(Long userId, String sid) {
 		Instant now = Instant.now();
 		Instant expiration = now.plus(jwtProperties.getRefreshToken().getExpirationDays(), ChronoUnit.DAYS);
 
@@ -80,6 +82,7 @@ public class JwtTokenProvider {
 				.expiration(Date.from(expiration))
 				.id(UUID.randomUUID().toString())
 				.claim(CLAIM_TOKEN_TYPE, TokenType.REFRESH.getValue())
+				.claim(CLAIM_SID, sid)
 				.signWith(privateKey, Jwts.SIG.RS256)
 				.compact();
 	}
@@ -116,6 +119,11 @@ public class JwtTokenProvider {
 	public String getJtiFromToken(String token) {
 		Claims claims = parseClaimsFromToken(token);
 		return claims.getId();
+	}
+
+	public String getSidFromToken(String token) {
+		Claims claims = parseClaimsFromToken(token);
+		return claims.get(CLAIM_SID, String.class);
 	}
 
 	public Date getExpirationFromToken(String token) {

@@ -78,16 +78,16 @@ public class KakaoAuthService {
 		user.updateLastLoginAt();
 
 		// 6. JWT 발급
+		String sid = UUID.randomUUID().toString();
 		String accessToken =
-				jwtTokenProvider.createAccessToken(user.getId(), "ROLE_USER");
+				jwtTokenProvider.createAccessToken(user.getId(), "ROLE_USER", sid);
 
 		String refreshToken =
-				jwtTokenProvider.createRefreshToken(user.getId());
+				jwtTokenProvider.createRefreshToken(user.getId(), sid);
 
 		String jti = jwtTokenProvider.getJtiFromToken(refreshToken);
 
 		// 7. refreshToken redis 에 저장
-		//LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
 		Instant now = Instant.now();
 
 		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
@@ -96,9 +96,8 @@ public class KakaoAuthService {
 				.userId(user.getId())
 				.token(refreshToken)
 				.jti(jti)
-				.tokenFamily(UUID.randomUUID().toString()) // 신규 로그인이므로 새로운 토큰 패밀리 생성
+				.sid(sid)
 				.issuedAt(now)
-				//.expiresAt(now.plusDays(expirationDays))
 				.expiresAt(now.plus(Duration.ofDays(expirationDays)))
 				.userAgent(request.getHeader("User-Agent"))
 				.ipAddress(getClientIp(request))
