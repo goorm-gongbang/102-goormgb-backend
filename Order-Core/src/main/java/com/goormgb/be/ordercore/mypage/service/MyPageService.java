@@ -27,7 +27,6 @@ import com.goormgb.be.ordercore.mypage.enums.TicketTab;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
-import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.payment.enums.PaymentMethod;
@@ -134,13 +133,9 @@ public class MyPageService {
 	 * 마이페이지 예매 상세 조회
 	 */
 	public MyPageTicketDetailResponse getTicketDetail(Long userId, Long ticketId) {
-		Order order = orderRepository.findById(ticketId)
-			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-
-		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
-
 		TicketDetailBaseRow base = myPageQueryService.findTicketDetailBaseByOrderId(ticketId)
 			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
+		Preconditions.validate(base.userId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
 		List<TicketSeatDetailRow> seatRows = myPageQueryService.findTicketSeatRowsByOrderId(ticketId);
 
 		MyPageTicketDetailResponse.PaymentInfo payment = new MyPageTicketDetailResponse.PaymentInfo(

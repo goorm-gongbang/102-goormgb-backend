@@ -6,6 +6,7 @@ import com.goormgb.be.ordercore.payment.enums.PaymentMethod;
 
 public record TicketDetailBaseRow(
 	Long orderId,
+	Long userId,
 	OrderStatus status,
 	int totalAmount,
 	int bookingFee,

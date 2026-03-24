@@ -129,6 +129,7 @@ public class MyPageQueryService {
 		String sql = """
 			SELECT
 			    o.id             AS order_id,
+			    o.user_id        AS user_id,
 			    o.status         AS order_status,
 			    o.total_amount,
 			    o.booking_fee,
@@ -171,6 +172,7 @@ public class MyPageQueryService {
 
 			return new TicketDetailBaseRow(
 				rs.getLong("order_id"),
+				rs.getLong("user_id"),
 				OrderStatus.valueOf(rs.getString("order_status")),
 				rs.getInt("total_amount"),
 				rs.getInt("booking_fee"),
