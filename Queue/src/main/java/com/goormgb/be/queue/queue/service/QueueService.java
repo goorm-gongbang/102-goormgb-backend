@@ -51,12 +51,8 @@ public class QueueService {
 		Match match = matchRepository.findByIdOrThrow(matchId, ErrorCode.MATCH_NOT_FOUND);
 		validateQueueOpen(match);
 
-		Preconditions.validate(!queueRedisRepository.isAlreadyQueued(matchId, userId),
-			ErrorCode.QUEUE_ALREADY_ENTERED);
-
-		queueRedisRepository.deleteExpiredMarker(matchId, userId);
-		queueRedisRepository.addToWaitingQueue(matchId, userId, Instant.now().toEpochMilli());
-		queueRedisRepository.addActiveMatch(matchId);
+		long enteredAtMillis = Instant.now().toEpochMilli();
+		queueRedisRepository.reenterQueueAtomic(matchId, userId, enteredAtMillis);
 
 		queueEntriesCounter.increment();
 

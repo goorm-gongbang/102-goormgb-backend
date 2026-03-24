@@ -1,5 +1,7 @@
 package com.goormgb.be.queue.queue.controller;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -7,10 +9,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
 
 import com.goormgb.be.global.response.ApiResult;
+import com.goormgb.be.queue.config.QueueProperties;
 import com.goormgb.be.queue.queue.dto.response.QueueEnterResponse;
 import com.goormgb.be.queue.queue.dto.response.QueueStatusResponse;
 import com.goormgb.be.queue.queue.enums.QueueStatus;
@@ -31,6 +32,7 @@ public class QueueController {
 
 	private final QueueService queueService;
 	private final AdmissionTokenCookieUtils admissionTokenCookieUtils;
+	private final QueueProperties queueProperties;
 
 	@Operation(summary = "대기열 진입", description = "경기 대기열에 진입합니다.")
 	@PostMapping("/{matchId}/enter")
@@ -63,7 +65,7 @@ public class QueueController {
 				HttpHeaders.SET_COOKIE,
 				admissionTokenCookieUtils.createAdmissionTokenCookie(
 					response.admissionToken(),
-					response.expiresIn()
+					queueProperties.admissionTtlSeconds()
 				).toString()
 			);
 		} else {
