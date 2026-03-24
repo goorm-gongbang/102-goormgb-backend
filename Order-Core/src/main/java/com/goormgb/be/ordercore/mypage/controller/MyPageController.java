@@ -3,6 +3,7 @@ package com.goormgb.be.ordercore.mypage.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.goormgb.be.global.response.ApiResult;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.service.MyPageService;
 
@@ -70,5 +72,25 @@ public class MyPageController {
 		@RequestParam(defaultValue = "10") int size
 	) {
 		return ApiResult.ok("조회 성공", myPageService.getTickets(userId, tab, page, size));
+	}
+
+	@Operation(
+		summary = "예매 상세 조회",
+		description = "사용자의 특정 예매(ticketId=orders.id) 상세 정보를 조회합니다.",
+		security = @SecurityRequirement(name = "BearerAuth")
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "조회 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+		@ApiResponse(responseCode = "403", description = "본인 소유 티켓 아님", content = @Content),
+		@ApiResponse(responseCode = "404", description = "티켓(주문) 없음", content = @Content)
+	})
+	@GetMapping("/tickets/{ticketId}")
+	@ResponseStatus(HttpStatus.OK)
+	public ApiResult<MyPageTicketDetailResponse> getTicketDetail(
+		@AuthenticationPrincipal Long userId,
+		@PathVariable Long ticketId
+	) {
+		return ApiResult.ok("조회 성공", myPageService.getTicketDetail(userId, ticketId));
 	}
 }
