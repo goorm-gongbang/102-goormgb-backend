@@ -19,7 +19,7 @@ public record OrderCreateRequest(
 	@NotNull(message = "matchId는 필수입니다.")
 	Long matchId,
 
-	@Schema(description = "좌석별 주문 정보 (할인 적용된 개별 가격 포함)", requiredMode = Schema.RequiredMode.REQUIRED)
+	@Schema(description = "좌석별 주문 정보 (matchSeatId + ticketType)", requiredMode = Schema.RequiredMode.REQUIRED)
 	@NotEmpty(message = "좌석 정보는 최소 1개 이상이어야 합니다.")
 	@Valid
 	List<SeatOrderItem> seats,

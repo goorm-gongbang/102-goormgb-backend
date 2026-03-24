@@ -68,9 +68,9 @@ public class OrderController {
 	@Operation(
 		summary = "주문 생성",
 		description = """
-			예매자 정보, 좌석별 티켓 타입·가격, 총 결제 금액을 받아 주문을 생성합니다.
-			- seats[].price: 프론트에서 할인 적용한 좌석별 최종 가격
-			- totalPrice: 좌석 가격 합계 + 수수료(2,000원) = 총 결제 금액 (프론트 계산)
+			예매자 정보, 좌석별 티켓 타입, 총 결제 금액을 받아 주문을 생성합니다.
+			- seats[]: matchSeatId + ticketType만 전송
+			- totalPrice: 프론트에서 할인 적용 후 계산한 총 결제 금액 (수수료 2,000원 포함)
 			- 결제는 목업(무조건 성공)으로 처리됩니다.
 			- ticketType: ADULT, YOUTH, MILITARY, CHILD, SENIOR, VETERAN, DISABLED
 			""",
