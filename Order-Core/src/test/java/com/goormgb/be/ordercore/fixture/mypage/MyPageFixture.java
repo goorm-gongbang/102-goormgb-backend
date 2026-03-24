@@ -4,11 +4,17 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import com.goormgb.be.domain.ticket.enums.TicketType;
+import com.goormgb.be.ordercore.mypage.dto.query.TicketDetailBaseRow;
+import com.goormgb.be.ordercore.mypage.dto.query.TicketSeatDetailRow;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.payment.enums.CashReceiptPurpose;
+import com.goormgb.be.ordercore.payment.enums.PaymentMethod;
 
 public final class MyPageFixture {
 
@@ -75,6 +81,76 @@ public final class MyPageFixture {
 			8, 2, 1, 5,
 			"BOOKED", 0, 10, 1L, 1, false,
 			List.of(ticket)
+		);
+	}
+
+	public static TicketDetailBaseRow createTicketDetailBaseRow(Long orderId, OrderStatus status) {
+		Instant futureMatchAt = Instant.now().plus(15, ChronoUnit.DAYS);
+		return new TicketDetailBaseRow(
+			orderId,
+			status,
+			42000,
+			2000,
+			status == OrderStatus.CANCELLED ? Instant.now().minus(1, ChronoUnit.DAYS) : null,
+			status == OrderStatus.CANCELLED ? 4200 : 0,
+			status == OrderStatus.CANCELLED ? 37800 : null,
+			55L,
+			futureMatchAt,
+			1L,
+			"LG 트윈스",
+			2L,
+			"두산 베어스",
+			3L,
+			"잠실야구장",
+			"서울특별시 송파구 올림픽로 19-2",
+			status == OrderStatus.PAYMENT_PENDING ? PaymentMethod.BANK_TRANSFER : PaymentMethod.TOSS_PAY,
+			status == OrderStatus.PAID ? Instant.now().minus(2, ChronoUnit.DAYS) : null,
+			status == OrderStatus.PAYMENT_PENDING ? "신한은행" : null,
+			status == OrderStatus.PAYMENT_PENDING ? "110-123-456789" : null,
+			status == OrderStatus.PAYMENT_PENDING ? "주식회사 구름공방" : null,
+			status == OrderStatus.PAYMENT_PENDING ? Instant.now().plus(1, ChronoUnit.DAYS) : null,
+			status == OrderStatus.PAID ? CashReceiptPurpose.PERSONAL_DEDUCTION : null,
+			status == OrderStatus.PAID ? "010-1234-5678" : null
+		);
+	}
+
+	public static List<TicketSeatDetailRow> createTicketSeatDetailRows() {
+		return List.of(
+			new TicketSeatDetailRow("오렌지석", "206", 3, 13, 20000, TicketType.ADULT),
+			new TicketSeatDetailRow("오렌지석", "206", 3, 14, 20000, TicketType.ADULT)
+		);
+	}
+
+	public static MyPageTicketDetailResponse createTicketDetailResponse() {
+		Instant futureMatchAt = Instant.now().plus(15, ChronoUnit.DAYS);
+		return new MyPageTicketDetailResponse(
+			101L,
+			OrderStatus.PAID,
+			new MyPageTicketDetailResponse.MatchInfo(
+				55L,
+				futureMatchAt,
+				new MyPageTicketDetailResponse.ClubInfo(1L, "LG 트윈스"),
+				new MyPageTicketDetailResponse.ClubInfo(2L, "KT 위즈"),
+				new MyPageTicketDetailResponse.StadiumInfo(3L, "잠실야구장", "서울특별시 송파구 올림픽로 19-2")
+			),
+			List.of(
+				new MyPageTicketDetailResponse.SeatInfo("오렌지석", "206", 3, 13, 20000, TicketType.ADULT),
+				new MyPageTicketDetailResponse.SeatInfo("오렌지석", "206", 3, 14, 20000, TicketType.ADULT)
+			),
+			new MyPageTicketDetailResponse.PaymentInfo(
+				42000,
+				2000,
+				"TOSS_PAY",
+				Instant.now().minus(2, ChronoUnit.DAYS),
+				new MyPageTicketDetailResponse.CashReceiptInfo("PERSONAL_DEDUCTION", "010-1234-5678", 42000)
+			),
+			new MyPageTicketDetailResponse.CancellationPolicy(
+				futureMatchAt.minus(1, ChronoUnit.DAYS),
+				"10%"
+			),
+			null,
+			null,
+			new MyPageTicketDetailResponse.TicketActions(true)
 		);
 	}
 }

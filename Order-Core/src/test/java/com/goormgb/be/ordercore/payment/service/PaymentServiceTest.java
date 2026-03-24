@@ -19,6 +19,7 @@ import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.order.OrderFixture;
 import com.goormgb.be.ordercore.fixture.payment.PaymentFixture;
+import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
@@ -45,12 +46,15 @@ class PaymentServiceTest {
 	private PaymentRepository paymentRepository;
 	@Mock
 	private CashReceiptRepository cashReceiptRepository;
+	@Mock
+	private OrderMetricsService orderMetricsService;
 
 	private PaymentService paymentService;
 
 	@BeforeEach
 	void setUp() {
-		paymentService = new PaymentService(orderRepository, paymentRepository, cashReceiptRepository);
+		paymentService = new PaymentService(orderMetricsService, orderRepository, paymentRepository,
+			cashReceiptRepository);
 	}
 
 	private Order createOrderWithUser(Long orderId, Long userId) {
@@ -135,10 +139,10 @@ class PaymentServiceTest {
 			given(orderRepository.findById(99L)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
-					() -> paymentService.processPayment(1L, 99L, PaymentFixture.createTossPayRequest())
+				() -> paymentService.processPayment(1L, 99L, PaymentFixture.createTossPayRequest())
 			)
-					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
 		}
 
 		@Test
@@ -151,10 +155,10 @@ class PaymentServiceTest {
 			given(orderRepository.findById(1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(
-					() -> paymentService.processPayment(attackerId, 1L, PaymentFixture.createTossPayRequest())
+				() -> paymentService.processPayment(attackerId, 1L, PaymentFixture.createTossPayRequest())
 			)
-					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
 		}
 
 		@Test
@@ -167,10 +171,10 @@ class PaymentServiceTest {
 			given(orderRepository.findById(1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(
-					() -> paymentService.processPayment(userId, 1L, PaymentFixture.createTossPayRequest())
+				() -> paymentService.processPayment(userId, 1L, PaymentFixture.createTossPayRequest())
 			)
-					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
 		}
 
 		@Test
@@ -185,10 +189,10 @@ class PaymentServiceTest {
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.of(existingPayment));
 
 			assertThatThrownBy(
-					() -> paymentService.processPayment(userId, orderId, PaymentFixture.createTossPayRequest())
+				() -> paymentService.processPayment(userId, orderId, PaymentFixture.createTossPayRequest())
 			)
-					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
 		}
 	}
 
@@ -248,11 +252,11 @@ class PaymentServiceTest {
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
-					() -> paymentService.createCashReceipt(userId, orderId,
-							PaymentFixture.createPersonalDeductionRequest())
+				() -> paymentService.createCashReceipt(userId, orderId,
+					PaymentFixture.createPersonalDeductionRequest())
 			)
-					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.PAYMENT_NOT_FOUND.getMessage());
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.PAYMENT_NOT_FOUND.getMessage());
 		}
 
 		@Test
@@ -269,11 +273,11 @@ class PaymentServiceTest {
 			given(cashReceiptRepository.findByPaymentId(payment.getId())).willReturn(Optional.of(existing));
 
 			assertThatThrownBy(
-					() -> paymentService.createCashReceipt(userId, orderId,
-							PaymentFixture.createPersonalDeductionRequest())
+				() -> paymentService.createCashReceipt(userId, orderId,
+					PaymentFixture.createPersonalDeductionRequest())
 			)
-					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.CASH_RECEIPT_ALREADY_EXISTS.getMessage());
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.CASH_RECEIPT_ALREADY_EXISTS.getMessage());
 		}
 
 		@Test
@@ -286,11 +290,11 @@ class PaymentServiceTest {
 			given(orderRepository.findById(1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(
-					() -> paymentService.createCashReceipt(attackerId, 1L,
-							PaymentFixture.createPersonalDeductionRequest())
+				() -> paymentService.createCashReceipt(attackerId, 1L,
+					PaymentFixture.createPersonalDeductionRequest())
 			)
-					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
 		}
 
 		@Test
@@ -299,10 +303,10 @@ class PaymentServiceTest {
 			given(orderRepository.findById(99L)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
-					() -> paymentService.createCashReceipt(1L, 99L, PaymentFixture.createPersonalDeductionRequest())
+				() -> paymentService.createCashReceipt(1L, 99L, PaymentFixture.createPersonalDeductionRequest())
 			)
-					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
 		}
 	}
 }
