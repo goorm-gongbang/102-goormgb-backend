@@ -32,7 +32,6 @@ import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
-import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.user.entity.User;
@@ -315,8 +314,6 @@ class MyPageServiceTest {
 		void getTicketDetail_PAID_성공() {
 			Long userId = 1L;
 			Long ticketId = 101L;
-			User user = OrderFixture.createUserWithId(userId);
-			Order order = OrderFixture.createOrderWithId(ticketId, user, OrderFixture.createWeekdayMatch(), 42000);
 			TicketDetailBaseRow baseRow = MyPageFixture.createTicketDetailBaseRow(ticketId, OrderStatus.PAID);
 			List<TicketSeatDetailRow> seatRows = MyPageFixture.createTicketSeatDetailRows();
 			CancellationFeePolicy policy = CancellationFeePolicy.builder()
@@ -327,7 +324,6 @@ class MyPageServiceTest {
 				.bookingFeeRefundable(false)
 				.build();
 
-			given(orderRepository.findById(ticketId)).willReturn(Optional.of(order));
 			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.of(baseRow));
 			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId)).willReturn(seatRows);
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
@@ -349,8 +345,6 @@ class MyPageServiceTest {
 		void getTicketDetail_PAYMENT_PENDING_가상계좌_성공() {
 			Long userId = 1L;
 			Long ticketId = 102L;
-			User user = OrderFixture.createUserWithId(userId);
-			Order order = OrderFixture.createOrderWithId(ticketId, user, OrderFixture.createWeekdayMatch(), 42000);
 			TicketDetailBaseRow baseRow = MyPageFixture.createTicketDetailBaseRow(ticketId,
 				OrderStatus.PAYMENT_PENDING);
 			CancellationFeePolicy policy = CancellationFeePolicy.builder()
@@ -361,7 +355,6 @@ class MyPageServiceTest {
 				.bookingFeeRefundable(true)
 				.build();
 
-			given(orderRepository.findById(ticketId)).willReturn(Optional.of(order));
 			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.of(baseRow));
 			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId))
 				.willReturn(MyPageFixture.createTicketSeatDetailRows());
@@ -381,8 +374,6 @@ class MyPageServiceTest {
 		void getTicketDetail_CANCELLED_성공() {
 			Long userId = 1L;
 			Long ticketId = 103L;
-			User user = OrderFixture.createUserWithId(userId);
-			Order order = OrderFixture.createOrderWithId(ticketId, user, OrderFixture.createWeekdayMatch(), 42000);
 			TicketDetailBaseRow baseRow = MyPageFixture.createTicketDetailBaseRow(ticketId, OrderStatus.CANCELLED);
 			CancellationFeePolicy policy = CancellationFeePolicy.builder()
 				.daysBeforeMatchMin(1)
@@ -392,7 +383,6 @@ class MyPageServiceTest {
 				.bookingFeeRefundable(false)
 				.build();
 
-			given(orderRepository.findById(ticketId)).willReturn(Optional.of(order));
 			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.of(baseRow));
 			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId))
 				.willReturn(MyPageFixture.createTicketSeatDetailRows());
@@ -409,7 +399,7 @@ class MyPageServiceTest {
 		@DisplayName("존재하지 않는 티켓이면 ORDER_NOT_FOUND 예외가 발생한다")
 		void getTicketDetail_주문없음_예외() {
 			Long ticketId = 999L;
-			given(orderRepository.findById(ticketId)).willReturn(Optional.empty());
+			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.empty());
 
 			assertThatThrownBy(() -> myPageService.getTicketDetail(1L, ticketId))
 				.isInstanceOf(CustomException.class)
@@ -420,10 +410,8 @@ class MyPageServiceTest {
 		@DisplayName("본인 소유가 아닌 티켓이면 ORDER_ACCESS_DENIED 예외가 발생한다")
 		void getTicketDetail_권한없음_예외() {
 			Long ticketId = 104L;
-			User owner = OrderFixture.createUserWithId(2L);
-			Order order = OrderFixture.createOrderWithId(ticketId, owner, OrderFixture.createWeekdayMatch(), 42000);
-
-			given(orderRepository.findById(ticketId)).willReturn(Optional.of(order));
+			TicketDetailBaseRow baseRow = MyPageFixture.createTicketDetailBaseRow(2L, ticketId, OrderStatus.PAID);
+			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.of(baseRow));
 
 			assertThatThrownBy(() -> myPageService.getTicketDetail(1L, ticketId))
 				.isInstanceOf(CustomException.class)

@@ -85,9 +85,14 @@ public final class MyPageFixture {
 	}
 
 	public static TicketDetailBaseRow createTicketDetailBaseRow(Long orderId, OrderStatus status) {
+		return createTicketDetailBaseRow(1L, orderId, status);
+	}
+
+	public static TicketDetailBaseRow createTicketDetailBaseRow(Long userId, Long orderId, OrderStatus status) {
 		Instant futureMatchAt = Instant.now().plus(15, ChronoUnit.DAYS);
 		return new TicketDetailBaseRow(
 			orderId,
+			userId,
 			status,
 			42000,
 			2000,
