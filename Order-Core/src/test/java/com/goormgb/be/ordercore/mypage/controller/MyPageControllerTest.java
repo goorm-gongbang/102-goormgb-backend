@@ -21,6 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.mypage.MyPageFixture;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.service.MyPageService;
@@ -180,6 +181,55 @@ class MyPageControllerTest extends WebMvcTestSupport {
 				.andExpect(jsonPath("$.data.tickets[0].actions.canDeposit").value(false))
 				.andExpect(jsonPath("$.data.tickets[0].actions.canCancel").value(true))
 				.andExpect(jsonPath("$.data.tickets[0].actions.canViewDetail").value(true));
+		}
+	}
+
+	@Nested
+	@DisplayName("GET /mypage/tickets/{ticketId} — 예매 상세 조회")
+	class GetTicketDetail {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 상세 정보를 반환한다")
+		void getTicketDetail_성공() throws Exception {
+			MyPageTicketDetailResponse response = MyPageFixture.createTicketDetailResponse();
+			given(myPageService.getTicketDetail(1L, 101L)).willReturn(response);
+
+			mockMvc.perform(get("/mypage/tickets/101"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("조회 성공"))
+				.andExpect(jsonPath("$.data.ticketId").value(101))
+				.andExpect(jsonPath("$.data.status").value("PAID"))
+				.andExpect(jsonPath("$.data.actions.canPrint").value(true))
+				.andExpect(jsonPath("$.data.match.matchId").value(55))
+				.andExpect(jsonPath("$.data.seats.length()").value(2));
+		}
+
+		@Test
+		@DisplayName("존재하지 않는 ticketId면 404를 반환한다")
+		void getTicketDetail_주문없음_404() throws Exception {
+			given(myPageService.getTicketDetail(1L, 999L))
+				.willThrow(new CustomException(ErrorCode.ORDER_NOT_FOUND));
+
+			mockMvc.perform(get("/mypage/tickets/999"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("주문을 찾을 수 없습니다."));
+		}
+
+		@Test
+		@DisplayName("본인 소유가 아니면 403을 반환한다")
+		void getTicketDetail_권한없음_403() throws Exception {
+			given(myPageService.getTicketDetail(1L, 101L))
+				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
+
+			mockMvc.perform(get("/mypage/tickets/101"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
 		}
 	}
 }
