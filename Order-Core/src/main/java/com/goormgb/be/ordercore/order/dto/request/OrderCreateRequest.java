@@ -3,7 +3,6 @@ package com.goormgb.be.ordercore.order.dto.request;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -19,12 +18,11 @@ public record OrderCreateRequest(
 	@NotNull(message = "matchId는 필수입니다.")
 	Long matchId,
 
-	@Schema(description = "좌석별 주문 정보 (matchSeatId + ticketType)", requiredMode = Schema.RequiredMode.REQUIRED)
+	@Schema(description = "매치 좌석 ID 목록 (주문서 조회에서 받은 matchSeatId)", example = "[149801, 149802]", requiredMode = Schema.RequiredMode.REQUIRED)
 	@NotEmpty(message = "좌석 정보는 최소 1개 이상이어야 합니다.")
-	@Valid
-	List<SeatOrderItem> seats,
+	List<Long> matchSeatIds,
 
-	@Schema(description = "총 결제 금액 (좌석 가격 합계 + 수수료 2,000원, 프론트에서 계산)", example = "42000", requiredMode = Schema.RequiredMode.REQUIRED)
+	@Schema(description = "총 결제 금액 (프론트에서 할인 적용 후 계산, 수수료 2,000원 포함, 원 단위)", example = "42000", requiredMode = Schema.RequiredMode.REQUIRED)
 	@NotNull(message = "총 결제 금액은 필수입니다.")
 	@Min(value = 0, message = "총 결제 금액은 0 이상이어야 합니다.")
 	Integer totalPrice,

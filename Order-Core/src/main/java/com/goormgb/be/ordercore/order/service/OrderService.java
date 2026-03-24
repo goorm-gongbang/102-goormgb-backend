@@ -5,18 +5,16 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.repository.MatchRepository;
+import com.goormgb.be.domain.ticket.enums.TicketType;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.ordercore.order.dto.request.OrderCreateRequest;
-import com.goormgb.be.ordercore.order.dto.request.SeatOrderItem;
 import com.goormgb.be.ordercore.order.dto.response.OrderCreateResponse;
 import com.goormgb.be.ordercore.order.dto.response.OrderSheetGetResponse;
 import com.goormgb.be.ordercore.order.entity.Order;
@@ -76,37 +74,36 @@ public class OrderService {
 	 * 주문 생성: 좌석 선점 검증 후 Order + OrderSeat 엔티티를 생성한다.
 	 */
 	public OrderCreateResponse createOrder(Long userId, OrderCreateRequest request) {
-		Preconditions.validate(!request.seats().isEmpty(), ErrorCode.ORDER_SEAT_EMPTY);
+		Preconditions.validate(!request.matchSeatIds().isEmpty(), ErrorCode.ORDER_SEAT_EMPTY);
 
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		Match match = matchRepository.findDetailByIdOrThrow(request.matchId());
 
-		List<Long> matchSeatIds = request.seats().stream()
-				.map(SeatOrderItem::matchSeatId)
-				.toList();
-
-		List<SeatHoldInfo> holdInfos = seatInfoQueryService.findSeatHoldInfos(userId, matchSeatIds);
-		Preconditions.validate(holdInfos.size() == matchSeatIds.size(), ErrorCode.SEAT_HOLD_NOT_FOUND);
+		List<SeatHoldInfo> holdInfos = seatInfoQueryService.findSeatHoldInfos(userId, request.matchSeatIds());
+		Preconditions.validate(holdInfos.size() == request.matchSeatIds().size(), ErrorCode.SEAT_HOLD_NOT_FOUND);
 
 		Instant now = Instant.now();
 		String dayType = determineDayType(match.getMatchAt());
-		Map<Long, SeatOrderItem> seatItemMap = request.seats().stream()
-				.collect(Collectors.toMap(SeatOrderItem::matchSeatId, item -> item));
 
-		// 유효성 검증 + 좌석별 가격 조회 (order_seats 저장용)
-		record SeatPriceItem(SeatHoldInfo hold, SeatOrderItem item, int price) {
-		}
-		List<SeatPriceItem> priceItems = new ArrayList<>();
+		// 유효성 검증 + 좌석별 성인 기본가 조회 (order_seats 저장용)
+		List<OrderSeat> orderSeats = new ArrayList<>();
 		for (SeatHoldInfo hold : holdInfos) {
 			Preconditions.validate(!hold.isExpired(now), ErrorCode.SEAT_HOLD_EXPIRED);
 			Preconditions.validate(!seatInfoQueryService.isAlreadyOrdered(hold.matchSeatId()),
 					ErrorCode.INVALID_ORDER_STATUS);
 
-			SeatOrderItem item = seatItemMap.get(hold.matchSeatId());
-			Preconditions.validate(item != null, ErrorCode.ORDER_SEAT_EMPTY);
-			Integer price = seatInfoQueryService.findPrice(hold.sectionId(), dayType, item.ticketType().name());
-			Preconditions.validate(price != null, ErrorCode.PRICE_POLICY_NOT_FOUND);
-			priceItems.add(new SeatPriceItem(hold, item, price));
+			Integer adultPrice = seatInfoQueryService.findPrice(hold.sectionId(), dayType, "ADULT");
+			Preconditions.validate(adultPrice != null, ErrorCode.PRICE_POLICY_NOT_FOUND);
+
+			orderSeats.add(OrderSeat.builder()
+					.matchSeatId(hold.matchSeatId())
+					.blockId(hold.blockId())
+					.sectionId(hold.sectionId())
+					.rowNo(hold.rowNo())
+					.seatNo(hold.seatNo())
+					.price(adultPrice)
+					.ticketType(TicketType.ADULT)
+					.build());
 		}
 
 		Order order = Order.builder()
@@ -120,20 +117,7 @@ public class OrderService {
 				.build();
 
 		orderRepository.save(order);
-
-		List<OrderSeat> orderSeats = priceItems.stream()
-				.map(pi -> OrderSeat.builder()
-						.order(order)
-						.matchSeatId(pi.hold().matchSeatId())
-						.blockId(pi.hold().blockId())
-						.sectionId(pi.hold().sectionId())
-						.rowNo(pi.hold().rowNo())
-						.seatNo(pi.hold().seatNo())
-						.price(pi.price())
-						.ticketType(pi.item().ticketType())
-						.build())
-				.toList();
-
+		orderSeats.forEach(seat -> seat.assignOrder(order));
 		orderSeatRepository.saveAll(orderSeats);
 
 		log.info("[OrderService] 주문 생성 완료 - orderId={}, userId={}, seatCount={}, totalAmount={}",
