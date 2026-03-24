@@ -38,7 +38,12 @@ public class OrderController {
 
 	@Operation(
 		summary = "주문서 조회",
-		description = "선점된 좌석의 경기·좌석 상세 정보와 예상 금액을 조회합니다.",
+		description = """
+			선점된 좌석의 경기·좌석 상세 정보와 성인 기본가(adultPrice)를 조회합니다.
+			- 경기장은 잠실야구장으로 고정 반환됩니다.
+			- adultPrice는 주중/주말에 따라 자동 계산된 성인 기본가입니다.
+			- 할인 가격(장애인, 청소년, 군경 등)은 adultPrice를 기준으로 프론트에서 계산합니다.
+			""",
 		security = @SecurityRequirement(name = "BearerAuth")
 	)
 	@ApiResponses({
@@ -62,7 +67,13 @@ public class OrderController {
 
 	@Operation(
 		summary = "주문 생성",
-		description = "예매자 정보 및 좌석·티켓 타입을 입력받아 주문을 생성합니다. 결제는 별도로 진행합니다.",
+		description = """
+			예매자 정보, 좌석별 티켓 타입·가격, 총 결제 금액을 받아 주문을 생성합니다.
+			- seats[].price: 프론트에서 할인 적용한 좌석별 최종 가격
+			- totalPrice: 좌석 가격 합계 + 수수료(2,000원) = 총 결제 금액 (프론트 계산)
+			- 결제는 목업(무조건 성공)으로 처리됩니다.
+			- ticketType: ADULT, YOUTH, MILITARY, CHILD, SENIOR, VETERAN, DISABLED
+			""",
 		security = @SecurityRequirement(name = "BearerAuth")
 	)
 	@ApiResponses({
