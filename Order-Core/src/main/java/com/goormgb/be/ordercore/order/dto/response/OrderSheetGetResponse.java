@@ -23,6 +23,7 @@ public record OrderSheetGetResponse(
 			@Schema(description = "원정 구단 정보") ClubInfo awayClub,
 			@Schema(description = "경기장 정보 (잠실야구장 고정)") StadiumInfo stadium
 	) {
+		private static final Long JAMSIL_STADIUM_ID = 1L;
 		private static final String JAMSIL_STADIUM_NAME = "잠실종합운동장 잠실야구장";
 		private static final String JAMSIL_STADIUM_ADDRESS = "서울 송파구 올림픽로 19-2 서울종합운동장";
 
@@ -33,7 +34,7 @@ public record OrderSheetGetResponse(
 					new ClubInfo(match.getHomeClub().getId(), match.getHomeClub().getKoName()),
 					new ClubInfo(match.getAwayClub().getId(), match.getAwayClub().getKoName()),
 					new StadiumInfo(
-							match.getStadium().getId(),
+							JAMSIL_STADIUM_ID,
 							JAMSIL_STADIUM_NAME,
 							JAMSIL_STADIUM_ADDRESS
 					)
