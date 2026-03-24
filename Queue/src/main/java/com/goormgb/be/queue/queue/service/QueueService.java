@@ -97,6 +97,21 @@ public class QueueService {
 		);
 	}
 
+	public void leave(Long matchId, Long userId) {
+		requireAuthenticated(userId);
+
+		/*queueRedisRepository.removeFromWaitingQueue(matchId, userId);
+		queueRedisRepository.deleteReadyToken(matchId, userId);
+		queueRedisRepository.deleteExpiredMarker(matchId, userId);
+
+		if (queueRedisRepository.getWaitingCount(matchId) == 0
+			&& queueRedisRepository.getReadyUserIds(matchId).isEmpty()) {
+			queueRedisRepository.removeActiveMatch(matchId);
+		}*/
+		// 개별 호출 대신 원자적 스크립트 실행
+		queueRedisRepository.leaveQueueAtomic(matchId, userId);
+	}
+
 	private void validateQueueOpen(Match match) {
 		Preconditions.validate(match.getSaleStatus() == SaleStatus.ON_SALE,
 			ErrorCode.MATCH_NOT_AVAILABLE_FOR_QUEUE);
