@@ -100,35 +100,57 @@ public class JwtTokenProvider {
 		}
 	}
 
-	public Long getUserIdFromToken(String token) {
-		Claims claims = parseClaimsFromToken(token);
+	public Claims parseClaims(String token) {
+		return parseClaimsFromToken(token);
+	}
+
+	public Long getUserId(Claims claims) {
 		return Long.parseLong(claims.getSubject());
 	}
 
-	public String getAuthorityFromToken(String token) {
-		Claims claims = parseClaimsFromToken(token);
+	public String getAuthority(Claims claims) {
 		return claims.get(CLAIM_AUTH, String.class);
 	}
 
-	public TokenType getTokenTypeFromToken(String token) {
-		Claims claims = parseClaimsFromToken(token);
+	public TokenType getTokenType(Claims claims) {
 		String tokenTypeValue = claims.get(CLAIM_TOKEN_TYPE, String.class);
 		return TokenType.valueOf(tokenTypeValue);
 	}
 
-	public String getJtiFromToken(String token) {
-		Claims claims = parseClaimsFromToken(token);
+	public String getJti(Claims claims) {
 		return claims.getId();
 	}
 
-	public String getSidFromToken(String token) {
-		Claims claims = parseClaimsFromToken(token);
+	public String getSid(Claims claims) {
 		return claims.get(CLAIM_SID, String.class);
 	}
 
-	public Date getExpirationFromToken(String token) {
-		Claims claims = parseClaimsFromToken(token);
+	public Date getExpiration(Claims claims) {
 		return claims.getExpiration();
+	}
+
+	public Long getUserIdFromToken(String token) {
+		return getUserId(parseClaimsFromToken(token));
+	}
+
+	public String getAuthorityFromToken(String token) {
+		return getAuthority(parseClaimsFromToken(token));
+	}
+
+	public TokenType getTokenTypeFromToken(String token) {
+		return getTokenType(parseClaimsFromToken(token));
+	}
+
+	public String getJtiFromToken(String token) {
+		return getJti(parseClaimsFromToken(token));
+	}
+
+	public String getSidFromToken(String token) {
+		return getSid(parseClaimsFromToken(token));
+	}
+
+	public Date getExpirationFromToken(String token) {
+		return getExpiration(parseClaimsFromToken(token));
 	}
 
 	private Claims parseClaimsFromToken(String token) {

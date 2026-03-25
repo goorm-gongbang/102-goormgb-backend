@@ -78,4 +78,8 @@ public class OrderSeat extends BaseEntity {
 		this.price = price;
 		this.ticketType = ticketType;
 	}
+
+	public void assignOrder(Order order) {
+		this.order = order;
+	}
 }
