@@ -22,6 +22,7 @@ public class JwtTokenProvider {
 
 	private static final String CLAIM_TOKEN_TYPE = "tokenType";
 	private static final String CLAIM_AUTH = "auth";
+	private static final String CLAIM_SID = "sid";
 
 	private final JwtProperties jwtProperties;
 	private RSAPublicKey publicKey;
@@ -62,5 +63,9 @@ public class JwtTokenProvider {
 
 	public String getJti(Claims claims) {
 		return claims.getId();
+	}
+
+	public String getSid(Claims claims) {
+		return claims.get(CLAIM_SID, String.class);
 	}
 }

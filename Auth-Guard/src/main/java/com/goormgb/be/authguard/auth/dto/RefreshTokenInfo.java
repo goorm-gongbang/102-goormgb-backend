@@ -2,6 +2,8 @@ package com.goormgb.be.authguard.auth.dto;
 
 import java.time.Instant;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,8 +34,9 @@ public class RefreshTokenInfo {
 	/** JWT ID - 토큰 고유 식별자 (UUID), Redis Key로 사용 */
 	private String jti;
 
-	/** 토큰 패밀리 ID - RTR(Refresh Token Rotation) 추적용 */
-	private String tokenFamily;
+	/** 세션 ID - 로그인 세션 식별 및 RTR 추적용 */
+	@JsonAlias("tokenFamily")
+	private String sid;
 
 	/** 토큰 발급 시각 (UTC 기준 절대시간) */
 	private Instant issuedAt;

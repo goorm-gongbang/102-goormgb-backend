@@ -30,6 +30,7 @@ public class JwtTokenProvider {
 
 	private static final String CLAIM_TOKEN_TYPE = "tokenType";
 	private static final String CLAIM_AUTH = "auth";
+	private static final String CLAIM_SID = "sid";
 
 	private final JwtProperties jwtProperties;
 	private RSAPrivateKey privateKey;
@@ -41,7 +42,7 @@ public class JwtTokenProvider {
 		this.publicKey = RsaKeyUtils.parsePublicKey(jwtProperties.getPublicKey());
 	}
 
-	public String createAccessToken(Long userId, String authority) {
+	public String createAccessToken(Long userId, String authority, String sid) {
 		Instant now = Instant.now();
 		Instant expiration = now.plus(jwtProperties.getAccessToken().getExpirationMinutes(), ChronoUnit.MINUTES);
 
@@ -59,11 +60,12 @@ public class JwtTokenProvider {
 				.id(UUID.randomUUID().toString())
 				.claim(CLAIM_TOKEN_TYPE, TokenType.ACCESS.getValue())
 				.claim(CLAIM_AUTH, authority)
+				.claim(CLAIM_SID, sid)
 				.signWith(privateKey, Jwts.SIG.RS256)
 				.compact();
 	}
 
-	public String createRefreshToken(Long userId) {
+	public String createRefreshToken(Long userId, String sid) {
 		Instant now = Instant.now();
 		Instant expiration = now.plus(jwtProperties.getRefreshToken().getExpirationDays(), ChronoUnit.DAYS);
 
@@ -80,6 +82,7 @@ public class JwtTokenProvider {
 				.expiration(Date.from(expiration))
 				.id(UUID.randomUUID().toString())
 				.claim(CLAIM_TOKEN_TYPE, TokenType.REFRESH.getValue())
+				.claim(CLAIM_SID, sid)
 				.signWith(privateKey, Jwts.SIG.RS256)
 				.compact();
 	}
@@ -97,30 +100,57 @@ public class JwtTokenProvider {
 		}
 	}
 
-	public Long getUserIdFromToken(String token) {
-		Claims claims = parseClaimsFromToken(token);
+	public Claims parseClaims(String token) {
+		return parseClaimsFromToken(token);
+	}
+
+	public Long getUserId(Claims claims) {
 		return Long.parseLong(claims.getSubject());
 	}
 
-	public String getAuthorityFromToken(String token) {
-		Claims claims = parseClaimsFromToken(token);
+	public String getAuthority(Claims claims) {
 		return claims.get(CLAIM_AUTH, String.class);
 	}
 
-	public TokenType getTokenTypeFromToken(String token) {
-		Claims claims = parseClaimsFromToken(token);
+	public TokenType getTokenType(Claims claims) {
 		String tokenTypeValue = claims.get(CLAIM_TOKEN_TYPE, String.class);
 		return TokenType.valueOf(tokenTypeValue);
 	}
 
-	public String getJtiFromToken(String token) {
-		Claims claims = parseClaimsFromToken(token);
+	public String getJti(Claims claims) {
 		return claims.getId();
 	}
 
-	public Date getExpirationFromToken(String token) {
-		Claims claims = parseClaimsFromToken(token);
+	public String getSid(Claims claims) {
+		return claims.get(CLAIM_SID, String.class);
+	}
+
+	public Date getExpiration(Claims claims) {
 		return claims.getExpiration();
+	}
+
+	public Long getUserIdFromToken(String token) {
+		return getUserId(parseClaimsFromToken(token));
+	}
+
+	public String getAuthorityFromToken(String token) {
+		return getAuthority(parseClaimsFromToken(token));
+	}
+
+	public TokenType getTokenTypeFromToken(String token) {
+		return getTokenType(parseClaimsFromToken(token));
+	}
+
+	public String getJtiFromToken(String token) {
+		return getJti(parseClaimsFromToken(token));
+	}
+
+	public String getSidFromToken(String token) {
+		return getSid(parseClaimsFromToken(token));
+	}
+
+	public Date getExpirationFromToken(String token) {
+		return getExpiration(parseClaimsFromToken(token));
 	}
 
 	private Claims parseClaimsFromToken(String token) {

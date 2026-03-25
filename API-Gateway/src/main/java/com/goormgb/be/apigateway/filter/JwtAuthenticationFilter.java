@@ -29,6 +29,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 	private static final String BEARER_PREFIX = "Bearer ";
 	private static final String HEADER_USER_ID = "X-User-Id";
 	private static final String HEADER_USER_ROLE = "X-User-Role";
+	private static final String HEADER_SESSION_ID = "X-Session-Id";
+	private static final String HEADER_TOKEN_JTI = "X-Token-Jti";
 
 	// 인증 없이 통과시킬 경로 prefix 목록
 	private static final List<String> WHITELIST = List.of(
@@ -76,6 +78,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 			String jti = jwtTokenProvider.getJti(claims);
 			Long userId = jwtTokenProvider.getUserId(claims);
 			String authority = jwtTokenProvider.getAuthority(claims);
+			String sid = jwtTokenProvider.getSid(claims);
 
 			return blacklistRepository.isBlacklisted(jti)
 					.flatMap(isBlacklisted -> {
@@ -84,12 +87,18 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 							return unauthorizedResponse(exchange);
 						}
 
-						ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+						ServerHttpRequest.Builder requestBuilder = exchange.getRequest().mutate()
 								.header(HEADER_USER_ID, String.valueOf(userId))
 								.header(HEADER_USER_ROLE, authority)
-								.build();
+								.header(HEADER_TOKEN_JTI, jti);
 
-						log.debug("JWT authenticated - userId: {}, role: {}", userId, authority);
+						if (sid != null) {
+							requestBuilder.header(HEADER_SESSION_ID, sid);
+						}
+
+						ServerHttpRequest mutatedRequest = requestBuilder.build();
+
+						log.debug("JWT authenticated - userId: {}, role: {}, sid: {}", userId, authority, sid);
 						return chain.filter(exchange.mutate().request(mutatedRequest).build());
 					});
 
