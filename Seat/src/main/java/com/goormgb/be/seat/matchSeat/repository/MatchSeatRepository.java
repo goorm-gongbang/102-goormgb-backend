@@ -1,5 +1,6 @@
 package com.goormgb.be.seat.matchSeat.repository;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -95,4 +96,23 @@ public interface MatchSeatRepository extends JpaRepository<MatchSeat, Long> {
 		@Param("matchId") Long matchId,
 		@Param("blockIds") List<Long> blockIds
 	);
+
+	@Query(
+		value = """
+			SELECT ms.id
+			FROM match_seats ms
+			JOIN matches m ON m.id = ms.match_id
+			WHERE m.sale_status = :saleStatus
+			  AND m.match_at < :cutoff
+			""",
+		nativeQuery = true
+	)
+	List<Long> findCleanupTargetMatchSeatIds(
+		@Param("saleStatus") String saleStatus,
+		@Param("cutoff") Instant cutoff
+	);
+
+	@Modifying(clearAutomatically = true)
+	@Query("DELETE FROM MatchSeat ms WHERE ms.id IN :matchSeatIds")
+	int deleteByIdIn(@Param("matchSeatIds") List<Long> matchSeatIds);
 }

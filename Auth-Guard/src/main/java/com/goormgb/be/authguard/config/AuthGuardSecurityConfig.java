@@ -33,11 +33,14 @@ public class AuthGuardSecurityConfig {
 								"/kakao/**",
 								"/token/refresh",
 								"/dev/auth/**",
+								"/loadtest/signup",
+								"/loadtest/login",
 								"/swagger-ui/**",
 								"/swagger-ui.html",
 								"/swagger-resources/**",
 								"/v3/api-docs/**",
-								"/actuator/health/**"
+								"/actuator/health/**",
+								"/actuator/prometheus"
 						).permitAll()
 						.anyRequest().authenticated()
 				)

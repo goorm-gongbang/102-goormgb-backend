@@ -13,7 +13,7 @@ public record BlockItemDto(
 
 	public static BlockItemDto from(Block block) {
 		return new BlockItemDto(
-			block.getId(),
+			block.getBlockNum(),
 			block.getBlockCode(),
 			block.getSection().getName(),
 			block.getArea().getName(),

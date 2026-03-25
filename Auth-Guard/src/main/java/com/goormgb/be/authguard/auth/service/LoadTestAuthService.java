@@ -14,11 +14,9 @@ import com.goormgb.be.authguard.jwt.provider.JwtTokenProvider;
 import com.goormgb.be.authguard.jwt.repository.RefreshTokenRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.global.support.Preconditions;
-import com.goormgb.be.user.entity.DevUser;
+import com.goormgb.be.user.entity.LoadTestUser;
 import com.goormgb.be.user.entity.User;
-import com.goormgb.be.user.enums.UserStatus;
-import com.goormgb.be.user.repository.DevUserRepository;
+import com.goormgb.be.user.repository.LoadTestUserRepository;
 import com.goormgb.be.user.repository.UserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,55 +26,49 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DevAuthService {
+public class LoadTestAuthService {
 
 	private static final String DEFAULT_AUTHORITY = "ROLE_USER";
 
 	private final UserRepository userRepository;
-	private final DevUserRepository devUserRepository;
+	private final LoadTestUserRepository loadTestUserRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final JwtProperties jwtProperties;
 	private final RefreshTokenRepository refreshTokenRepository;
 
 	@Transactional
-	public void signup(String loginId, String password, String nickname, String email) {
-		if (devUserRepository.existsByLoginId(loginId)) {
+	public void signup(String loginId, String password) {
+		if (loadTestUserRepository.existsByLoginId(loginId)) {
 			throw new CustomException(ErrorCode.USER_ALREADY_EXISTS);
 		}
 
 		User user = User.builder()
-				.email(email)
-				.nickname(nickname != null ? nickname : loginId)
+				.email(loginId + "@loadtest.com")
+				.nickname(loginId)
 				.build();
 		userRepository.save(user);
 
-		DevUser devUser = DevUser.builder()
+		LoadTestUser loadTestUser = LoadTestUser.builder()
 				.loginId(loginId)
 				.passwordHash(passwordEncoder.encode(password))
 				.user(user)
 				.build();
-		devUserRepository.save(devUser);
+		loadTestUserRepository.save(loadTestUser);
 
-		log.info("Dev user created - loginId: {}, userId: {}", loginId, user.getId());
+		log.info("[LoadTest] 부하테스트 유저 생성 - loginId: {}, userId: {}", loginId, user.getId());
 	}
 
 	@Transactional
-	public DevLoginResult login(String loginId, String password, HttpServletRequest request) {
-		DevUser devUser = devUserRepository.findByLoginId(loginId)
+	public LoadTestLoginResult login(String loginId, String password, HttpServletRequest request) {
+		LoadTestUser loadTestUser = loadTestUserRepository.findByLoginId(loginId)
 				.orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
-		if (!passwordEncoder.matches(password, devUser.getPasswordHash())) {
+		if (!passwordEncoder.matches(password, loadTestUser.getPasswordHash())) {
 			throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
 		}
 
-		User user = devUser.getUser();
-
-		Preconditions.validate(
-				user.getStatus() != UserStatus.DEACTIVATE,
-				ErrorCode.USER_DEACTIVATED
-		);
-
+		User user = loadTestUser.getUser();
 		user.updateLastLoginAt();
 
 		String sid = UUID.randomUUID().toString();
@@ -100,12 +92,7 @@ public class DevAuthService {
 
 		refreshTokenRepository.save(tokenInfo);
 
-		log.info("Dev user logged in - loginId: {}, userId: {}", loginId, user.getId());
-
-		boolean agreementRequired = !Boolean.TRUE.equals(user.getMarketingConsent());
-		boolean onboardingRequired = !Boolean.TRUE.equals(user.getOnboardingCompleted());
-
-		return new DevLoginResult(accessToken, refreshToken, agreementRequired, onboardingRequired);
+		return new LoadTestLoginResult(accessToken, refreshToken);
 	}
 
 	private String getClientIp(HttpServletRequest request) {
@@ -116,7 +103,6 @@ public class DevAuthService {
 		return request.getRemoteAddr();
 	}
 
-	public record DevLoginResult(String accessToken, String refreshToken, boolean agreementRequired,
-								 boolean onboardingRequired) {
+	public record LoadTestLoginResult(String accessToken, String refreshToken) {
 	}
 }

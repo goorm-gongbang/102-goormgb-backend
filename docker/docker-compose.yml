@@ -52,6 +52,9 @@ services:
     build:
       context: ..
       dockerfile: API-Gateway/Dockerfile
+      args:
+        BUILDPLATFORM: ${BUILDPLATFORM:-linux/arm64}
+        TARGETPLATFORM: ${TARGETPLATFORM:-linux/arm64}
     container_name: api-gateway
     environment:
       AUTH_GUARD_URL: http://auth-guard:8080
@@ -76,6 +79,9 @@ services:
     build:
       context: ..
       dockerfile: Auth-Guard/Dockerfile
+      args:
+        BUILDPLATFORM: ${BUILDPLATFORM:-linux/arm64}
+        TARGETPLATFORM: ${TARGETPLATFORM:-linux/arm64}
     container_name: auth-guard
     environment:
       DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
@@ -105,6 +111,9 @@ services:
     build:
       context: ..
       dockerfile: Queue/Dockerfile
+      args:
+        BUILDPLATFORM: ${BUILDPLATFORM:-linux/arm64}
+        TARGETPLATFORM: ${TARGETPLATFORM:-linux/arm64}
     container_name: queue
     environment:
       DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
@@ -126,6 +135,9 @@ services:
     build:
       context: ..
       dockerfile: Seat/Dockerfile
+      args:
+        BUILDPLATFORM: ${BUILDPLATFORM:-linux/arm64}
+        TARGETPLATFORM: ${TARGETPLATFORM:-linux/arm64}
     container_name: seat
     environment:
       DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
@@ -146,6 +158,9 @@ services:
     build:
       context: ..
       dockerfile: Order-Core/Dockerfile
+      args:
+        BUILDPLATFORM: ${BUILDPLATFORM:-linux/arm64}
+        TARGETPLATFORM: ${TARGETPLATFORM:-linux/arm64}
     container_name: order-core
     environment:
       DB_URL: jdbc:postgresql://local-postgres:5432/goormgb
