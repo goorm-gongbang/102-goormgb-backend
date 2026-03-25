@@ -8,6 +8,7 @@ import com.goormgb.be.domain.ticket.enums.TicketType;
 import com.goormgb.be.ordercore.mypage.dto.query.TicketDetailBaseRow;
 import com.goormgb.be.ordercore.mypage.dto.query.TicketSeatDetailRow;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
@@ -176,6 +177,16 @@ public final class MyPageFixture {
 				new MyPageTicketQrResponse.SeatInfo("오렌지석", "206", 3, 13),
 				new MyPageTicketQrResponse.SeatInfo("오렌지석", "206", 3, 14)
 			)
+		);
+	}
+
+	public static MyPageTicketCancelResponse createTicketCancelResponse() {
+		return new MyPageTicketCancelResponse(
+			101L,
+			OrderStatus.CANCEL_REQUESTED,
+			42000,
+			6000,
+			36000
 		);
 	}
 }
