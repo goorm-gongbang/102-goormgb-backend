@@ -56,6 +56,10 @@ springdoc:
         url: /order/v3/api-docs
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
   endpoint:
     health:
       probes:

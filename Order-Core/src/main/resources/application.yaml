@@ -31,6 +31,10 @@ spring:
       port: ${REDIS_PORT}
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
   endpoint:
     health:
       probes:
