@@ -7,7 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum UserStatus {
 	ACTIVATE("활성"),
-	DEACTIVATE("비활성");
-
+	DEACTIVATE("비활성"),
+	BLOCKED("차단");
+	
 	private final String description;
 }

@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.goormgb.be.authguard.auth.dto.RefreshTokenInfo;
+import com.goormgb.be.authguard.auth.dto.UserStatusChangeResponse;
 import com.goormgb.be.authguard.auth.dto.WithdrawalResponse;
 import com.goormgb.be.authguard.jwt.config.JwtProperties;
 import com.goormgb.be.authguard.jwt.enums.TokenType;
@@ -159,6 +160,30 @@ public class AuthService {
 	 * 토큰 재발급 결과
 	 */
 	public record TokenRefreshResult(String accessToken, String refreshToken) {
+	}
+
+	@Transactional
+	public UserStatusChangeResponse blockUser(Long targetUserId) {
+		User user = userRepository.findByIdOrThrow(targetUserId, ErrorCode.USER_NOT_FOUND);
+
+		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
+		Preconditions.validate(user.getStatus() != UserStatus.BLOCKED, ErrorCode.USER_ALREADY_BLOCKED);
+
+		user.block();
+
+		return UserStatusChangeResponse.from(user);
+	}
+
+	@Transactional
+	public UserStatusChangeResponse unblockUser(Long targetUserId) {
+		User user = userRepository.findByIdOrThrow(targetUserId, ErrorCode.USER_NOT_FOUND);
+
+		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
+		Preconditions.validate(user.getStatus() != UserStatus.ACTIVATE, ErrorCode.USER_ALREADY_ACTIVE);
+
+		user.unblock();
+
+		return UserStatusChangeResponse.from(user);
 	}
 
 	/**

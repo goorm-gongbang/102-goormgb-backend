@@ -86,6 +86,14 @@ public class User extends BaseEntity {
 		this.status = UserStatus.ACTIVATE;
 	}
 
+	public void block() {
+		this.status = UserStatus.BLOCKED;
+	}
+
+	public void unblock() {
+		activate();
+	}
+
 	public static User createOAuthUser(String email, String nickname, String profileImageUrl) {
 		return User.builder()
 				.email(email)
