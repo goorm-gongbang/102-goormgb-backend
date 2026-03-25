@@ -3,6 +3,8 @@ package com.goormgb.be.authguard.auth.service;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
@@ -55,32 +57,28 @@ public class AuthService {
 		// 1. Refresh Token 검증
 		jwtTokenProvider.validateToken(refreshToken);
 
-		// 2. 토큰 타입 확인
-		TokenType tokenType = jwtTokenProvider.getTokenTypeFromToken(refreshToken);
+		// 2. Claims 한 번만 파싱하여 필요한 정보 추출
+		Claims claims = jwtTokenProvider.parseClaims(refreshToken);
+		TokenType tokenType = jwtTokenProvider.getTokenType(claims);
 		Preconditions.validate(tokenType == TokenType.REFRESH, ErrorCode.INVALID_TOKEN_TYPE);
 
-		// 3. jti, userId 추출
-		String jti = jwtTokenProvider.getJtiFromToken(refreshToken);
-		Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
+		String jti = jwtTokenProvider.getJti(claims);
+		Long userId = jwtTokenProvider.getUserId(claims);
 
-		// 4. Redis에서 저장된 토큰 조회 & 일치 확인
+		// 3. Redis에서 저장된 토큰 조회 & 일치 확인
 		RefreshTokenInfo storedTokenInfo = refreshTokenRepository.findByJtiOrThrow(jti,
 				ErrorCode.REFRESH_TOKEN_NOT_FOUND);
 
 		Preconditions.validate(refreshToken.equals(storedTokenInfo.getToken()), ErrorCode.REFRESH_TOKEN_MISMATCH);
 
-		// 5. 사용자 상태 확인
+		// 4. 사용자 상태 확인
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
 
-		// 6. 기존 sid 추출 (하위 호환: sid 없는 기존 토큰은 새로 생성)
-		String sid = jwtTokenProvider.getSidFromToken(refreshToken);
-		if (sid == null) {
-			sid = storedTokenInfo.getSid();
-		}
-		if (sid == null) {
-			sid = java.util.UUID.randomUUID().toString();
-		}
+		// 5. 기존 sid 추출 (하위 호환: sid 없는 기존 토큰은 새로 생성)
+		String sid = Optional.ofNullable(jwtTokenProvider.getSid(claims))
+				.or(() -> Optional.ofNullable(storedTokenInfo.getSid()))
+				.orElseGet(() -> UUID.randomUUID().toString());
 
 		// 7. 새 토큰 발급 (동일 sid 유지)
 		String newAccessToken = jwtTokenProvider.createAccessToken(userId, DEFAULT_AUTHORITY, sid);
