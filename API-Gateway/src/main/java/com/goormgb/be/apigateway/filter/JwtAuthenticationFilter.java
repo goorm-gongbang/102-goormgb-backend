@@ -37,6 +37,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 			"/auth/kakao",
 			"/auth/token/refresh",
 			"/auth/dev/auth",
+			"/auth/dev/loadtest",
 			"/swagger-ui",
 			"/v3/api-docs",
 			"/auth/v3/api-docs",
