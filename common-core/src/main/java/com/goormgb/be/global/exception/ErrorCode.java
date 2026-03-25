@@ -24,7 +24,6 @@ public enum ErrorCode {
 	USER_DEACTIVATED(HttpStatus.FORBIDDEN, "비활성화된 사용자입니다."),
 	USER_ALREADY_BLOCKED(HttpStatus.CONFLICT, "이미 차단된 사용자입니다."),
 	USER_ALREADY_ACTIVE(HttpStatus.CONFLICT, "이미 활성 상태인 사용자입니다."),
-	USER_SELF_BLOCK_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자기 자신은 차단할 수 없습니다."),
 
 	// Onboarding
 	ONBOARDING_NOT_COMPLETED(HttpStatus.FORBIDDEN, "온보딩이 완료되지 않았습니다."),
