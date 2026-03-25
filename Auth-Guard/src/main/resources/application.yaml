@@ -53,6 +53,10 @@ kakao:
   user-info-url: https://kapi.kakao.com/v2/user/me
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
   endpoint:
     health:
       probes:
