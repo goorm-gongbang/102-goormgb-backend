@@ -30,6 +30,7 @@ import com.goormgb.be.ordercore.mypage.enums.TicketTab;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
+import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
 import com.goormgb.be.ordercore.qrtoken.entity.QrToken;
 import com.goormgb.be.ordercore.qrtoken.repository.QrTokenRepository;
@@ -172,19 +173,19 @@ public class MyPageService {
 
 	@Transactional
 	public MyPageTicketQrResponse getTicketEntryQr(Long userId, Long ticketId) {
-		TicketDetailBaseRow base = myPageQueryService.findTicketDetailBaseByOrderId(ticketId)
+		Order order = orderRepository.findByIdForUpdate(ticketId)
 			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-		Preconditions.validate(base.userId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
-		Preconditions.validate(base.status() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
+		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
+		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
 
 		Instant now = Instant.now();
-		validateQrIssuableTime(base.matchAt(), now);
+		validateQrIssuableTime(order.getMatch().getMatchAt(), now);
 
 		QrToken qrToken = qrTokenRepository.findByOrderIdAndExpiresAtAfter(ticketId, now)
-			.orElseGet(() -> issueNewQrToken(userId, ticketId, now));
+			.orElseGet(() -> issueNewQrToken(order, now));
 
 		List<TicketSeatDetailRow> seatRows = myPageQueryService.findTicketSeatRowsByOrderId(ticketId);
-		return MyPageTicketQrResponse.of(base, seatRows, qrToken.getQrToken(), qrToken.getExpiresAt());
+		return MyPageTicketQrResponse.of(order, seatRows, qrToken.getQrToken(), qrToken.getExpiresAt());
 	}
 
 	private Map<Long, List<MyPageTicketListResponse.SeatInfo>> buildSeatMap(List<Long> orderIds) {
@@ -298,10 +299,10 @@ public class MyPageService {
 		Preconditions.validate(!now.isBefore(matchAt.minus(ENTRY_OPEN_BEFORE_MATCH)), ErrorCode.ENTRY_QR_NOT_AVAILABLE_YET);
 	}
 
-	private QrToken issueNewQrToken(Long userId, Long ticketId, Instant now) {
+	private QrToken issueNewQrToken(Order order, Instant now) {
 		QrToken qrToken = QrToken.builder()
-			.order(orderRepository.getReferenceById(ticketId))
-			.user(userRepository.getReferenceById(userId))
+			.order(order)
+			.user(order.getUser())
 			.qrToken(UUID.randomUUID().toString())
 			.expiresAt(calculateNextQrExpiry(now))
 			.build();

@@ -3,8 +3,8 @@ package com.goormgb.be.ordercore.mypage.dto.response;
 import java.time.Instant;
 import java.util.List;
 
-import com.goormgb.be.ordercore.mypage.dto.query.TicketDetailBaseRow;
 import com.goormgb.be.ordercore.mypage.dto.query.TicketSeatDetailRow;
+import com.goormgb.be.ordercore.order.entity.Order;
 
 public record MyPageTicketQrResponse(
 	Long ticketId,
@@ -15,16 +15,16 @@ public record MyPageTicketQrResponse(
 ) {
 
 	public static MyPageTicketQrResponse of(
-		TicketDetailBaseRow base,
+		Order order,
 		List<TicketSeatDetailRow> seatRows,
 		String qrToken,
 		Instant expiresAt
 	) {
 		return new MyPageTicketQrResponse(
-			base.orderId(),
+			order.getId(),
 			qrToken,
 			expiresAt,
-			MatchInfo.from(base),
+			MatchInfo.from(order),
 			seatRows.stream().map(SeatInfo::from).toList()
 		);
 	}
@@ -35,12 +35,12 @@ public record MyPageTicketQrResponse(
 		ClubInfo awayClub,
 		String stadiumName
 	) {
-		public static MatchInfo from(TicketDetailBaseRow base) {
+		public static MatchInfo from(Order order) {
 			return new MatchInfo(
-				base.matchAt(),
-				new ClubInfo(base.homeClubName()),
-				new ClubInfo(base.awayClubName()),
-				base.stadiumName()
+				order.getMatch().getMatchAt(),
+				new ClubInfo(order.getMatch().getHomeClub().getKoName()),
+				new ClubInfo(order.getMatch().getAwayClub().getKoName()),
+				order.getMatch().getStadium().getKoName()
 			);
 		}
 	}
