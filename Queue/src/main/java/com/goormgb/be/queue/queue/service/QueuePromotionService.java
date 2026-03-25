@@ -51,19 +51,20 @@ public class QueuePromotionService {
 		}
 
 		Instant issuedAt = Instant.now();
-		Instant expiresAt = issuedAt.plusSeconds(queueProperties.readyTtlSeconds());
+		Instant readyExpiresAt = issuedAt.plusSeconds(queueProperties.readyTtlSeconds());
 		Duration readyTtl = Duration.ofSeconds(queueProperties.readyTtlSeconds());
+		Duration admissionTtl = Duration.ofSeconds(queueProperties.admissionTtlSeconds());
 
 		for (Long userId : promotedUserIds) {
-			String token = admissionTokenProvider.issue(userId, matchId, readyTtl);
+			String token = admissionTokenProvider.issue(userId, matchId, admissionTtl);
 			ReadyTokenPayload payload = new ReadyTokenPayload(
 				userId,
 				matchId,
 				token,
 				issuedAt,
-				expiresAt
+				readyExpiresAt
 			);
-			queueRedisRepository.saveReadyToken(payload);
+			queueRedisRepository.saveReadyToken(payload, readyTtl);
 		}
 
 		cleanupInactiveMatch(matchId, activeReadyCount + promotedUserIds.size());

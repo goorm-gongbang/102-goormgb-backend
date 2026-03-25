@@ -21,6 +21,7 @@ public class XUserIdAuthenticationFilter extends OncePerRequestFilter {
 
 	private static final String HEADER_USER_ID = "X-User-Id";
 	private static final String HEADER_USER_ROLE = "X-User-Role";
+	private static final String HEADER_SESSION_ID = "X-Session-Id";
 
 	@Override
 	protected void doFilterInternal(
@@ -31,6 +32,7 @@ public class XUserIdAuthenticationFilter extends OncePerRequestFilter {
 
 		String userId = request.getHeader(HEADER_USER_ID);
 		String userRole = request.getHeader(HEADER_USER_ROLE);
+		String sessionId = request.getHeader(HEADER_SESSION_ID);
 
 		if (userId != null && !userId.isBlank()) {
 			try {
@@ -46,6 +48,10 @@ public class XUserIdAuthenticationFilter extends OncePerRequestFilter {
 								null,
 								List.of(authority)
 						);
+
+				if (sessionId != null && !sessionId.isBlank()) {
+					authentication.setDetails(sessionId);
+				}
 
 				SecurityContextHolder.getContext().setAuthentication(authentication);
 			} catch (NumberFormatException e) {

@@ -102,7 +102,8 @@ public class SeatHoldTransactionalService {
 				// hold 성공 횟수 증가
 				seatMetricsService.increaseHoldSuccess(SeatHoldMode.MAP);
 
-				return SeatHoldCreateResponse.of(matchId, seatIds, expiresAt);
+				List<Long> matchSeatIds = requestedSeats.stream().map(MatchSeat::getId).toList();
+				return SeatHoldCreateResponse.of(matchId, matchSeatIds, expiresAt);
 			}
 
 			releaseUserActiveHolds(userActiveHolds);
@@ -123,7 +124,8 @@ public class SeatHoldTransactionalService {
 			// hold 성공 횟수 증가
 			seatMetricsService.increaseHoldSuccess(SeatHoldMode.MAP);
 
-			return SeatHoldCreateResponse.of(matchId, seatIds, expiresAt);
+			List<Long> matchSeatIds = requestedSeats.stream().map(MatchSeat::getId).toList();
+			return SeatHoldCreateResponse.of(matchId, matchSeatIds, expiresAt);
 		} catch (CustomException e) {
 			// hold 실패 횟수 증가
 			seatMetricsService.increaseHoldFail(SeatHoldMode.MAP, mapFailReason(e.getErrorCode()));

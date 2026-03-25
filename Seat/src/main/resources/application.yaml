@@ -40,6 +40,10 @@ admission:
     issuer: ${ADMISSION_JWT_ISSUER:queue-service}
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
   endpoint:
     health:
       probes:

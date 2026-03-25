@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -19,11 +20,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.ordercore.cancellation.entity.CancellationFeePolicy;
+import com.goormgb.be.ordercore.cancellation.repository.CancellationFeePolicyRepository;
 import com.goormgb.be.ordercore.fixture.mypage.MyPageFixture;
 import com.goormgb.be.ordercore.fixture.order.OrderFixture;
+import com.goormgb.be.ordercore.mypage.dto.query.TicketDetailBaseRow;
+import com.goormgb.be.ordercore.mypage.dto.query.TicketSeatDetailRow;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
-import com.goormgb.be.ordercore.mypage.enums.TicketTab;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
@@ -47,13 +52,15 @@ class MyPageServiceTest {
 	private OrderRepository orderRepository;
 	@Mock
 	private MyPageQueryService myPageQueryService;
+	@Mock
+	private CancellationFeePolicyRepository cancellationFeePolicyRepository;
 
 	private MyPageService myPageService;
 
 	@BeforeEach
 	void setUp() {
 		myPageService = new MyPageService(
-			userRepository, userSnsRepository, orderRepository, myPageQueryService
+			userRepository, userSnsRepository, orderRepository, myPageQueryService, cancellationFeePolicyRepository
 		);
 	}
 
@@ -295,6 +302,120 @@ class MyPageServiceTest {
 			assertThat(response.summary().upcomingCount()).isEqualTo(3);
 			assertThat(response.summary().cancelProcessingCount()).isEqualTo(2);
 			assertThat(response.summary().completedCount()).isEqualTo(5);
+		}
+	}
+
+	@Nested
+	@DisplayName("getTicketDetail — 예매 상세 조회")
+	class GetTicketDetail {
+
+		@Test
+		@DisplayName("PAID 상태 상세 정보를 반환한다")
+		void getTicketDetail_PAID_성공() {
+			Long userId = 1L;
+			Long ticketId = 101L;
+			TicketDetailBaseRow baseRow = MyPageFixture.createTicketDetailBaseRow(ticketId, OrderStatus.PAID);
+			List<TicketSeatDetailRow> seatRows = MyPageFixture.createTicketSeatDetailRows();
+			CancellationFeePolicy policy = CancellationFeePolicy.builder()
+				.daysBeforeMatchMin(1)
+				.daysBeforeMatchMax(6)
+				.cancellable(true)
+				.ticketFeeRate(new BigDecimal("0.100"))
+				.bookingFeeRefundable(false)
+				.build();
+
+			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.of(baseRow));
+			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId)).willReturn(seatRows);
+			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
+
+			MyPageTicketDetailResponse response = myPageService.getTicketDetail(userId, ticketId);
+
+			assertThat(response.ticketId()).isEqualTo(ticketId);
+			assertThat(response.status()).isEqualTo(OrderStatus.PAID);
+			assertThat(response.payment().paymentMethod()).isEqualTo("TOSS_PAY");
+			assertThat(response.virtualAccount()).isNull();
+			assertThat(response.cancellation()).isNull();
+			assertThat(response.actions().canPrint()).isTrue();
+			assertThat(response.seats()).hasSize(2);
+			assertThat(response.payment().cashReceipt()).isNotNull();
+		}
+
+		@Test
+		@DisplayName("PAYMENT_PENDING 무통장 상세 조회 시 virtualAccount를 반환한다")
+		void getTicketDetail_PAYMENT_PENDING_가상계좌_성공() {
+			Long userId = 1L;
+			Long ticketId = 102L;
+			TicketDetailBaseRow baseRow = MyPageFixture.createTicketDetailBaseRow(ticketId,
+				OrderStatus.PAYMENT_PENDING);
+			CancellationFeePolicy policy = CancellationFeePolicy.builder()
+				.daysBeforeMatchMin(7)
+				.daysBeforeMatchMax(null)
+				.cancellable(true)
+				.ticketFeeRate(BigDecimal.ZERO)
+				.bookingFeeRefundable(true)
+				.build();
+
+			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.of(baseRow));
+			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId))
+				.willReturn(MyPageFixture.createTicketSeatDetailRows());
+			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
+
+			MyPageTicketDetailResponse response = myPageService.getTicketDetail(userId, ticketId);
+
+			assertThat(response.status()).isEqualTo(OrderStatus.PAYMENT_PENDING);
+			assertThat(response.payment().paymentMethod()).isEqualTo("VIRTUAL_ACCOUNT");
+			assertThat(response.payment().paidAt()).isNull();
+			assertThat(response.virtualAccount()).isNotNull();
+			assertThat(response.actions().canPrint()).isFalse();
+		}
+
+		@Test
+		@DisplayName("취소된 티켓은 cancellation 정보를 반환한다")
+		void getTicketDetail_CANCELLED_성공() {
+			Long userId = 1L;
+			Long ticketId = 103L;
+			TicketDetailBaseRow baseRow = MyPageFixture.createTicketDetailBaseRow(ticketId, OrderStatus.CANCELLED);
+			CancellationFeePolicy policy = CancellationFeePolicy.builder()
+				.daysBeforeMatchMin(1)
+				.daysBeforeMatchMax(6)
+				.cancellable(true)
+				.ticketFeeRate(new BigDecimal("0.100"))
+				.bookingFeeRefundable(false)
+				.build();
+
+			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.of(baseRow));
+			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId))
+				.willReturn(MyPageFixture.createTicketSeatDetailRows());
+			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
+
+			MyPageTicketDetailResponse response = myPageService.getTicketDetail(userId, ticketId);
+
+			assertThat(response.status()).isEqualTo(OrderStatus.CANCELLED);
+			assertThat(response.cancellation()).isNotNull();
+			assertThat(response.actions().canPrint()).isFalse();
+		}
+
+		@Test
+		@DisplayName("존재하지 않는 티켓이면 ORDER_NOT_FOUND 예외가 발생한다")
+		void getTicketDetail_주문없음_예외() {
+			Long ticketId = 999L;
+			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.empty());
+
+			assertThatThrownBy(() -> myPageService.getTicketDetail(1L, ticketId))
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
+		}
+
+		@Test
+		@DisplayName("본인 소유가 아닌 티켓이면 ORDER_ACCESS_DENIED 예외가 발생한다")
+		void getTicketDetail_권한없음_예외() {
+			Long ticketId = 104L;
+			TicketDetailBaseRow baseRow = MyPageFixture.createTicketDetailBaseRow(2L, ticketId, OrderStatus.PAID);
+			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.of(baseRow));
+
+			assertThatThrownBy(() -> myPageService.getTicketDetail(1L, ticketId))
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
 		}
 	}
 }

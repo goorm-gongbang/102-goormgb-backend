@@ -60,10 +60,12 @@ class SeatCommonServiceTest {
 	}
 
 	private Block createBlock(Long blockId, String blockCode, Section section) {
+		Long blockNum = blockCode.matches("\\d+") ? Long.parseLong(blockCode) : blockId;
 		Block block = Block.builder()
 			.area(section.getArea())
 			.section(section)
 			.blockCode(blockCode)
+			.blockNum(blockNum)
 			.viewpoint(com.goormgb.be.domain.onboarding.enums.Viewpoint.INFIELD_1B)
 			.homeCheerRank(1)
 			.awayCheerRank(1)
