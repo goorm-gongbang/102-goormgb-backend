@@ -10,6 +10,7 @@ import com.goormgb.be.ordercore.mypage.dto.query.TicketSeatDetailRow;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
@@ -156,6 +157,25 @@ public final class MyPageFixture {
 			null,
 			null,
 			new MyPageTicketDetailResponse.TicketActions(true)
+		);
+	}
+
+	public static MyPageTicketQrResponse createTicketQrResponse() {
+		Instant matchAt = Instant.now().plus(1, ChronoUnit.HOURS);
+		return new MyPageTicketQrResponse(
+			101L,
+			"qr-token-uuid",
+			Instant.now().plus(2, ChronoUnit.MINUTES),
+			new MyPageTicketQrResponse.MatchInfo(
+				matchAt,
+				new MyPageTicketQrResponse.ClubInfo("LG 트윈스"),
+				new MyPageTicketQrResponse.ClubInfo("KT 위즈"),
+				"잠실야구장"
+			),
+			List.of(
+				new MyPageTicketQrResponse.SeatInfo("오렌지석", "206", 3, 13),
+				new MyPageTicketQrResponse.SeatInfo("오렌지석", "206", 3, 14)
+			)
 		);
 	}
 }
