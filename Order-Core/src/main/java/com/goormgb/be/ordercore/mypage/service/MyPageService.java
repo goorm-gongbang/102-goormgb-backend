@@ -23,6 +23,7 @@ import com.goormgb.be.ordercore.cancellation.repository.CancellationFeePolicyRep
 import com.goormgb.be.ordercore.mypage.dto.query.TicketDetailBaseRow;
 import com.goormgb.be.ordercore.mypage.dto.query.TicketSeatDetailRow;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
@@ -188,6 +189,23 @@ public class MyPageService {
 		return MyPageTicketQrResponse.of(order, seatRows, qrToken.getQrToken(), qrToken.getExpiresAt());
 	}
 
+	@Transactional
+	public MyPageTicketCancelResponse requestTicketCancel(Long userId, Long ticketId) {
+		Order order = orderRepository.findByIdForUpdate(ticketId)
+			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
+		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
+		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
+
+		CancellationFeePolicy policy = findCancellationPolicy(order.getMatch().getMatchAt());
+		Preconditions.validate(Boolean.TRUE.equals(policy.getCancellable()), ErrorCode.TICKET_CANCEL_NOT_ALLOWED);
+
+		int cancellationFee = calculateCancellationFee(order, policy);
+		int refundedAmount = order.getTotalAmount() - cancellationFee;
+		order.cancel(cancellationFee, refundedAmount);
+
+		return MyPageTicketCancelResponse.of(order);
+	}
+
 	private Map<Long, List<MyPageTicketListResponse.SeatInfo>> buildSeatMap(List<Long> orderIds) {
 		List<OrderSeatRow> seatRows = myPageQueryService.findOrderSeatRowsByOrderIds(orderIds);
 		return seatRows.stream()
@@ -313,5 +331,27 @@ public class MyPageService {
 		long nowEpochSec = now.getEpochSecond();
 		long expiresEpochSec = ((nowEpochSec / QR_REFRESH_INTERVAL_SECONDS) + 1) * QR_REFRESH_INTERVAL_SECONDS;
 		return Instant.ofEpochSecond(expiresEpochSec);
+	}
+
+	private CancellationFeePolicy findCancellationPolicy(Instant matchAt) {
+		int daysLeft = Math.max(0, (int)ChronoUnit.DAYS.between(
+			LocalDate.now(KST),
+			matchAt.atZone(KST).toLocalDate()
+		));
+		return cancellationFeePolicyRepository.findByDaysLeft(daysLeft)
+			.orElseThrow(() -> new CustomException(ErrorCode.INTERNAL_SERVER_ERROR));
+	}
+
+	private int calculateCancellationFee(Order order, CancellationFeePolicy policy) {
+		int ticketAmount = Math.max(0, order.getTotalAmount() - order.getBookingFee());
+		int ticketFee = policy.getTicketFeeRate()
+			.multiply(BigDecimal.valueOf(ticketAmount))
+			.setScale(0, RoundingMode.DOWN)
+			.intValue();
+
+		if (Boolean.TRUE.equals(policy.getBookingFeeRefundable())) {
+			return ticketFee;
+		}
+		return ticketFee + order.getBookingFee();
 	}
 }
