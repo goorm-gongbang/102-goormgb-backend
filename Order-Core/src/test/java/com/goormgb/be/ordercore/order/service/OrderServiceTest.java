@@ -20,12 +20,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.repository.MatchRepository;
-import com.goormgb.be.domain.ticket.enums.TicketType;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.order.OrderFixture;
 import com.goormgb.be.ordercore.order.dto.request.OrderCreateRequest;
-import com.goormgb.be.ordercore.order.dto.request.SeatOrderItem;
 import com.goormgb.be.ordercore.order.dto.response.OrderCreateResponse;
 import com.goormgb.be.ordercore.order.dto.response.OrderSheetGetResponse;
 import com.goormgb.be.ordercore.order.entity.Order;
@@ -245,10 +243,8 @@ class OrderServiceTest {
 			);
 			OrderCreateRequest request = new OrderCreateRequest(
 				1L,
-				List.of(
-					new SeatOrderItem(101L, TicketType.ADULT),
-					new SeatOrderItem(102L, TicketType.YOUTH)
-				),
+				List.of(101L, 102L),
+				31000,
 				"홍길동", "hong@test.com", "010-1234-5678", "990831"
 			);
 
@@ -259,7 +255,6 @@ class OrderServiceTest {
 			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
 			given(seatInfoQueryService.isAlreadyOrdered(102L)).willReturn(false);
 			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
-			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "YOUTH")).willReturn(7000);
 			stubSaveOrder(1L);
 
 			OrderCreateResponse response = orderService.createOrder(userId, request);
@@ -277,7 +272,8 @@ class OrderServiceTest {
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = new OrderCreateRequest(
 				2L,
-				List.of(new SeatOrderItem(101L, TicketType.ADULT)),
+				List.of(101L),
+				26000,
 				"홍길동", "hong@test.com", "010-1234-5678", "990831"
 			);
 
@@ -319,6 +315,7 @@ class OrderServiceTest {
 		void createOrder_빈좌석_예외() {
 			OrderCreateRequest request = new OrderCreateRequest(
 				1L, Collections.emptyList(),
+				24000,
 				"홍길동", "hong@test.com", "010-1234-5678", "990831"
 			);
 

@@ -12,7 +12,6 @@ import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.domain.stadium.entity.Stadium;
 import com.goormgb.be.domain.ticket.enums.TicketType;
 import com.goormgb.be.ordercore.order.dto.request.OrderCreateRequest;
-import com.goormgb.be.ordercore.order.dto.request.SeatOrderItem;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.entity.OrderSeat;
 import com.goormgb.be.ordercore.order.query.SeatHoldInfo;
@@ -206,7 +205,8 @@ public final class OrderFixture {
 	public static OrderCreateRequest createOrderCreateRequest() {
 		return new OrderCreateRequest(
 			1L,
-			List.of(new SeatOrderItem(101L, TicketType.ADULT)),
+			List.of(101L),
+			24000,
 			"홍길동",
 			"hong@test.com",
 			"010-1234-5678",
@@ -214,10 +214,11 @@ public final class OrderFixture {
 		);
 	}
 
-	public static OrderCreateRequest createOrderCreateRequestWithSeats(Long matchId, List<SeatOrderItem> seats) {
+	public static OrderCreateRequest createOrderCreateRequestWithSeats(Long matchId, List<Long> matchSeatIds) {
 		return new OrderCreateRequest(
 			matchId,
-			seats,
+			matchSeatIds,
+			24000,
 			"홍길동",
 			"hong@test.com",
 			"010-1234-5678",
