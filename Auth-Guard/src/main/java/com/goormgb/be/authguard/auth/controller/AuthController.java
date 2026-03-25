@@ -3,10 +3,12 @@ package com.goormgb.be.authguard.auth.controller;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.goormgb.be.authguard.auth.dto.TokenRefreshResponse;
+import com.goormgb.be.authguard.auth.dto.UserStatusChangeResponse;
 import com.goormgb.be.authguard.auth.dto.WithdrawalResponse;
 import com.goormgb.be.authguard.auth.service.AuthService;
 import com.goormgb.be.authguard.jwt.util.CookieUtils;
@@ -75,6 +77,36 @@ public class AuthController {
 		return ResponseEntity.ok()
 				.header(HttpHeaders.SET_COOKIE, cookie)
 				.body(ApiResult.ok("로그아웃 성공", null));
+	}
+
+	@Operation(summary = "유저 차단", description = "내부 시스템이 특정 유저를 차단 상태(BLOCKED)로 변경합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "유저 차단 성공"),
+		@ApiResponse(responseCode = "403", description = "탈퇴 처리된 유저", content = @Content),
+		@ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content),
+		@ApiResponse(responseCode = "409", description = "이미 차단된 사용자", content = @Content)
+	})
+	@PostMapping("/internal/users/{userId}/block")
+	public ResponseEntity<ApiResult<UserStatusChangeResponse>> blockUser(
+			@PathVariable Long userId
+	) {
+		UserStatusChangeResponse response = authService.blockUser(userId);
+		return ResponseEntity.ok()
+				.body(ApiResult.ok("유저 차단 성공", response));
+	}
+
+	@Operation(summary = "유저 차단 해제", description = "내부 시스템이 특정 유저를 활성 상태(ACTIVATE)로 복구합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "유저 차단 해제 성공"),
+		@ApiResponse(responseCode = "403", description = "탈퇴 처리된 유저", content = @Content),
+		@ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음", content = @Content),
+		@ApiResponse(responseCode = "409", description = "이미 활성 상태인 사용자", content = @Content)
+	})
+	@PostMapping("/internal/users/{userId}/unblock")
+	public ResponseEntity<ApiResult<UserStatusChangeResponse>> unblockUser(@PathVariable Long userId) {
+		UserStatusChangeResponse response = authService.unblockUser(userId);
+		return ResponseEntity.ok()
+				.body(ApiResult.ok("유저 차단 해제 성공", response));
 	}
 
 	@Operation(summary = "회원 탈퇴 신청", description = "회원 탈퇴를 신청합니다. 즉시 서비스 이용이 중단되고, 30일의 유예 기간 이후 계정이 최종 삭제됩니다.",
