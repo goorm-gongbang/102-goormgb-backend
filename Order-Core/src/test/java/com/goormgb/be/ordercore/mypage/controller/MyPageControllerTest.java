@@ -21,9 +21,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.mypage.MyPageFixture;
-import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
 import com.goormgb.be.ordercore.mypage.service.MyPageService;
 import com.goormgb.be.ordercore.support.WebMvcTestSupport;
 
@@ -230,6 +231,65 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			mockMvc.perform(get("/mypage/tickets/101"))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
+		}
+	}
+
+	@Nested
+	@DisplayName("GET /mypage/tickets/{ticketId}/qr — 입장용 QR 조회")
+	class GetTicketEntryQr {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 QR 정보를 반환한다")
+		void getTicketEntryQr_성공() throws Exception {
+			MyPageTicketQrResponse response = MyPageFixture.createTicketQrResponse();
+			given(myPageService.getTicketEntryQr(1L, 101L)).willReturn(response);
+
+			mockMvc.perform(get("/mypage/tickets/101/qr"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("QR 발급 성공"))
+				.andExpect(jsonPath("$.data.ticketId").value(101))
+				.andExpect(jsonPath("$.data.qrToken").value("qr-token-uuid"))
+				.andExpect(jsonPath("$.data.match.homeClub.koName").value("LG 트윈스"))
+				.andExpect(jsonPath("$.data.seats.length()").value(2));
+		}
+
+		@Test
+		@DisplayName("본인 소유가 아니면 403을 반환한다")
+		void getTicketEntryQr_권한없음_403() throws Exception {
+			given(myPageService.getTicketEntryQr(1L, 101L))
+				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
+
+			mockMvc.perform(get("/mypage/tickets/101/qr"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
+		}
+
+		@Test
+		@DisplayName("입장 가능 시간이 아니면 400을 반환한다")
+		void getTicketEntryQr_입장시간아님_400() throws Exception {
+			given(myPageService.getTicketEntryQr(1L, 101L))
+				.willThrow(new CustomException(ErrorCode.ENTRY_QR_NOT_AVAILABLE_YET));
+
+			mockMvc.perform(get("/mypage/tickets/101/qr"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("아직 입장 가능 시간이 아닙니다."));
+		}
+
+		@Test
+		@DisplayName("경기 시작 이후면 400을 반환한다")
+		void getTicketEntryQr_경기시작이후_400() throws Exception {
+			given(myPageService.getTicketEntryQr(1L, 101L))
+				.willThrow(new CustomException(ErrorCode.ENTRY_QR_MATCH_STARTED));
+
+			mockMvc.perform(get("/mypage/tickets/101/qr"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("경기 시작 이후에는 QR을 발급할 수 없습니다."));
 		}
 	}
 }

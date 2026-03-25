@@ -5,9 +5,11 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -23,11 +25,15 @@ import com.goormgb.be.ordercore.mypage.dto.query.TicketSeatDetailRow;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
 import com.goormgb.be.ordercore.mypage.enums.TicketTab;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
+import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.qrtoken.entity.QrToken;
+import com.goormgb.be.ordercore.qrtoken.repository.QrTokenRepository;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.payment.enums.PaymentMethod;
 import com.goormgb.be.user.entity.User;
@@ -45,6 +51,8 @@ import lombok.extern.slf4j.Slf4j;
 public class MyPageService {
 
 	private static final int MAX_PAGE_SIZE = 10;
+	private static final long QR_REFRESH_INTERVAL_SECONDS = 180L;
+	private static final Duration ENTRY_OPEN_BEFORE_MATCH = Duration.ofHours(3);
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
 	private static final List<OrderStatus> UPCOMING_STATUSES = List.of(
@@ -67,6 +75,7 @@ public class MyPageService {
 	private final UserRepository userRepository;
 	private final UserSnsRepository userSnsRepository;
 	private final OrderRepository orderRepository;
+	private final QrTokenRepository qrTokenRepository;
 	private final MyPageQueryService myPageQueryService;
 	private final CancellationFeePolicyRepository cancellationFeePolicyRepository;
 
@@ -160,6 +169,23 @@ public class MyPageService {
 			virtualAccount,
 			cancellation
 		);
+	}
+
+	@Transactional
+	public MyPageTicketQrResponse getTicketEntryQr(Long userId, Long ticketId) {
+		Order order = orderRepository.findByIdForUpdate(ticketId)
+			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
+		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
+		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
+
+		Instant now = Instant.now();
+		validateQrIssuableTime(order.getMatch().getMatchAt(), now);
+
+		QrToken qrToken = qrTokenRepository.findByOrderIdAndExpiresAtAfter(ticketId, now)
+			.orElseGet(() -> issueNewQrToken(order, now));
+
+		List<TicketSeatDetailRow> seatRows = myPageQueryService.findTicketSeatRowsByOrderId(ticketId);
+		return MyPageTicketQrResponse.of(order, seatRows, qrToken.getQrToken(), qrToken.getExpiresAt());
 	}
 
 	private Map<Long, List<MyPageTicketListResponse.SeatInfo>> buildSeatMap(List<Long> orderIds) {
@@ -266,5 +292,26 @@ public class MyPageService {
 			return "VIRTUAL_ACCOUNT";
 		}
 		return method.name();
+	}
+
+	private void validateQrIssuableTime(Instant matchAt, Instant now) {
+		Preconditions.validate(now.isBefore(matchAt), ErrorCode.ENTRY_QR_MATCH_STARTED);
+		Preconditions.validate(!now.isBefore(matchAt.minus(ENTRY_OPEN_BEFORE_MATCH)), ErrorCode.ENTRY_QR_NOT_AVAILABLE_YET);
+	}
+
+	private QrToken issueNewQrToken(Order order, Instant now) {
+		QrToken qrToken = QrToken.builder()
+			.order(order)
+			.user(order.getUser())
+			.qrToken(UUID.randomUUID().toString())
+			.expiresAt(calculateNextQrExpiry(now))
+			.build();
+		return qrTokenRepository.save(qrToken);
+	}
+
+	private Instant calculateNextQrExpiry(Instant now) {
+		long nowEpochSec = now.getEpochSecond();
+		long expiresEpochSec = ((nowEpochSec / QR_REFRESH_INTERVAL_SECONDS) + 1) * QR_REFRESH_INTERVAL_SECONDS;
+		return Instant.ofEpochSecond(expiresEpochSec);
 	}
 }
