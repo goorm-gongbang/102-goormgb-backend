@@ -91,7 +91,7 @@ public class User extends BaseEntity {
 	}
 
 	public void unblock() {
-		this.status = UserStatus.ACTIVATE;
+		activate();
 	}
 
 	public static User createOAuthUser(String email, String nickname, String profileImageUrl) {

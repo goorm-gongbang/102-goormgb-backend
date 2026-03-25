@@ -87,9 +87,7 @@ public class AuthController {
 		@ApiResponse(responseCode = "409", description = "이미 차단된 사용자", content = @Content)
 	})
 	@PostMapping("/internal/users/{userId}/block")
-	public ResponseEntity<ApiResult<UserStatusChangeResponse>> blockUser(
-			@PathVariable Long userId
-	) {
+	public ResponseEntity<ApiResult<UserStatusChangeResponse>> blockUser(@PathVariable Long userId) {
 		UserStatusChangeResponse response = authService.blockUser(userId);
 		return ResponseEntity.ok()
 				.body(ApiResult.ok("유저 차단 성공", response));
