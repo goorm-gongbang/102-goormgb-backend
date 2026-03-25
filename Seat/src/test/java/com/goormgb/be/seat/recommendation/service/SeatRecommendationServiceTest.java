@@ -84,7 +84,7 @@ class SeatRecommendationServiceTest {
 		given(onboardingPreferredBlockRepository.findBlockIdsByUserId(userId))
 			.willReturn(List.of(205L, 206L));
 		given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
-		given(blockRepository.findAllByIdInWithSectionAndArea(List.of(205L, 206L)))
+		given(blockRepository.findAllByBlockNumInWithSectionAndArea(List.of(205L, 206L)))
 			.willReturn(List.of(block205, block206));
 		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any()))
 			.willReturn(OnboardingFixture.preference(user, lgClub, CheerProximityPref.ANY));
@@ -128,7 +128,7 @@ class SeatRecommendationServiceTest {
 		given(onboardingPreferredBlockRepository.findBlockIdsByUserId(userId))
 			.willReturn(List.of(205L, 408L));
 		given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
-		given(blockRepository.findAllByIdInWithSectionAndArea(List.of(205L, 408L)))
+		given(blockRepository.findAllByBlockNumInWithSectionAndArea(List.of(205L, 408L)))
 			.willReturn(List.of(block205, block408));
 		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any()))
 			.willReturn(OnboardingFixture.preference(user, lgClub, CheerProximityPref.NEAR));
@@ -173,7 +173,7 @@ class SeatRecommendationServiceTest {
 		given(onboardingPreferredBlockRepository.findBlockIdsByUserId(userId))
 			.willReturn(List.of(205L));
 		given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
-		given(blockRepository.findAllByIdInWithSectionAndArea(List.of(205L))).willReturn(List.of(block205));
+		given(blockRepository.findAllByBlockNumInWithSectionAndArea(List.of(205L))).willReturn(List.of(block205));
 		given(onboardingPreferenceRepository.findByUserIdOrThrow(eq(userId), any()))
 			.willReturn(OnboardingFixture.preference(user, lgClub, CheerProximityPref.ANY));
 		given(onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId)).willReturn(List.of());

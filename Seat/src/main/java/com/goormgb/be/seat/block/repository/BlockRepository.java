@@ -23,6 +23,9 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
 	@Query("SELECT b FROM Block b JOIN FETCH b.section s JOIN FETCH b.area a WHERE b.id IN :blockIds")
 	List<Block> findAllByIdInWithSectionAndArea(@Param("blockIds") List<Long> blockIds);
 
+	@Query("SELECT b FROM Block b JOIN FETCH b.section s JOIN FETCH b.area a WHERE b.blockNum IN :blockNums")
+	List<Block> findAllByBlockNumInWithSectionAndArea(@Param("blockNums") List<Long> blockNums);
+
 	@Query("SELECT b FROM Block b JOIN FETCH b.section s JOIN FETCH b.area a WHERE b.id = :blockId")
 	Optional<Block> findByIdWithSectionAndArea(@Param("blockId") Long blockId);
 
