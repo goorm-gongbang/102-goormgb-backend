@@ -20,12 +20,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import com.goormgb.be.domain.ticket.enums.TicketType;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.order.OrderFixture;
 import com.goormgb.be.ordercore.order.dto.request.OrderCreateRequest;
-import com.goormgb.be.ordercore.order.dto.request.SeatOrderItem;
 import com.goormgb.be.ordercore.order.dto.response.OrderCreateResponse;
 import com.goormgb.be.ordercore.order.dto.response.OrderSheetGetResponse;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
@@ -205,7 +203,8 @@ class OrderControllerTest extends WebMvcTestSupport {
 		void createOrder_생년월일_형식오류_400() throws Exception {
 			OrderCreateRequest invalidRequest = new OrderCreateRequest(
 				1L,
-				List.of(new SeatOrderItem(101L, TicketType.ADULT)),
+				List.of(101L),
+				24000,
 				"홍길동", "hong@test.com", "010-1234-5678",
 				"19990831" // 8자리 — 유효하지 않음
 			);
@@ -221,7 +220,8 @@ class OrderControllerTest extends WebMvcTestSupport {
 		void createOrder_이메일_형식오류_400() throws Exception {
 			OrderCreateRequest invalidRequest = new OrderCreateRequest(
 				1L,
-				List.of(new SeatOrderItem(101L, TicketType.ADULT)),
+				List.of(101L),
+				24000,
 				"홍길동", "not-an-email", "010-1234-5678", "990831"
 			);
 
@@ -236,6 +236,7 @@ class OrderControllerTest extends WebMvcTestSupport {
 		void createOrder_빈좌석_400() throws Exception {
 			OrderCreateRequest invalidRequest = new OrderCreateRequest(
 				1L, List.of(),
+				24000,
 				"홍길동", "hong@test.com", "010-1234-5678", "990831"
 			);
 
@@ -310,7 +311,8 @@ class OrderControllerTest extends WebMvcTestSupport {
 		void createOrder_matchId_누락_400() throws Exception {
 			String invalidJson = """
 				{
-				  "seats": [{"matchSeatId": 101, "ticketType": "ADULT"}],
+				  "matchSeatIds": [101],
+				  "totalPrice": 24000,
 				  "ordererName": "홍길동",
 				  "ordererEmail": "hong@test.com",
 				  "ordererPhone": "010-1234-5678",

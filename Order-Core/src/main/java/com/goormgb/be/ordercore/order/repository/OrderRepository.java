@@ -2,13 +2,17 @@ package com.goormgb.be.ordercore.order.repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+
+import jakarta.persistence.LockModeType;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
@@ -24,4 +28,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
 	@Query("SELECT COUNT(o) FROM Order o WHERE o.user.id = :userId AND o.status IN :statuses")
 	long countByUserIdAndStatusIn(@Param("userId") Long userId, @Param("statuses") List<OrderStatus> statuses);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("""
+		SELECT o
+		FROM Order o
+		JOIN FETCH o.user u
+		JOIN FETCH o.match m
+		JOIN FETCH m.homeClub hc
+		JOIN FETCH m.awayClub ac
+		JOIN FETCH m.stadium s
+		WHERE o.id = :orderId
+		""")
+	Optional<Order> findByIdForUpdate(@Param("orderId") Long orderId);
 }
