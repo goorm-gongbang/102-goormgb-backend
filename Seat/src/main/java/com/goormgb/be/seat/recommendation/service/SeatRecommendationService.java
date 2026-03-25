@@ -71,10 +71,10 @@ public class SeatRecommendationService {
 
 			SeatSession seatSession = SeatSession.from(bookingOptions);
 			int ticketCount = seatSession.getTicketCount();
-			List<Long> preferredBlockIds = onboardingPreferredBlockRepository.findBlockIdsByUserId(userId);
+			List<Long> preferredBlockNums = onboardingPreferredBlockRepository.findBlockIdsByUserId(userId);
 
 			Match match = matchRepository.findDetailByIdOrThrow(matchId);
-			List<Block> preferredBlocks = blockRepository.findAllByBlockNumInWithSectionAndArea(preferredBlockIds);
+			List<Block> preferredBlocks = blockRepository.findAllByBlockNumInWithSectionAndArea(preferredBlockNums);
 			OnboardingPreference pref = onboardingPreferenceRepository.findByUserIdOrThrow(
 				userId, ErrorCode.PREFERENCE_NOT_FOUND);
 			List<OnboardingViewpointPriority> viewpoints =
