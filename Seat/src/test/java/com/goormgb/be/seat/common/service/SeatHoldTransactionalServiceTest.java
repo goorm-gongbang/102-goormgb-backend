@@ -15,6 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
@@ -46,7 +48,7 @@ class SeatHoldTransactionalServiceTest {
 	private SeatHoldTransactionalService seatHoldTransactionalService;
 
 	private MatchSeat matchSeat(Long seatId, MatchSeatSaleStatus status) {
-		return MatchSeat.builder()
+		MatchSeat ms = MatchSeat.builder()
 			.matchId(MATCH_ID)
 			.seatId(seatId)
 			.areaId(1L)
@@ -58,6 +60,8 @@ class SeatHoldTransactionalServiceTest {
 			.seatZone(SeatZone.LOW)
 			.saleStatus(status)
 			.build();
+		ReflectionTestUtils.setField(ms, "id", seatId);
+		return ms;
 	}
 
 	private SeatHold seatHold(Long matchSeatId, Long seatId, Long userId, Instant expiresAt) {
@@ -131,7 +135,7 @@ class SeatHoldTransactionalServiceTest {
 			List.of(206313L, 206314L));
 
 		// then
-		assertThat(response.seatIds()).containsExactly(206313L, 206314L);
+		assertThat(response.matchSeatIds()).containsExactly(206313L, 206314L);
 		verify(seatHoldRepository).deleteAllByMatchSeatIdIn(List.of(11L, 12L));
 		verify(seatHoldRepository).flush();
 		verify(seatHoldRepository).saveAll(anyList());
