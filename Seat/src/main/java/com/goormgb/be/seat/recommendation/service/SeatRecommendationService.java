@@ -74,7 +74,7 @@ public class SeatRecommendationService {
 			List<Long> preferredBlockIds = onboardingPreferredBlockRepository.findBlockIdsByUserId(userId);
 
 			Match match = matchRepository.findDetailByIdOrThrow(matchId);
-			List<Block> preferredBlocks = blockRepository.findAllByIdInWithSectionAndArea(preferredBlockIds);
+			List<Block> preferredBlocks = blockRepository.findAllByBlockNumInWithSectionAndArea(preferredBlockIds);
 			OnboardingPreference pref = onboardingPreferenceRepository.findByUserIdOrThrow(
 				userId, ErrorCode.PREFERENCE_NOT_FOUND);
 			List<OnboardingViewpointPriority> viewpoints =
