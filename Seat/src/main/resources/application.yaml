@@ -61,3 +61,5 @@ management:
 
 logging:
   config: classpath:logback-spring.xml
+  level:
+    org.springframework.web: DEBUG
