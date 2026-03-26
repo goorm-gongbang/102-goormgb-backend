@@ -126,7 +126,7 @@ class SeatCommonControllerTest extends WebMvcTestSupport {
 			.andExpect(jsonPath("$.code").value("OK"))
 			.andExpect(jsonPath("$.data.matchId").value(10))
 			.andExpect(jsonPath("$.data.seatCount").value(2))
-			.andExpect(jsonPath("$.data.seatIds[0]").value(206313))
+			.andExpect(jsonPath("$.data.matchSeatIds[0]").value(206313))
 			.andExpect(jsonPath("$.data.holdExpiresAt").value("2026-04-15T10:05:00Z"));
 
 		then(seatHoldService).should().createOrRefreshHold(userId, matchId, List.of(206313L, 206314L));

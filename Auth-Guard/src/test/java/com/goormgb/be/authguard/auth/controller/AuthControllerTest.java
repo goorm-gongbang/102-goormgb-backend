@@ -22,9 +22,11 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import com.goormgb.be.authguard.auth.dto.UserStatusChangeResponse;
 import com.goormgb.be.authguard.auth.dto.WithdrawalResponse;
 import com.goormgb.be.authguard.auth.service.AuthService;
 import com.goormgb.be.authguard.support.WebMvcTestSupport;
+import com.goormgb.be.user.enums.UserStatus;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -133,4 +135,42 @@ class AuthControllerTest extends WebMvcTestSupport {
 				.andExpect(jsonPath("$.data.withdrawnAt").exists())
 				.andExpect(jsonPath("$.data.reactivateUntil").exists());
 	}
+
+	@Test
+	@DisplayName("POST /auth/internal/users/{userId}/block - 유저 차단 성공")
+	void 유저_차단_성공() throws Exception {
+		// given
+		Long userId = 1L;
+		UserStatusChangeResponse response = new UserStatusChangeResponse(userId, UserStatus.BLOCKED);
+
+		given(authService.blockUser(userId)).willReturn(response);
+
+		// when & then
+		mockMvc.perform(post("/internal/users/{userId}/block", userId))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("OK"))
+			.andExpect(jsonPath("$.message").value("유저 차단 성공"))
+			.andExpect(jsonPath("$.data.userId").value(1))
+			.andExpect(jsonPath("$.data.status").value("BLOCKED"));
+
+	}
+
+	@Test
+	@DisplayName("POST /auth/internal/users/{userId}/unblock - 유저 차단 해제 성공")
+	void 유저_차단_해제_성공() throws Exception {
+		// given
+		Long userId = 1L;
+		UserStatusChangeResponse response = new UserStatusChangeResponse(userId, UserStatus.ACTIVATE);
+
+		given(authService.unblockUser(userId)).willReturn(response);
+
+		// when $ then
+		mockMvc.perform(post("/internal/users/{userId}/unblock", userId))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("OK"))
+			.andExpect(jsonPath("$.message").value("유저 차단 해제 성공"))
+			.andExpect(jsonPath("$.data.userId").value(1))
+			.andExpect(jsonPath("$.data.status").value("ACTIVATE"));
+	}
+
 }

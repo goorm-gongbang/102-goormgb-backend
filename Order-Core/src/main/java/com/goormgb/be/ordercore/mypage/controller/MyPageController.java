@@ -13,6 +13,7 @@ import com.goormgb.be.global.response.ApiResult;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
 import com.goormgb.be.ordercore.mypage.service.MyPageService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -92,5 +93,26 @@ public class MyPageController {
 		@PathVariable Long ticketId
 	) {
 		return ApiResult.ok("조회 성공", myPageService.getTicketDetail(userId, ticketId));
+	}
+
+	@Operation(
+		summary = "입장용 QR 조회",
+		description = "사용자의 특정 예매(ticketId=orders.id)에 대한 입장용 QR 토큰을 조회합니다.",
+		security = @SecurityRequirement(name = "BearerAuth")
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "QR 발급 성공"),
+		@ApiResponse(responseCode = "400", description = "발급 불가 상태", content = @Content),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+		@ApiResponse(responseCode = "403", description = "본인 소유 티켓 아님", content = @Content),
+		@ApiResponse(responseCode = "404", description = "티켓(주문) 없음", content = @Content)
+	})
+	@GetMapping("/tickets/{ticketId}/qr")
+	@ResponseStatus(HttpStatus.OK)
+	public ApiResult<MyPageTicketQrResponse> getTicketEntryQr(
+		@AuthenticationPrincipal Long userId,
+		@PathVariable Long ticketId
+	) {
+		return ApiResult.ok("QR 발급 성공", myPageService.getTicketEntryQr(userId, ticketId));
 	}
 }

@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +18,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import com.goormgb.be.domain.match.entity.Match;
+import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.cancellation.entity.CancellationFeePolicy;
@@ -29,11 +33,15 @@ import com.goormgb.be.ordercore.mypage.dto.query.TicketSeatDetailRow;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
+import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
+import com.goormgb.be.ordercore.qrtoken.entity.QrToken;
+import com.goormgb.be.ordercore.qrtoken.repository.QrTokenRepository;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.entity.UserSns;
 import com.goormgb.be.user.enums.SocialProvider;
@@ -54,13 +62,20 @@ class MyPageServiceTest {
 	private MyPageQueryService myPageQueryService;
 	@Mock
 	private CancellationFeePolicyRepository cancellationFeePolicyRepository;
+	@Mock
+	private QrTokenRepository qrTokenRepository;
 
 	private MyPageService myPageService;
 
 	@BeforeEach
 	void setUp() {
 		myPageService = new MyPageService(
-			userRepository, userSnsRepository, orderRepository, myPageQueryService, cancellationFeePolicyRepository
+			userRepository,
+			userSnsRepository,
+			orderRepository,
+			qrTokenRepository,
+			myPageQueryService,
+			cancellationFeePolicyRepository
 		);
 	}
 
@@ -416,6 +431,110 @@ class MyPageServiceTest {
 			assertThatThrownBy(() -> myPageService.getTicketDetail(1L, ticketId))
 				.isInstanceOf(CustomException.class)
 				.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
+		}
+	}
+
+	@Nested
+	@DisplayName("getTicketEntryQr — 입장용 QR 조회")
+	class GetTicketEntryQr {
+
+		private Order createOrder(Long ticketId, Long userId, OrderStatus status, Instant matchAt) {
+			var stadium = OrderFixture.createStadium();
+			var homeClub = OrderFixture.createHomeClub(stadium);
+			var awayClub = OrderFixture.createAwayClub(stadium);
+			Match match = Match.builder()
+				.matchAt(matchAt)
+				.homeClub(homeClub)
+				.awayClub(awayClub)
+				.stadium(stadium)
+				.saleStatus(SaleStatus.ON_SALE)
+				.build();
+			ReflectionTestUtils.setField(match, "id", 55L);
+
+			User user = OrderFixture.createUserWithId(userId);
+			Order order = OrderFixture.createOrderWithId(ticketId, user, match, 42000);
+			order.updateStatus(status);
+			return order;
+		}
+
+		@Test
+		@DisplayName("유효한 토큰이 있으면 기존 토큰을 반환한다")
+		void getTicketEntryQr_existingToken_성공() {
+			Long userId = 1L;
+			Long ticketId = 101L;
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now().plus(10, ChronoUnit.MINUTES));
+			List<TicketSeatDetailRow> seatRows = MyPageFixture.createTicketSeatDetailRows();
+			QrToken existing = QrToken.builder()
+				.qrToken("existing-qr-token")
+				.expiresAt(Instant.now().plus(2, ChronoUnit.MINUTES))
+				.build();
+
+			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(qrTokenRepository.findByOrderIdAndExpiresAtAfter(eq(ticketId), any())).willReturn(Optional.of(existing));
+			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId)).willReturn(seatRows);
+
+			MyPageTicketQrResponse response = myPageService.getTicketEntryQr(userId, ticketId);
+
+			assertThat(response.ticketId()).isEqualTo(ticketId);
+			assertThat(response.qrToken()).isEqualTo("existing-qr-token");
+			assertThat(response.seats()).hasSize(2);
+		}
+
+		@Test
+		@DisplayName("유효한 토큰이 없으면 신규 UUID 토큰을 발급한다")
+		void getTicketEntryQr_issueNewToken_성공() {
+			Long userId = 1L;
+			Long ticketId = 101L;
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now().plus(10, ChronoUnit.MINUTES));
+			List<TicketSeatDetailRow> seatRows = MyPageFixture.createTicketSeatDetailRows();
+
+			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(qrTokenRepository.findByOrderIdAndExpiresAtAfter(eq(ticketId), any())).willReturn(Optional.empty());
+			given(qrTokenRepository.save(any(QrToken.class))).willAnswer(invocation -> invocation.getArgument(0));
+			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId)).willReturn(seatRows);
+
+			MyPageTicketQrResponse response = myPageService.getTicketEntryQr(userId, ticketId);
+
+			assertThat(response.ticketId()).isEqualTo(ticketId);
+			assertThat(response.qrToken()).isNotBlank();
+			assertThat(response.expiresAt()).isAfter(Instant.now());
+			then(qrTokenRepository).should().save(any(QrToken.class));
+		}
+
+		@Test
+		@DisplayName("PAID 상태가 아니면 INVALID_ORDER_STATUS 예외가 발생한다")
+		void getTicketEntryQr_notPaid_예외() {
+			Long ticketId = 101L;
+			Order order = createOrder(ticketId, 1L, OrderStatus.PAYMENT_PENDING, Instant.now().plus(10, ChronoUnit.MINUTES));
+			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+
+			assertThatThrownBy(() -> myPageService.getTicketEntryQr(1L, ticketId))
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.INVALID_ORDER_STATUS.getMessage());
+		}
+
+		@Test
+		@DisplayName("입장 가능 시간 이전이면 ENTRY_QR_NOT_AVAILABLE_YET 예외가 발생한다")
+		void getTicketEntryQr_beforeEntryWindow_예외() {
+			Long ticketId = 101L;
+			Order order = createOrder(ticketId, 1L, OrderStatus.PAID, Instant.now().plus(5, ChronoUnit.HOURS));
+			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+
+			assertThatThrownBy(() -> myPageService.getTicketEntryQr(1L, ticketId))
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.ENTRY_QR_NOT_AVAILABLE_YET.getMessage());
+		}
+
+		@Test
+		@DisplayName("경기 시작 이후면 ENTRY_QR_MATCH_STARTED 예외가 발생한다")
+		void getTicketEntryQr_matchStarted_예외() {
+			Long ticketId = 101L;
+			Order order = createOrder(ticketId, 1L, OrderStatus.PAID, Instant.now().minus(1, ChronoUnit.HOURS));
+			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+
+			assertThatThrownBy(() -> myPageService.getTicketEntryQr(1L, ticketId))
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.ENTRY_QR_MATCH_STARTED.getMessage());
 		}
 	}
 }
