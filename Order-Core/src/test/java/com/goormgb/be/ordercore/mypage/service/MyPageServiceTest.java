@@ -5,7 +5,9 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
@@ -67,16 +69,19 @@ class MyPageServiceTest {
 	private QrTokenRepository qrTokenRepository;
 
 	private MyPageService myPageService;
+	private Clock clock;
 
 	@BeforeEach
 	void setUp() {
+		clock = Clock.fixed(Instant.parse("2026-03-26T00:00:00Z"), ZoneOffset.UTC);
 		myPageService = new MyPageService(
 			userRepository,
 			userSnsRepository,
 			orderRepository,
 			qrTokenRepository,
 			myPageQueryService,
-			cancellationFeePolicyRepository
+			cancellationFeePolicyRepository,
+			clock
 		);
 	}
 
@@ -463,11 +468,11 @@ class MyPageServiceTest {
 		void getTicketEntryQr_existingToken_성공() {
 			Long userId = 1L;
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now().plus(10, ChronoUnit.MINUTES));
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(10, ChronoUnit.MINUTES));
 			List<TicketSeatDetailRow> seatRows = MyPageFixture.createTicketSeatDetailRows();
 			QrToken existing = QrToken.builder()
 				.qrToken("existing-qr-token")
-				.expiresAt(Instant.now().plus(2, ChronoUnit.MINUTES))
+				.expiresAt(Instant.now(clock).plus(2, ChronoUnit.MINUTES))
 				.build();
 
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
@@ -486,7 +491,7 @@ class MyPageServiceTest {
 		void getTicketEntryQr_issueNewToken_성공() {
 			Long userId = 1L;
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now().plus(10, ChronoUnit.MINUTES));
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(10, ChronoUnit.MINUTES));
 			List<TicketSeatDetailRow> seatRows = MyPageFixture.createTicketSeatDetailRows();
 
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
@@ -498,7 +503,7 @@ class MyPageServiceTest {
 
 			assertThat(response.ticketId()).isEqualTo(ticketId);
 			assertThat(response.qrToken()).isNotBlank();
-			assertThat(response.expiresAt()).isAfter(Instant.now());
+			assertThat(response.expiresAt()).isAfter(Instant.now(clock));
 			then(qrTokenRepository).should().save(any(QrToken.class));
 		}
 
@@ -506,7 +511,7 @@ class MyPageServiceTest {
 		@DisplayName("PAID 상태가 아니면 INVALID_ORDER_STATUS 예외가 발생한다")
 		void getTicketEntryQr_notPaid_예외() {
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, 1L, OrderStatus.PAYMENT_PENDING, Instant.now().plus(10, ChronoUnit.MINUTES));
+			Order order = createOrder(ticketId, 1L, OrderStatus.PAYMENT_PENDING, Instant.now(clock).plus(10, ChronoUnit.MINUTES));
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(() -> myPageService.getTicketEntryQr(1L, ticketId))
@@ -518,7 +523,7 @@ class MyPageServiceTest {
 		@DisplayName("입장 가능 시간 이전이면 ENTRY_QR_NOT_AVAILABLE_YET 예외가 발생한다")
 		void getTicketEntryQr_beforeEntryWindow_예외() {
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, 1L, OrderStatus.PAID, Instant.now().plus(5, ChronoUnit.HOURS));
+			Order order = createOrder(ticketId, 1L, OrderStatus.PAID, Instant.now(clock).plus(5, ChronoUnit.HOURS));
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(() -> myPageService.getTicketEntryQr(1L, ticketId))
@@ -530,7 +535,7 @@ class MyPageServiceTest {
 		@DisplayName("경기 시작 이후면 ENTRY_QR_MATCH_STARTED 예외가 발생한다")
 		void getTicketEntryQr_matchStarted_예외() {
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, 1L, OrderStatus.PAID, Instant.now().minus(1, ChronoUnit.HOURS));
+			Order order = createOrder(ticketId, 1L, OrderStatus.PAID, Instant.now(clock).minus(1, ChronoUnit.HOURS));
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(() -> myPageService.getTicketEntryQr(1L, ticketId))
@@ -612,6 +617,31 @@ class MyPageServiceTest {
 
 			assertThat(response.cancellationFee()).isEqualTo(0);
 			assertThat(response.refundedAmount()).isEqualTo(42000);
+		}
+
+		@Test
+		@DisplayName("D-7 이상이어도 예매 당일이 아니면 bookingFee는 환불하지 않는다")
+		void requestTicketCancel_d7plus_notBookingDay_bookingFee미환불() {
+			Long userId = 1L;
+			Long ticketId = 101L;
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now().plus(10, ChronoUnit.DAYS));
+			ReflectionTestUtils.setField(order, "createdAt", Instant.now().minus(1, ChronoUnit.DAYS));
+
+			CancellationFeePolicy policy = CancellationFeePolicy.builder()
+				.daysBeforeMatchMin(7)
+				.daysBeforeMatchMax(null)
+				.cancellable(true)
+				.ticketFeeRate(BigDecimal.ZERO)
+				.bookingFeeRefundable(true)
+				.build();
+
+			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
+
+			MyPageTicketCancelResponse response = myPageService.requestTicketCancel(userId, ticketId);
+
+			assertThat(response.cancellationFee()).isEqualTo(2000);
+			assertThat(response.refundedAmount()).isEqualTo(40000);
 		}
 
 		@Test

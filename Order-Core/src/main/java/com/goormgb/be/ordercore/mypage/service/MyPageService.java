@@ -1,6 +1,7 @@
 package com.goormgb.be.ordercore.mypage.service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -79,6 +80,7 @@ public class MyPageService {
 	private final QrTokenRepository qrTokenRepository;
 	private final MyPageQueryService myPageQueryService;
 	private final CancellationFeePolicyRepository cancellationFeePolicyRepository;
+	private final Clock clock;
 
 	/**
 	 * 마이페이지 프로필 요약 조회
@@ -87,7 +89,7 @@ public class MyPageService {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		UserSns userSns = userSnsRepository.findByUserId(userId).orElse(null);
 
-		Instant now = Instant.now();
+		Instant now = Instant.now(clock);
 		long upcomingCount = orderRepository.countUpcomingOrders(userId, UPCOMING_STATUSES, now);
 		long cancelRefundCount = orderRepository.countByUserIdAndStatusIn(userId, CANCEL_REFUND_STATUSES);
 		long completedCount = orderRepository.countCompletedOrders(userId, now);
@@ -107,7 +109,7 @@ public class MyPageService {
 		TicketTab ticketTab = TicketTab.fromString(tab);
 		List<String> statusNames = ticketTab.getStatusNames();
 
-		Instant now = Instant.now();
+		Instant now = Instant.now(clock);
 		int totalCount = (int)orderRepository.countByUserId(userId);
 		int upcomingCount = (int)orderRepository.countUpcomingOrders(userId, UPCOMING_STATUSES, now);
 		int cancelProcessingCount = (int)orderRepository.countByUserIdAndStatusIn(userId, CANCEL_PROCESSING_STATUSES);
@@ -179,7 +181,7 @@ public class MyPageService {
 		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
 		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
 
-		Instant now = Instant.now();
+		Instant now = Instant.now(clock);
 		validateQrIssuableTime(order.getMatch().getMatchAt(), now);
 
 		QrToken qrToken = qrTokenRepository.findByOrderIdAndExpiresAtAfter(ticketId, now)
@@ -191,15 +193,16 @@ public class MyPageService {
 
 	@Transactional
 	public MyPageTicketCancelResponse requestTicketCancel(Long userId, Long ticketId) {
+		Instant now = Instant.now(clock);
 		Order order = orderRepository.findByIdForUpdate(ticketId)
 			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
 		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
 		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
 
-		CancellationFeePolicy policy = findCancellationPolicy(order.getMatch().getMatchAt());
+		CancellationFeePolicy policy = findCancellationPolicy(order.getMatch().getMatchAt(), now);
 		Preconditions.validate(Boolean.TRUE.equals(policy.getCancellable()), ErrorCode.TICKET_CANCEL_NOT_ALLOWED);
 
-		int cancellationFee = calculateCancellationFee(order, policy);
+		int cancellationFee = calculateCancellationFee(order, policy, now);
 		int refundedAmount = order.getTotalAmount() - cancellationFee;
 		order.cancel(cancellationFee, refundedAmount);
 
@@ -284,7 +287,7 @@ public class MyPageService {
 			.toInstant();
 
 		int daysLeft = Math.max(0, (int)ChronoUnit.DAYS.between(
-			LocalDate.now(KST),
+			Instant.now(clock).atZone(KST).toLocalDate(),
 			matchAt.atZone(KST).toLocalDate()
 		));
 
@@ -333,25 +336,34 @@ public class MyPageService {
 		return Instant.ofEpochSecond(expiresEpochSec);
 	}
 
-	private CancellationFeePolicy findCancellationPolicy(Instant matchAt) {
+	private CancellationFeePolicy findCancellationPolicy(Instant matchAt, Instant now) {
 		int daysLeft = Math.max(0, (int)ChronoUnit.DAYS.between(
-			LocalDate.now(KST),
+			now.atZone(KST).toLocalDate(),
 			matchAt.atZone(KST).toLocalDate()
 		));
 		return cancellationFeePolicyRepository.findByDaysLeft(daysLeft)
 			.orElseThrow(() -> new CustomException(ErrorCode.INTERNAL_SERVER_ERROR));
 	}
 
-	private int calculateCancellationFee(Order order, CancellationFeePolicy policy) {
+	private int calculateCancellationFee(Order order, CancellationFeePolicy policy, Instant now) {
 		int ticketAmount = Math.max(0, order.getTotalAmount() - order.getBookingFee());
 		int ticketFee = policy.getTicketFeeRate()
 			.multiply(BigDecimal.valueOf(ticketAmount))
 			.setScale(0, RoundingMode.DOWN)
 			.intValue();
 
-		if (Boolean.TRUE.equals(policy.getBookingFeeRefundable())) {
+		if (Boolean.TRUE.equals(policy.getBookingFeeRefundable()) && isSameBookingDate(order, now)) {
 			return ticketFee;
 		}
 		return ticketFee + order.getBookingFee();
+	}
+
+	private boolean isSameBookingDate(Order order, Instant now) {
+		if (order.getCreatedAt() == null) {
+			return false;
+		}
+		LocalDate bookingDate = order.getCreatedAt().atZone(KST).toLocalDate();
+		LocalDate cancelDate = now.atZone(KST).toLocalDate();
+		return bookingDate.equals(cancelDate);
 	}
 }
