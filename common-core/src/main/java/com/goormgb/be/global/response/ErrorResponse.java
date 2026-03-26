@@ -19,7 +19,8 @@ public class ErrorResponse {
 	}
 
 	public static ResponseEntity<ErrorData> error(ErrorCode errorCode) {
-		return error(errorCode.getStatus(), errorCode.getMessage());
+		return ResponseEntity.status(errorCode.getStatus())
+				.body(ErrorData.of(errorCode.name(), errorCode.getMessage()));
 	}
 
 	@Getter

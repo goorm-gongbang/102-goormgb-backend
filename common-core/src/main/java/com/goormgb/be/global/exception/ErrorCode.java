@@ -44,6 +44,11 @@ public enum ErrorCode {
 	PREFERENCE_NOT_FOUND(HttpStatus.NOT_FOUND, "온보딩 선호도 정보를 찾을 수 없습니다."),
 
 	// Auth
+
+	// TODO: 묶을 수 있는 공통 에러사항에 대해서는 한가지 키워드로 묶기. 백엔드 보안처리.
+
+	// HTTP UNAUTHORIZED 401
+	// AUTHORIZED_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않습니다."),
 	INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
 	EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 토큰입니다."),
 	INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "잘못된 인증 정보입니다."),

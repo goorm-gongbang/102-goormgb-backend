@@ -1,11 +1,13 @@
 package com.goormgb.be.ordercore.inquiry.entity;
 
+import com.goormgb.be.global.encryption.EncryptionConverter;
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.ordercore.inquiry.enums.InquiryCategory;
 import com.goormgb.be.ordercore.inquiry.enums.InquiryStatus;
 import com.goormgb.be.user.entity.User;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -52,7 +54,8 @@ public class Inquiry extends BaseEntity {
 	@Column(name = "status", nullable = false, length = 20)
 	private InquiryStatus status;
 
-	@Column(name = "phone_number", length = 20)
+	@Convert(converter = EncryptionConverter.class)
+	@Column(name = "phone_number", length = 512)
 	private String phoneNumber;
 
 	@Builder

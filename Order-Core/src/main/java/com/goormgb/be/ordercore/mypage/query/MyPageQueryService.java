@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import com.goormgb.be.domain.ticket.enums.TicketType;
+import com.goormgb.be.global.encryption.EncryptionProvider;
 import com.goormgb.be.ordercore.mypage.dto.query.TicketDetailBaseRow;
 import com.goormgb.be.ordercore.mypage.dto.query.TicketSeatDetailRow;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class MyPageQueryService {
 
 	private final NamedParameterJdbcTemplate namedJdbc;
+	private final EncryptionProvider encryptionProvider;
 
 	/**
 	 * 탭 조건에 해당하는 티켓 수를 반환한다.
@@ -193,12 +195,12 @@ public class MyPageQueryService {
 				rs.getObject("paid_at", Timestamp.class) == null ? null
 					: rs.getObject("paid_at", Timestamp.class).toInstant(),
 				rs.getString("account_bank"),
-				rs.getString("account_number"),
-				rs.getString("account_holder"),
+				decrypt(rs.getString("account_number")),
+				decrypt(rs.getString("account_holder")),
 				rs.getObject("deposit_deadline", Timestamp.class) == null ? null
 					: rs.getObject("deposit_deadline", Timestamp.class).toInstant(),
 				cashReceiptPurpose == null ? null : CashReceiptPurpose.valueOf(cashReceiptPurpose),
-				rs.getString("cash_receipt_number")
+				decrypt(rs.getString("cash_receipt_number"))
 			);
 		});
 
@@ -248,6 +250,13 @@ public class MyPageQueryService {
 		String stadiumName,
 		int seatCount
 	) {
+	}
+
+	private String decrypt(String value) {
+		if (value == null) {
+			return null;
+		}
+		return encryptionProvider.decrypt(value);
 	}
 
 	public record OrderSeatRow(
