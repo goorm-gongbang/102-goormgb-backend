@@ -1,6 +1,7 @@
 package com.goormgb.be.global.encryption;
 
 import java.nio.ByteBuffer;
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Base64;
 
@@ -58,7 +59,7 @@ public class AesEncryptionProvider implements EncryptionProvider {
 			byteBuffer.put(cipherText);
 
 			return Base64.getEncoder().encodeToString(byteBuffer.array());
-		} catch (Exception e) {
+		} catch (GeneralSecurityException e) {
 			throw new IllegalStateException("DB 암호화 실패", e);
 		}
 	}
@@ -80,7 +81,7 @@ public class AesEncryptionProvider implements EncryptionProvider {
 
 			byte[] plainText = cipher.doFinal(encrypted);
 			return new String(plainText, java.nio.charset.StandardCharsets.UTF_8);
-		} catch (Exception e) {
+		} catch (GeneralSecurityException | RuntimeException e) {
 			throw new IllegalStateException("DB 복호화 실패", e);
 		}
 	}
