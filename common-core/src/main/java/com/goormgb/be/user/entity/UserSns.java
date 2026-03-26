@@ -3,10 +3,7 @@ package com.goormgb.be.user.entity;
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.user.enums.SocialProvider;
 
-import com.goormgb.be.global.encryption.EncryptionConverter;
-
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -39,8 +36,7 @@ public class UserSns extends BaseEntity {
 	@Column(name = "provider", nullable = false, length = 20)
 	private SocialProvider provider;
 
-	@Convert(converter = EncryptionConverter.class)
-	@Column(name = "provider_user_id", nullable = false, length = 512)
+	@Column(name = "provider_user_id", nullable = false, length = 128)
 	private String providerUserId;
 
 	@Builder
