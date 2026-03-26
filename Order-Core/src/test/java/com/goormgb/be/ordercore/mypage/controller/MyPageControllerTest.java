@@ -22,6 +22,7 @@ import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.mypage.MyPageFixture;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
@@ -290,6 +291,55 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			mockMvc.perform(get("/mypage/tickets/101/qr"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message").value("경기 시작 이후에는 QR을 발급할 수 없습니다."));
+		}
+	}
+
+	@Nested
+	@DisplayName("POST /mypage/tickets/{ticketId}/cancel — 티켓 취소 요청")
+	class RequestTicketCancel {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 취소 결과를 반환한다")
+		void requestTicketCancel_성공() throws Exception {
+			MyPageTicketCancelResponse response = MyPageFixture.createTicketCancelResponse();
+			given(myPageService.requestTicketCancel(1L, 101L)).willReturn(response);
+
+			mockMvc.perform(post("/mypage/tickets/101/cancel"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("취소 요청이 완료되었습니다."))
+				.andExpect(jsonPath("$.data.ticketId").value(101))
+				.andExpect(jsonPath("$.data.status").value("CANCEL_REQUESTED"))
+				.andExpect(jsonPath("$.data.totalAmount").value(42000))
+				.andExpect(jsonPath("$.data.cancellationFee").value(6000))
+				.andExpect(jsonPath("$.data.refundedAmount").value(36000));
+		}
+
+		@Test
+		@DisplayName("본인 소유가 아니면 403을 반환한다")
+		void requestTicketCancel_권한없음_403() throws Exception {
+			given(myPageService.requestTicketCancel(1L, 101L))
+				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
+
+			mockMvc.perform(post("/mypage/tickets/101/cancel"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
+		}
+
+		@Test
+		@DisplayName("취소 가능한 기간이 아니면 400을 반환한다")
+		void requestTicketCancel_취소불가기간_400() throws Exception {
+			given(myPageService.requestTicketCancel(1L, 101L))
+				.willThrow(new CustomException(ErrorCode.TICKET_CANCEL_NOT_ALLOWED));
+
+			mockMvc.perform(post("/mypage/tickets/101/cancel"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("취소 가능한 기간이 아닙니다."));
 		}
 	}
 }
