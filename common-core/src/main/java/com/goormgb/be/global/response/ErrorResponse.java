@@ -3,6 +3,7 @@ package com.goormgb.be.global.response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import com.goormgb.be.global.environment.ErrorResponseStrategy;
 import com.goormgb.be.global.exception.ErrorCode;
 
 import lombok.AllArgsConstructor;
@@ -18,9 +19,9 @@ public class ErrorResponse {
 		return ResponseEntity.status(status).body(ErrorData.of(status.series().name(), message));
 	}
 
-	public static ResponseEntity<ErrorData> error(ErrorCode errorCode) {
+	public static ResponseEntity<ErrorData> error(ErrorCode errorCode, ErrorResponseStrategy strategy) {
 		return ResponseEntity.status(errorCode.getStatus())
-				.body(ErrorData.of(errorCode.name(), errorCode.getMessage()));
+				.body(ErrorData.of(strategy.resolveCode(errorCode), errorCode.getMessage()));
 	}
 
 	@Getter

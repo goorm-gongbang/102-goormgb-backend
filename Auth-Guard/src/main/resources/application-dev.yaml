@@ -45,6 +45,9 @@ jwt:
     # SameSite=Lax, secure=false로 되돌릴 것.
     secure: true
 
+internal:
+  api-key: ${INTERNAL_API_KEY}
+
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret: ${KAKAO_CLIENT_SECRET}
