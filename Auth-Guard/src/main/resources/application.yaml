@@ -64,6 +64,10 @@ management:
       group:
         readiness:
           include: readinessState, db
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 logging:
   config: classpath:logback-spring.xml
