@@ -28,11 +28,17 @@ class InternalApiKeyFilterTest {
 		filter = new InternalApiKeyFilter(properties, objectMapper);
 	}
 
+	private MockHttpServletRequest createRequest(String method, String path) {
+		MockHttpServletRequest request = new MockHttpServletRequest(method, path);
+		request.setServletPath(path);
+		return request;
+	}
+
 	@Test
 	@DisplayName("유효한 API Key로 /internal/** 요청 시 정상 통과")
 	void 유효한_API_Key_정상_통과() throws Exception {
 		// given
-		MockHttpServletRequest request = new MockHttpServletRequest("POST", "/internal/users/1/block");
+		MockHttpServletRequest request = createRequest("POST", "/internal/users/1/block");
 		request.addHeader(HEADER_NAME, VALID_API_KEY);
 		MockHttpServletResponse response = new MockHttpServletResponse();
 		MockFilterChain filterChain = new MockFilterChain();
@@ -49,7 +55,7 @@ class InternalApiKeyFilterTest {
 	@DisplayName("API Key 헤더 누락 시 401 응답")
 	void API_Key_헤더_누락_401() throws Exception {
 		// given
-		MockHttpServletRequest request = new MockHttpServletRequest("POST", "/internal/users/1/block");
+		MockHttpServletRequest request = createRequest("POST", "/internal/users/1/block");
 		MockHttpServletResponse response = new MockHttpServletResponse();
 		MockFilterChain filterChain = new MockFilterChain();
 
@@ -66,7 +72,7 @@ class InternalApiKeyFilterTest {
 	@DisplayName("잘못된 API Key로 요청 시 401 응답")
 	void 잘못된_API_Key_401() throws Exception {
 		// given
-		MockHttpServletRequest request = new MockHttpServletRequest("POST", "/internal/users/1/unblock");
+		MockHttpServletRequest request = createRequest("POST", "/internal/users/1/unblock");
 		request.addHeader(HEADER_NAME, "wrong-api-key");
 		MockHttpServletResponse response = new MockHttpServletResponse();
 		MockFilterChain filterChain = new MockFilterChain();
@@ -84,7 +90,7 @@ class InternalApiKeyFilterTest {
 	@DisplayName("/internal/** 이 아닌 경로는 필터를 통과")
 	void 일반_경로_필터_통과() throws Exception {
 		// given
-		MockHttpServletRequest request = new MockHttpServletRequest("POST", "/token/refresh");
+		MockHttpServletRequest request = createRequest("POST", "/token/refresh");
 		MockHttpServletResponse response = new MockHttpServletResponse();
 		MockFilterChain filterChain = new MockFilterChain();
 

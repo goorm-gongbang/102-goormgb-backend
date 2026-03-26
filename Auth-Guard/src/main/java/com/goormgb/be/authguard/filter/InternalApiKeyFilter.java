@@ -1,6 +1,8 @@
 package com.goormgb.be.authguard.filter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -34,17 +36,17 @@ public class InternalApiKeyFilter extends OncePerRequestFilter {
 			HttpServletResponse response,
 			FilterChain filterChain
 	) throws ServletException, IOException {
-		String requestPath = request.getRequestURI();
+		String servletPath = request.getServletPath();
 
-		if (!requestPath.contains(INTERNAL_PATH_PREFIX)) {
+		if (!servletPath.startsWith(INTERNAL_PATH_PREFIX)) {
 			filterChain.doFilter(request, response);
 			return;
 		}
 
 		String apiKey = request.getHeader(HEADER_NAME);
 
-		if (apiKey == null || !apiKey.equals(properties.getApiKey())) {
-			log.warn("Internal API 인증 실패 - path: {}, remoteAddr: {}", requestPath, request.getRemoteAddr());
+		if (apiKey == null || !isEqual(apiKey, properties.getApiKey())) {
+			log.warn("Internal API 인증 실패 - path: {}, remoteAddr: {}", servletPath, request.getRemoteAddr());
 			sendErrorResponse(response);
 			return;
 		}
@@ -65,5 +67,12 @@ public class InternalApiKeyFilter extends OncePerRequestFilter {
 		);
 
 		objectMapper.writeValue(response.getWriter(), errorData);
+	}
+
+	private boolean isEqual(String a, String b) {
+		return MessageDigest.isEqual(
+				a.getBytes(StandardCharsets.UTF_8),
+				b.getBytes(StandardCharsets.UTF_8)
+		);
 	}
 }
