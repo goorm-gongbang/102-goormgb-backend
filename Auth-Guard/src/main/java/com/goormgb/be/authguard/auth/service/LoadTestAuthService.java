@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,20 +44,24 @@ public class LoadTestAuthService {
 			throw new CustomException(ErrorCode.USER_ALREADY_EXISTS);
 		}
 
-		User user = User.builder()
-				.email(loginId + "@loadtest.com")
-				.nickname(loginId)
-				.build();
-		userRepository.save(user);
+		try {
+			User user = User.builder()
+					.email(loginId + "@loadtest.com")
+					.nickname(loginId)
+					.build();
+			userRepository.save(user);
 
-		LoadTestUser loadTestUser = LoadTestUser.builder()
-				.loginId(loginId)
-				.passwordHash(passwordEncoder.encode(password))
-				.user(user)
-				.build();
-		loadTestUserRepository.save(loadTestUser);
+			LoadTestUser loadTestUser = LoadTestUser.builder()
+					.loginId(loginId)
+					.passwordHash(passwordEncoder.encode(password))
+					.user(user)
+					.build();
+			loadTestUserRepository.save(loadTestUser);
 
-		log.info("[LoadTest] 부하테스트 유저 생성 - loginId: {}, userId: {}", loginId, user.getId());
+			log.info("[LoadTest] 부하테스트 유저 생성 - loginId: {}, userId: {}", loginId, user.getId());
+		} catch (DataIntegrityViolationException e) {
+			throw new CustomException(ErrorCode.USER_ALREADY_EXISTS);
+		}
 	}
 
 	@Transactional
