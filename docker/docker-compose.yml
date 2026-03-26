@@ -99,6 +99,8 @@ services:
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
       KAKAO_REDIRECT_URI: ${KAKAO_REDIRECT_URI}
+      DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
     depends_on:
       local-postgres:
         condition: service_healthy
@@ -123,6 +125,7 @@ services:
       REDIS_PORT: 6379
       ADMISSION_PRIVATE_KEY: ${ADMISSION_PRIVATE_KEY}
       ADMISSION_PUBLIC_KEY: ${ADMISSION_PUBLIC_KEY}
+      DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
     depends_on:
       local-postgres:
         condition: service_healthy
@@ -146,6 +149,7 @@ services:
       REDIS_HOST: local-redis
       REDIS_PORT: 6379
       ADMISSION_PUBLIC_KEY: ${ADMISSION_PUBLIC_KEY}
+      DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
     depends_on:
       local-postgres:
         condition: service_healthy
@@ -168,6 +172,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: local-redis
       REDIS_PORT: 6379
+      DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
     depends_on:
       local-postgres:
         condition: service_healthy
