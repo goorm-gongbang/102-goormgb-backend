@@ -66,7 +66,7 @@ management:
         enabled: true
       group:
         readiness:
-          include: readinessState, db
+          include: readinessState
   metrics:
     distribution:
       percentiles-histogram:
