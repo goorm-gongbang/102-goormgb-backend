@@ -43,6 +43,9 @@ jwt:
   cookie:
     secure: false
 
+internal:
+  api-key: ${INTERNAL_API_KEY}
+
 encryption:
   db-key: ${DB_ENCRYPTION_KEY}
 
