@@ -1,9 +1,11 @@
 package com.goormgb.be.ordercore.payment.entity;
 
+import com.goormgb.be.global.encryption.EncryptionConverter;
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.ordercore.payment.enums.CashReceiptPurpose;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -40,7 +42,8 @@ public class CashReceipt extends BaseEntity {
 	 * PERSONAL_DEDUCTION: 현금영수증용 전화번호
 	 * BUSINESS_EXPENSE: 사업자번호
 	 */
-	@Column(name = "number", nullable = false, length = 50)
+	@Convert(converter = EncryptionConverter.class)
+	@Column(name = "number", nullable = false, length = 512)
 	private String number;
 
 	@Builder

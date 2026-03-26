@@ -3,11 +3,13 @@ package com.goormgb.be.ordercore.order.entity;
 import java.time.Instant;
 
 import com.goormgb.be.domain.match.entity.Match;
+import com.goormgb.be.global.encryption.EncryptionConverter;
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
 import com.goormgb.be.user.entity.User;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -65,16 +67,20 @@ public class Order extends BaseEntity {
 	@Column(name = "cancelled_at")
 	private Instant cancelledAt;
 
-	@Column(name = "orderer_name", nullable = false, length = 50)
+	@Convert(converter = EncryptionConverter.class)
+	@Column(name = "orderer_name", nullable = false, length = 512)
 	private String ordererName;
 
-	@Column(name = "orderer_email", nullable = false, length = 255)
+	@Convert(converter = EncryptionConverter.class)
+	@Column(name = "orderer_email", nullable = false, length = 512)
 	private String ordererEmail;
 
-	@Column(name = "orderer_phone", nullable = false, length = 20)
+	@Convert(converter = EncryptionConverter.class)
+	@Column(name = "orderer_phone", nullable = false, length = 512)
 	private String ordererPhone;
 
-	@Column(name = "orderer_birth_date", nullable = false, length = 6)
+	@Convert(converter = EncryptionConverter.class)
+	@Column(name = "orderer_birth_date", nullable = false, length = 512)
 	private String ordererBirthDate;
 
 	@Builder
