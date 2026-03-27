@@ -18,8 +18,6 @@ import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.common.service.lock.SeatHoldLockManager;
-import com.goormgb.be.seat.booking.model.BookingOptions;
-import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 
 @ExtendWith(MockitoExtension.class)
 class SeatHoldServiceTest {
@@ -28,19 +26,12 @@ class SeatHoldServiceTest {
 	private static final Long MATCH_ID = 10L;
 
 	@Mock
-	private BookingOptionsRedisRepository bookingOptionsRedisRepository;
-	@Mock
 	private SeatHoldLockManager seatHoldLockManager;
 	@Mock
 	private SeatHoldTransactionalService seatHoldTransactionalService;
 
 	@InjectMocks
 	private SeatHoldService seatHoldService;
-
-	private void setupSession(int ticketCount) {
-		given(bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(USER_ID, MATCH_ID))
-			.willReturn(new BookingOptions(USER_ID, MATCH_ID, true, ticketCount, false, Instant.now()));
-	}
 
 	@Test
 	@DisplayName("seatIds가 중복이면 INVALID_SEAT_HOLD_REQUEST 예외가 발생한다")
@@ -67,25 +58,9 @@ class SeatHoldServiceTest {
 	}
 
 	@Test
-	@DisplayName("티켓 수와 좌석 수가 다르면 INVALID_SEAT_HOLD_REQUEST 예외가 발생한다")
-	void 티켓수_불일치_예외() {
-		// given
-		setupSession(3);
-
-		// when & then
-		assertThatThrownBy(() -> seatHoldService.createOrRefreshHold(USER_ID, MATCH_ID, List.of(1L, 2L)))
-			.isInstanceOf(CustomException.class)
-			.extracting("errorCode")
-			.isEqualTo(ErrorCode.INVALID_SEAT_HOLD_REQUEST);
-
-		verifyNoInteractions(seatHoldLockManager);
-	}
-
-	@Test
 	@DisplayName("정상 요청 시 락 획득 후 트랜잭션 서비스를 호출하고 락을 해제한다")
 	void 정상_요청_락_트랜잭션_순서() {
 		// given
-		setupSession(2);
 		RLock lock1 = mock(RLock.class);
 		RLock lock2 = mock(RLock.class);
 		given(seatHoldLockManager.lockAll(MATCH_ID, List.of(206313L, 206314L))).willReturn(List.of(lock1, lock2));
@@ -111,7 +86,6 @@ class SeatHoldServiceTest {
 	@DisplayName("트랜잭션 서비스에서 예외 발생 시에도 락이 해제된다")
 	void 트랜잭션_예외시_락_해제() {
 		// given
-		setupSession(2);
 		RLock lock1 = mock(RLock.class);
 		RLock lock2 = mock(RLock.class);
 		given(seatHoldLockManager.lockAll(MATCH_ID, List.of(206313L, 206314L))).willReturn(List.of(lock1, lock2));
