@@ -122,22 +122,6 @@ class MyPageServiceTest {
 		}
 
 		@Test
-		@DisplayName("닉네임이 공백이면 INVALID_NICKNAME 예외가 발생한다")
-		void updateAccount_닉네임공백_예외() {
-			assertThatThrownBy(() -> myPageService.updateAccount(1L, new MyPageAccountUpdateRequest("   ")))
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.INVALID_NICKNAME.getMessage());
-		}
-
-		@Test
-		@DisplayName("닉네임이 15자를 초과하면 INVALID_NICKNAME 예외가 발생한다")
-		void updateAccount_닉네임길이초과_예외() {
-			assertThatThrownBy(() -> myPageService.updateAccount(1L, new MyPageAccountUpdateRequest("abcdefghijklmnopqrstu")))
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.INVALID_NICKNAME.getMessage());
-		}
-
-		@Test
 		@DisplayName("사용자가 없으면 USER_NOT_FOUND 예외가 발생한다")
 		void updateAccount_사용자없음_예외() {
 			Long userId = 999L;

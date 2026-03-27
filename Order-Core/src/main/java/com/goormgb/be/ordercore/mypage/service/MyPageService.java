@@ -87,7 +87,6 @@ public class MyPageService {
 	@Transactional
 	public MyPageAccountResponse updateAccount(Long userId, MyPageAccountUpdateRequest request) {
 		String nickname = request.nickname() == null ? "" : request.nickname().trim();
-		Preconditions.validate(!nickname.isBlank() && nickname.length() <= 15, ErrorCode.INVALID_NICKNAME);
 
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		user.updateNickname(nickname);

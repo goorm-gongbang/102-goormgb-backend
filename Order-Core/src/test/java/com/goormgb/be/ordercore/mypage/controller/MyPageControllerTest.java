@@ -79,9 +79,6 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("닉네임이 유효하지 않으면 400을 반환한다")
 		void updateAccount_닉네임오류_400() throws Exception {
-			given(myPageService.updateAccount(eq(1L), any(MyPageAccountUpdateRequest.class)))
-				.willThrow(new CustomException(ErrorCode.INVALID_NICKNAME));
-
 			mockMvc.perform(put("/mypage/account")
 					.contentType("application/json")
 					.content("""
@@ -90,7 +87,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 						}
 						"""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.message").value("닉네임은 공백일 수 없고 15자 이하여야 합니다."));
+				.andExpect(jsonPath("$.message").value("nickname: 닉네임은 공백일 수 없습니다."));
 		}
 
 		@Test

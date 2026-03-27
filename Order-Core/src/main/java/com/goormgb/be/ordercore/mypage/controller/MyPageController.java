@@ -29,6 +29,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Tag(name = "MyPage", description = "마이페이지 API")
@@ -54,7 +55,7 @@ public class MyPageController {
 	@ResponseStatus(HttpStatus.OK)
 	public ApiResult<MyPageAccountResponse> updateAccount(
 		@AuthenticationPrincipal Long userId,
-		@RequestBody MyPageAccountUpdateRequest request
+		@Valid @RequestBody MyPageAccountUpdateRequest request
 	) {
 		return ApiResult.ok("수정 성공", myPageService.updateAccount(userId, request));
 	}
