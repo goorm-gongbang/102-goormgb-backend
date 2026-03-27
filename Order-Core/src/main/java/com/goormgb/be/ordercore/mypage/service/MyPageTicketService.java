@@ -29,6 +29,7 @@ import com.goormgb.be.ordercore.mypage.service.support.MyPageTicketListAssembler
 import com.goormgb.be.ordercore.mypage.service.support.MyPageTicketQrSupport;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.qrtoken.entity.QrToken;
 import com.goormgb.be.ordercore.qrtoken.repository.QrTokenRepository;
@@ -67,10 +68,18 @@ public class MyPageTicketService {
 		List<String> statusNames = ticketTab.getStatusNames();
 
 		Instant now = Instant.now(clock);
-		int totalCount = (int)orderRepository.countByUserId(userId);
-		int upcomingCount = (int)orderRepository.countUpcomingOrders(userId, UPCOMING_STATUSES, now);
-		int cancelProcessingCount = (int)orderRepository.countByUserIdAndStatusIn(userId, CANCEL_PROCESSING_STATUSES);
-		int completedCount = (int)orderRepository.countCompletedOrders(userId, now);
+		OrderMyPageSummaryCounts counts = orderRepository.findMyPageSummaryCounts(
+			userId,
+			UPCOMING_STATUSES,
+			CANCEL_PROCESSING_STATUSES,
+			CANCEL_PROCESSING_STATUSES,
+			OrderStatus.PAID,
+			now
+		);
+		int totalCount = (int)counts.totalCount();
+		int upcomingCount = (int)counts.upcomingCount();
+		int cancelProcessingCount = (int)counts.cancelProcessingCount();
+		int completedCount = (int)counts.completedCount();
 
 		long totalElements = myPageQueryService.countTickets(userId, statusNames);
 		List<TicketRow> ticketRows = myPageQueryService.findTickets(userId, statusNames, page, size);

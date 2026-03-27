@@ -41,6 +41,7 @@ import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.qrtoken.entity.QrToken;
 import com.goormgb.be.ordercore.qrtoken.repository.QrTokenRepository;
@@ -74,6 +75,23 @@ class MyPageTicketServiceTest {
 		);
 	}
 
+	private void givenSummaryCounts(
+		Long userId,
+		long totalCount,
+		long upcomingCount,
+		long cancelProcessingCount,
+		long completedCount
+	) {
+		given(orderRepository.findMyPageSummaryCounts(eq(userId), any(), any(), any(), any(), any()))
+			.willReturn(new OrderMyPageSummaryCounts(
+				totalCount,
+				upcomingCount,
+				0L,
+				cancelProcessingCount,
+				completedCount
+			));
+	}
+
 	@Nested
 	@DisplayName("getTickets — 예매 내역 목록 조회")
 	class GetTickets {
@@ -85,10 +103,7 @@ class MyPageTicketServiceTest {
 			TicketRow ticketRow = MyPageFixture.createTicketRow(101L, OrderStatus.PAID);
 			OrderSeatRow seatRow = MyPageFixture.createOrderSeatRow(101L);
 
-			given(orderRepository.countByUserId(userId)).willReturn(8L);
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(2L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(1L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(5L);
+			givenSummaryCounts(userId, 8L, 2L, 1L, 5L);
 			given(myPageQueryService.countTickets(eq(userId), any())).willReturn(3L);
 			given(myPageQueryService.findTickets(eq(userId), any(), eq(0), eq(10))).willReturn(List.of(ticketRow));
 			given(myPageQueryService.findOrderSeatRowsByOrderIds(List.of(101L))).willReturn(List.of(seatRow));
@@ -111,10 +126,7 @@ class MyPageTicketServiceTest {
 			Long userId = 1L;
 			TicketRow cancelledRow = MyPageFixture.createPastTicketRow(102L, OrderStatus.CANCELLED);
 
-			given(orderRepository.countByUserId(userId)).willReturn(5L);
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(0L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(3L);
+			givenSummaryCounts(userId, 5L, 0L, 0L, 3L);
 			given(myPageQueryService.countTickets(eq(userId), any())).willReturn(2L);
 			given(myPageQueryService.findTickets(eq(userId), any(), eq(0), eq(10))).willReturn(List.of(cancelledRow));
 			given(myPageQueryService.findOrderSeatRowsByOrderIds(List.of(102L))).willReturn(Collections.emptyList());
@@ -134,10 +146,7 @@ class MyPageTicketServiceTest {
 			Long userId = 1L;
 			TicketRow pendingRow = MyPageFixture.createTicketRow(103L, OrderStatus.PAYMENT_PENDING);
 
-			given(orderRepository.countByUserId(userId)).willReturn(1L);
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(1L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(0L);
+			givenSummaryCounts(userId, 1L, 1L, 0L, 0L);
 			given(myPageQueryService.countTickets(eq(userId), any())).willReturn(1L);
 			given(myPageQueryService.findTickets(eq(userId), any(), eq(0), eq(10))).willReturn(List.of(pendingRow));
 			given(myPageQueryService.findOrderSeatRowsByOrderIds(List.of(103L))).willReturn(Collections.emptyList());
@@ -153,10 +162,7 @@ class MyPageTicketServiceTest {
 		void getTickets_빈목록_반환() {
 			Long userId = 1L;
 
-			given(orderRepository.countByUserId(userId)).willReturn(0L);
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(0L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(0L);
+			givenSummaryCounts(userId, 0L, 0L, 0L, 0L);
 			given(myPageQueryService.countTickets(eq(userId), any())).willReturn(0L);
 			given(myPageQueryService.findTickets(eq(userId), any(), eq(0), eq(10))).willReturn(Collections.emptyList());
 
@@ -175,10 +181,7 @@ class MyPageTicketServiceTest {
 			TicketRow row1 = MyPageFixture.createTicketRow(101L, OrderStatus.PAID);
 			TicketRow row2 = MyPageFixture.createTicketRow(102L, OrderStatus.PAID);
 
-			given(orderRepository.countByUserId(userId)).willReturn(15L);
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(5L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(10L);
+			givenSummaryCounts(userId, 15L, 5L, 0L, 10L);
 			given(myPageQueryService.countTickets(eq(userId), any())).willReturn(15L);
 			given(myPageQueryService.findTickets(eq(userId), any(), eq(0), eq(2))).willReturn(List.of(row1, row2));
 			given(myPageQueryService.findOrderSeatRowsByOrderIds(any())).willReturn(Collections.emptyList());
@@ -213,10 +216,7 @@ class MyPageTicketServiceTest {
 		void getTickets_summary_탭무관_전체통계() {
 			Long userId = 1L;
 
-			given(orderRepository.countByUserId(userId)).willReturn(10L);
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(3L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(2L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(5L);
+			givenSummaryCounts(userId, 10L, 3L, 2L, 5L);
 			given(myPageQueryService.countTickets(eq(userId), any())).willReturn(0L);
 			given(myPageQueryService.findTickets(eq(userId), any(), eq(0), eq(10))).willReturn(Collections.emptyList());
 

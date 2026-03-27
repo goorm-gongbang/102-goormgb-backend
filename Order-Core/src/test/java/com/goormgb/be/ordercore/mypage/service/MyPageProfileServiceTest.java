@@ -23,6 +23,7 @@ import com.goormgb.be.ordercore.fixture.order.OrderFixture;
 import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
+import com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.entity.UserSns;
@@ -112,9 +113,8 @@ class MyPageProfileServiceTest {
 
 		given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 		given(userSnsRepository.findByUserId(userId)).willReturn(Optional.of(userSns));
-		given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(2L);
-		given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(1L);
-		given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(5L);
+		given(orderRepository.findMyPageSummaryCounts(eq(userId), any(), any(), any(), any(), any()))
+			.willReturn(new OrderMyPageSummaryCounts(8L, 2L, 1L, 1L, 5L));
 
 		MyPageProfileResponse response = myPageProfileService.getProfile(userId);
 
@@ -134,9 +134,8 @@ class MyPageProfileServiceTest {
 
 		given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 		given(userSnsRepository.findByUserId(userId)).willReturn(Optional.empty());
-		given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(0L);
-		given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
-		given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(0L);
+		given(orderRepository.findMyPageSummaryCounts(eq(userId), any(), any(), any(), any(), any()))
+			.willReturn(new OrderMyPageSummaryCounts(0L, 0L, 0L, 0L, 0L));
 
 		MyPageProfileResponse response = myPageProfileService.getProfile(userId);
 
@@ -164,9 +163,8 @@ class MyPageProfileServiceTest {
 
 		given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 		given(userSnsRepository.findByUserId(userId)).willReturn(Optional.empty());
-		given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(0L);
-		given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
-		given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(0L);
+		given(orderRepository.findMyPageSummaryCounts(eq(userId), any(), any(), any(), any(), any()))
+			.willReturn(new OrderMyPageSummaryCounts(0L, 0L, 0L, 0L, 0L));
 
 		MyPageProfileResponse response = myPageProfileService.getProfile(userId);
 

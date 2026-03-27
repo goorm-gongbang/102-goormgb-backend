@@ -12,6 +12,7 @@ import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.entity.UserSns;
@@ -61,9 +62,17 @@ public class MyPageProfileService {
 		UserSns userSns = userSnsRepository.findByUserId(userId).orElse(null);
 
 		Instant now = Instant.now(clock);
-		long upcomingCount = orderRepository.countUpcomingOrders(userId, UPCOMING_STATUSES, now);
-		long cancelRefundCount = orderRepository.countByUserIdAndStatusIn(userId, CANCEL_REFUND_STATUSES);
-		long completedCount = orderRepository.countCompletedOrders(userId, now);
+		OrderMyPageSummaryCounts counts = orderRepository.findMyPageSummaryCounts(
+			userId,
+			UPCOMING_STATUSES,
+			CANCEL_REFUND_STATUSES,
+			CANCEL_REFUND_STATUSES,
+			OrderStatus.PAID,
+			now
+		);
+		long upcomingCount = counts.upcomingCount();
+		long cancelRefundCount = counts.cancelRefundCount();
+		long completedCount = counts.completedCount();
 
 		log.info("[MyPageProfileService] 프로필 조회 - userId={}, upcomingCount={}, cancelRefundCount={}, completedCount={}",
 			userId, upcomingCount, cancelRefundCount, completedCount);
