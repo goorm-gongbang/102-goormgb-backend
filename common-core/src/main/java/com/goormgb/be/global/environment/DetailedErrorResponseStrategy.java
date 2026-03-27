@@ -29,4 +29,9 @@ public class DetailedErrorResponseStrategy implements ErrorResponseStrategy {
 	public String resolveCode(ErrorCode errorCode) {
 		return errorCode.name();
 	}
+
+	@Override
+	public String resolveMessage(ErrorCode errorCode) {
+		return errorCode.getMessage();
+	}
 }

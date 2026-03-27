@@ -19,4 +19,6 @@ import com.goormgb.be.global.exception.ErrorCode;
  */
 public interface ErrorResponseStrategy {
 	String resolveCode(ErrorCode errorCode);
+
+	String resolveMessage(ErrorCode errorCode);
 }
