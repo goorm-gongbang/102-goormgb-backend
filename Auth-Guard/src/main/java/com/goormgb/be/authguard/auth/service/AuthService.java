@@ -3,6 +3,8 @@ package com.goormgb.be.authguard.auth.service;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
@@ -10,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.goormgb.be.authguard.auth.dto.RefreshTokenInfo;
+import com.goormgb.be.authguard.auth.dto.UserStatusChangeResponse;
 import com.goormgb.be.authguard.auth.dto.WithdrawalResponse;
 import com.goormgb.be.authguard.jwt.config.JwtProperties;
 import com.goormgb.be.authguard.jwt.enums.TokenType;
@@ -55,33 +58,37 @@ public class AuthService {
 		// 1. Refresh Token 검증
 		jwtTokenProvider.validateToken(refreshToken);
 
-		// 2. 토큰 타입 확인
-		TokenType tokenType = jwtTokenProvider.getTokenTypeFromToken(refreshToken);
+		// 2. Claims 한 번만 파싱하여 필요한 정보 추출
+		Claims claims = jwtTokenProvider.parseClaims(refreshToken);
+		TokenType tokenType = jwtTokenProvider.getTokenType(claims);
 		Preconditions.validate(tokenType == TokenType.REFRESH, ErrorCode.INVALID_TOKEN_TYPE);
 
-		// 3. jti, userId 추출
-		String jti = jwtTokenProvider.getJtiFromToken(refreshToken);
-		Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
+		String jti = jwtTokenProvider.getJti(claims);
+		Long userId = jwtTokenProvider.getUserId(claims);
 
-		// 4. Redis에서 저장된 토큰 조회 & 일치 확인
+		// 3. Redis에서 저장된 토큰 조회 & 일치 확인
 		RefreshTokenInfo storedTokenInfo = refreshTokenRepository.findByJtiOrThrow(jti,
 				ErrorCode.REFRESH_TOKEN_NOT_FOUND);
 
 		Preconditions.validate(refreshToken.equals(storedTokenInfo.getToken()), ErrorCode.REFRESH_TOKEN_MISMATCH);
 
-		// 5. 사용자 상태 확인
+		// 4. 사용자 상태 확인
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
 
-		// 6. 새 토큰 발급
-		String newAccessToken = jwtTokenProvider.createAccessToken(userId, DEFAULT_AUTHORITY);
-		String newRefreshToken = jwtTokenProvider.createRefreshToken(userId);
+		// 5. 기존 sid 추출 (하위 호환: sid 없는 기존 토큰은 새로 생성)
+		String sid = Optional.ofNullable(jwtTokenProvider.getSid(claims))
+				.or(() -> Optional.ofNullable(storedTokenInfo.getSid()))
+				.orElseGet(() -> UUID.randomUUID().toString());
+
+		// 7. 새 토큰 발급 (동일 sid 유지)
+		String newAccessToken = jwtTokenProvider.createAccessToken(userId, DEFAULT_AUTHORITY, sid);
+		String newRefreshToken = jwtTokenProvider.createRefreshToken(userId, sid);
 		String newJti = jwtTokenProvider.getJtiFromToken(newRefreshToken);
 
-		// 7. Redis 갱신 (기존 토큰 삭제 + 새 토큰 저장)
+		// 8. Redis 갱신 (기존 토큰 삭제 + 새 토큰 저장)
 		refreshTokenRepository.deleteByJti(jti);
 
-		// LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
 		Instant now = Instant.now();
 		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
 
@@ -89,9 +96,8 @@ public class AuthService {
 				.userId(userId)
 				.token(newRefreshToken)
 				.jti(newJti)
-				.tokenFamily(storedTokenInfo.getTokenFamily()) // 기존 토큰 패밀리 유지
+				.sid(sid)
 				.issuedAt(now)
-				// .expiresAt(now.plusDays(expirationDays))
 				.expiresAt(now.plus(Duration.ofDays(expirationDays)))
 				.userAgent(request.getHeader("User-Agent"))
 				.ipAddress(getClientIp(request))
@@ -154,6 +160,30 @@ public class AuthService {
 	 * 토큰 재발급 결과
 	 */
 	public record TokenRefreshResult(String accessToken, String refreshToken) {
+	}
+
+	@Transactional
+	public UserStatusChangeResponse blockUser(Long targetUserId) {
+		User user = userRepository.findByIdOrThrow(targetUserId, ErrorCode.USER_NOT_FOUND);
+
+		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
+		Preconditions.validate(user.getStatus() != UserStatus.BLOCKED, ErrorCode.USER_ALREADY_BLOCKED);
+
+		user.block();
+
+		return UserStatusChangeResponse.from(user);
+	}
+
+	@Transactional
+	public UserStatusChangeResponse unblockUser(Long targetUserId) {
+		User user = userRepository.findByIdOrThrow(targetUserId, ErrorCode.USER_NOT_FOUND);
+
+		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
+		Preconditions.validate(user.getStatus() != UserStatus.ACTIVATE, ErrorCode.USER_ALREADY_ACTIVE);
+
+		user.unblock();
+
+		return UserStatusChangeResponse.from(user);
 	}
 
 	/**

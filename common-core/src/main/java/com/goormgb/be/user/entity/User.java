@@ -5,7 +5,10 @@ import java.time.Instant;
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.user.enums.UserStatus;
 
+import com.goormgb.be.global.encryption.EncryptionConverter;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -25,10 +28,12 @@ public class User extends BaseEntity {
 	@Column(name = "status", nullable = false, length = 20)
 	private UserStatus status = UserStatus.ACTIVATE;
 
-	@Column(name = "email", length = 255)
+	@Convert(converter = EncryptionConverter.class)
+	@Column(name = "email", length = 512)
 	private String email;
 
-	@Column(name = "nickname", length = 100)
+	@Convert(converter = EncryptionConverter.class)
+	@Column(name = "nickname", length = 512)
 	private String nickname;
 
 	@Column(name = "profile_image_url")
@@ -78,12 +83,24 @@ public class User extends BaseEntity {
 		}
 	}
 
+	public void updateNickname(String nickname) {
+		this.nickname = nickname;
+	}
+
 	public void deactivate() {
 		this.status = UserStatus.DEACTIVATE;
 	}
 
 	public void activate() {
 		this.status = UserStatus.ACTIVATE;
+	}
+
+	public void block() {
+		this.status = UserStatus.BLOCKED;
+	}
+
+	public void unblock() {
+		activate();
 	}
 
 	public static User createOAuthUser(String email, String nickname, String profileImageUrl) {

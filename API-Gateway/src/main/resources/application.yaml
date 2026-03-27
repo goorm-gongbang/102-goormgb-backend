@@ -56,6 +56,10 @@ springdoc:
         url: /order/v3/api-docs
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
   endpoint:
     health:
       probes:
@@ -63,6 +67,12 @@ management:
       group:
         readiness:
           include: readinessState
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 logging:
   config: classpath:logback-spring.xml
+  level:
+    org.springframework.web: DEBUG

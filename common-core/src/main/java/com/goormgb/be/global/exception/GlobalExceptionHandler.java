@@ -13,13 +13,18 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import com.goormgb.be.global.environment.ErrorResponseStrategy;
 import com.goormgb.be.global.response.ErrorResponse;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+	private final ErrorResponseStrategy errorResponseStrategy;
 
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse.ErrorData> handleException(Exception e) {
@@ -29,7 +34,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(CustomException.class)
 	public ResponseEntity<ErrorResponse.ErrorData> handleCustomException(CustomException e) {
-		return ErrorResponse.error(e.getErrorCode().getStatus(), e.getErrorCode().getMessage());
+		return ErrorResponse.error(e.getErrorCode(), errorResponseStrategy);
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
@@ -52,7 +57,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(MissingRequestCookieException.class)
 	public ResponseEntity<ErrorResponse.ErrorData> handleMissingCookie(MissingRequestCookieException e) {
-		return ErrorResponse.error(HttpStatus.UNAUTHORIZED, ErrorCode.INVALID_TOKEN.getMessage());
+		return ErrorResponse.error(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
 	}
 
 	@ExceptionHandler(MissingServletRequestParameterException.class)

@@ -30,7 +30,14 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
+encryption:
+  db-key: ${DB_ENCRYPTION_KEY}
+
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
   endpoint:
     health:
       probes:
@@ -38,6 +45,12 @@ management:
       group:
         readiness:
           include: readinessState, db
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 logging:
   config: classpath:logback-spring.xml
+  level:
+    org.springframework.web: DEBUG

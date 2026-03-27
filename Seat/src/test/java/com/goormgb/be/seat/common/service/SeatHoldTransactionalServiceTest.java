@@ -15,12 +15,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
+import com.goormgb.be.seat.metrics.SeatMetricsService;
 import com.goormgb.be.seat.seat.enums.SeatZone;
 import com.goormgb.be.seat.seatHold.entity.SeatHold;
 import com.goormgb.be.seat.seatHold.repository.SeatHoldRepository;
@@ -33,6 +36,8 @@ class SeatHoldTransactionalServiceTest {
 	private static final Instant NOW = Instant.parse("2026-04-15T10:00:00Z");
 
 	@Mock
+	private SeatMetricsService seatMetricsService;
+	@Mock
 	private MatchSeatRepository matchSeatRepository;
 	@Mock
 	private SeatHoldRepository seatHoldRepository;
@@ -43,7 +48,7 @@ class SeatHoldTransactionalServiceTest {
 	private SeatHoldTransactionalService seatHoldTransactionalService;
 
 	private MatchSeat matchSeat(Long seatId, MatchSeatSaleStatus status) {
-		return MatchSeat.builder()
+		MatchSeat ms = MatchSeat.builder()
 			.matchId(MATCH_ID)
 			.seatId(seatId)
 			.areaId(1L)
@@ -55,6 +60,8 @@ class SeatHoldTransactionalServiceTest {
 			.seatZone(SeatZone.LOW)
 			.saleStatus(status)
 			.build();
+		ReflectionTestUtils.setField(ms, "id", seatId);
+		return ms;
 	}
 
 	private SeatHold seatHold(Long matchSeatId, Long seatId, Long userId, Instant expiresAt) {
@@ -128,7 +135,7 @@ class SeatHoldTransactionalServiceTest {
 			List.of(206313L, 206314L));
 
 		// then
-		assertThat(response.seatIds()).containsExactly(206313L, 206314L);
+		assertThat(response.matchSeatIds()).containsExactly(206313L, 206314L);
 		verify(seatHoldRepository).deleteAllByMatchSeatIdIn(List.of(11L, 12L));
 		verify(seatHoldRepository).flush();
 		verify(seatHoldRepository).saveAll(anyList());

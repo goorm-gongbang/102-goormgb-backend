@@ -23,11 +23,22 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
 	@Query("SELECT b FROM Block b JOIN FETCH b.section s JOIN FETCH b.area a WHERE b.id IN :blockIds")
 	List<Block> findAllByIdInWithSectionAndArea(@Param("blockIds") List<Long> blockIds);
 
+	@Query("SELECT b FROM Block b JOIN FETCH b.section s JOIN FETCH b.area a WHERE b.blockNum IN :blockNums")
+	List<Block> findAllByBlockNumInWithSectionAndArea(@Param("blockNums") List<Long> blockNums);
+
 	@Query("SELECT b FROM Block b JOIN FETCH b.section s JOIN FETCH b.area a WHERE b.id = :blockId")
 	Optional<Block> findByIdWithSectionAndArea(@Param("blockId") Long blockId);
 
 	default Block findByIdWithSectionOrThrow(Long blockId) {
 		return findByIdWithSectionAndArea(blockId)
+			.orElseThrow(() -> new CustomException(ErrorCode.BLOCK_NOT_FOUND));
+	}
+
+	@Query("SELECT b FROM Block b JOIN FETCH b.section s JOIN FETCH b.area a WHERE b.blockNum = :blockNum")
+	Optional<Block> findByBlockNumWithSectionAndArea(@Param("blockNum") Long blockNum);
+
+	default Block findByBlockNumWithSectionOrThrow(Long blockNum) {
+		return findByBlockNumWithSectionAndArea(blockNum)
 			.orElseThrow(() -> new CustomException(ErrorCode.BLOCK_NOT_FOUND));
 	}
 }

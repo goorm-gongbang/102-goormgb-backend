@@ -10,8 +10,6 @@ import org.springframework.stereotype.Service;
 
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
-import com.goormgb.be.seat.booking.model.BookingOptions;
-import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.common.service.lock.SeatHoldLockManager;
 
@@ -27,7 +25,7 @@ import lombok.RequiredArgsConstructor;
  *
  * <h3>처리 흐름</h3>
  * <ol>
- *   <li>seatIds 정규화 및 검증 (중복, null, 티켓 수 일치)</li>
+ *   <li>seatIds 정규화 및 검증 (중복, null)</li>
  *   <li>좌석 단위 Redisson 분산 락 획득 (정렬 순서로 데드락 방지)</li>
  *   <li>트랜잭션 서비스에서 Hold 생성/갱신 + 커밋</li>
  *   <li>락 해제</li>
@@ -37,13 +35,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SeatHoldService {
 
-	private final BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	private final SeatHoldLockManager seatHoldLockManager;
 	private final SeatHoldTransactionalService seatHoldTransactionalService;
 
 	public SeatHoldCreateResponse createOrRefreshHold(Long userId, Long matchId, List<Long> seatIds) {
 		List<Long> normalizedSeatIds = normalizeSeatIds(seatIds);
-		validateSeatCount(userId, matchId, normalizedSeatIds.size());
 
 		List<RLock> locks = seatHoldLockManager.lockAll(matchId, normalizedSeatIds);
 		try {
@@ -55,33 +51,21 @@ public class SeatHoldService {
 
 	private List<Long> normalizeSeatIds(List<Long> seatIds) {
 		Preconditions.validate(
-			seatIds != null && !seatIds.isEmpty(),
-			ErrorCode.INVALID_SEAT_HOLD_REQUEST
+				seatIds != null && !seatIds.isEmpty(),
+				ErrorCode.INVALID_SEAT_HOLD_REQUEST);
+
+		Preconditions.validate(
+				seatIds.stream().noneMatch(Objects::isNull),
+				ErrorCode.INVALID_SEAT_HOLD_REQUEST
 		);
 
 		Preconditions.validate(
-			seatIds.stream().noneMatch(Objects::isNull),
-			ErrorCode.INVALID_SEAT_HOLD_REQUEST
-		);
-
-		Preconditions.validate(
-			new HashSet<>(seatIds).size() == seatIds.size(),
-			ErrorCode.INVALID_SEAT_HOLD_REQUEST
+				new HashSet<>(seatIds).size() == seatIds.size(),
+				ErrorCode.INVALID_SEAT_HOLD_REQUEST
 		);
 
 		return seatIds.stream()
-			.sorted(Comparator.naturalOrder())
-			.toList();
-	}
-
-	private void validateSeatCount(Long userId, Long matchId, int requestedCount) {
-		BookingOptions bookingOptions =
-			bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
-
-		Integer ticketCount = bookingOptions.ticketCount();
-		Preconditions.validate(
-			ticketCount != null && ticketCount == requestedCount,
-			ErrorCode.INVALID_SEAT_HOLD_REQUEST
-		);
+				.sorted(Comparator.naturalOrder())
+				.toList();
 	}
 }

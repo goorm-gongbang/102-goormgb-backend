@@ -43,6 +43,12 @@ jwt:
   cookie:
     secure: false
 
+internal:
+  api-key: ${INTERNAL_API_KEY}
+
+encryption:
+  db-key: ${DB_ENCRYPTION_KEY}
+
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret: ${KAKAO_CLIENT_SECRET}
@@ -53,6 +59,10 @@ kakao:
   user-info-url: https://kapi.kakao.com/v2/user/me
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
   endpoint:
     health:
       probes:
@@ -60,6 +70,12 @@ management:
       group:
         readiness:
           include: readinessState, db
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 logging:
   config: classpath:logback-spring.xml
+  level:
+    org.springframework.web: DEBUG

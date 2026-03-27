@@ -23,6 +23,7 @@ import com.goormgb.be.seat.fixture.BlockFixture;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
+import com.goormgb.be.seat.metrics.SeatMetricsService;
 import com.goormgb.be.seat.recommendation.dto.internal.SeatGroup;
 import com.goormgb.be.seat.recommendation.dto.internal.SemiGroup;
 import com.goormgb.be.seat.recommendation.dto.response.SeatAssignmentResponse;
@@ -32,6 +33,8 @@ import com.goormgb.be.seat.seatHold.repository.SeatHoldRepository;
 @ExtendWith(MockitoExtension.class)
 class SeatAssignmentTransactionalServiceTest {
 
+	@Mock
+	private SeatMetricsService seatMetricsService;
 	@Mock
 	private MatchSeatRepository matchSeatRepository;
 	@Mock

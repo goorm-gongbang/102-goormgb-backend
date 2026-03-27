@@ -3,14 +3,23 @@ package com.goormgb.be.ordercore.mypage.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import com.goormgb.be.global.response.ApiResult;
+import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
 import com.goormgb.be.ordercore.mypage.service.MyPageService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +29,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Tag(name = "MyPage", description = "마이페이지 API")
@@ -29,6 +39,26 @@ import lombok.RequiredArgsConstructor;
 public class MyPageController {
 
 	private final MyPageService myPageService;
+
+	@Operation(
+		summary = "개인정보 수정",
+		description = "로그인한 사용자의 닉네임을 수정합니다.",
+		security = @SecurityRequirement(name = "BearerAuth")
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "수정 성공"),
+		@ApiResponse(responseCode = "400", description = "닉네임 입력값 오류", content = @Content),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+		@ApiResponse(responseCode = "404", description = "사용자 없음", content = @Content)
+	})
+	@PutMapping("/account")
+	@ResponseStatus(HttpStatus.OK)
+	public ApiResult<MyPageAccountResponse> updateAccount(
+		@AuthenticationPrincipal Long userId,
+		@Valid @RequestBody MyPageAccountUpdateRequest request
+	) {
+		return ApiResult.ok("수정 성공", myPageService.updateAccount(userId, request));
+	}
 
 	@Operation(
 		summary = "마이페이지 프로필 요약 조회",
@@ -70,5 +100,67 @@ public class MyPageController {
 		@RequestParam(defaultValue = "10") int size
 	) {
 		return ApiResult.ok("조회 성공", myPageService.getTickets(userId, tab, page, size));
+	}
+
+	@Operation(
+		summary = "예매 상세 조회",
+		description = "사용자의 특정 예매(ticketId=orders.id) 상세 정보를 조회합니다.",
+		security = @SecurityRequirement(name = "BearerAuth")
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "조회 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+		@ApiResponse(responseCode = "403", description = "본인 소유 티켓 아님", content = @Content),
+		@ApiResponse(responseCode = "404", description = "티켓(주문) 없음", content = @Content)
+	})
+	@GetMapping("/tickets/{ticketId}")
+	@ResponseStatus(HttpStatus.OK)
+	public ApiResult<MyPageTicketDetailResponse> getTicketDetail(
+		@AuthenticationPrincipal Long userId,
+		@PathVariable Long ticketId
+	) {
+		return ApiResult.ok("조회 성공", myPageService.getTicketDetail(userId, ticketId));
+	}
+
+	@Operation(
+		summary = "입장용 QR 조회",
+		description = "사용자의 특정 예매(ticketId=orders.id)에 대한 입장용 QR 토큰을 조회합니다.",
+		security = @SecurityRequirement(name = "BearerAuth")
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "QR 발급 성공"),
+		@ApiResponse(responseCode = "400", description = "발급 불가 상태", content = @Content),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+		@ApiResponse(responseCode = "403", description = "본인 소유 티켓 아님", content = @Content),
+		@ApiResponse(responseCode = "404", description = "티켓(주문) 없음", content = @Content)
+	})
+	@GetMapping("/tickets/{ticketId}/qr")
+	@ResponseStatus(HttpStatus.OK)
+	public ApiResult<MyPageTicketQrResponse> getTicketEntryQr(
+		@AuthenticationPrincipal Long userId,
+		@PathVariable Long ticketId
+	) {
+		return ApiResult.ok("QR 발급 성공", myPageService.getTicketEntryQr(userId, ticketId));
+	}
+
+	@Operation(
+		summary = "티켓 취소 요청",
+		description = "사용자의 특정 예매(ticketId=orders.id)에 대한 취소 요청을 처리합니다.",
+		security = @SecurityRequirement(name = "BearerAuth")
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "취소 요청 완료"),
+		@ApiResponse(responseCode = "400", description = "취소 불가 상태", content = @Content),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+		@ApiResponse(responseCode = "403", description = "본인 소유 티켓 아님", content = @Content),
+		@ApiResponse(responseCode = "404", description = "티켓(주문) 없음", content = @Content)
+	})
+	@PostMapping("/tickets/{ticketId}/cancel")
+	@ResponseStatus(HttpStatus.OK)
+	public ApiResult<MyPageTicketCancelResponse> requestTicketCancel(
+		@AuthenticationPrincipal Long userId,
+		@PathVariable Long ticketId
+	) {
+		return ApiResult.ok("취소 요청이 완료되었습니다.", myPageService.requestTicketCancel(userId, ticketId));
 	}
 }

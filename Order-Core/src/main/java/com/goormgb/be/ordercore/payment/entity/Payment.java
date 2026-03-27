@@ -2,12 +2,14 @@ package com.goormgb.be.ordercore.payment.entity;
 
 import java.time.Instant;
 
+import com.goormgb.be.global.encryption.EncryptionConverter;
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.payment.enums.PaymentMethod;
 import com.goormgb.be.ordercore.payment.enums.PaymentStatus;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -55,10 +57,12 @@ public class Payment extends BaseEntity {
 	@Column(name = "account_bank", length = 50)
 	private String accountBank;
 
-	@Column(name = "account_number", length = 50)
+	@Convert(converter = EncryptionConverter.class)
+	@Column(name = "account_number", length = 512)
 	private String accountNumber;
 
-	@Column(name = "account_holder", length = 50)
+	@Convert(converter = EncryptionConverter.class)
+	@Column(name = "account_holder", length = 512)
 	private String accountHolder;
 
 	@Column(name = "deposit_deadline")

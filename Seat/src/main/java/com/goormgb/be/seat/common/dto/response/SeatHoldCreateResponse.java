@@ -5,12 +5,12 @@ import java.util.List;
 
 public record SeatHoldCreateResponse(
 	Long matchId,
-	List<Long> seatIds,
+	List<Long> matchSeatIds,
 	int seatCount,
 	Instant holdExpiresAt
 ) {
 
-	public static SeatHoldCreateResponse of(Long matchId, List<Long> seatIds, Instant holdExpiresAt) {
-		return new SeatHoldCreateResponse(matchId, seatIds, seatIds.size(), holdExpiresAt);
+	public static SeatHoldCreateResponse of(Long matchId, List<Long> matchSeatIds, Instant holdExpiresAt) {
+		return new SeatHoldCreateResponse(matchId, matchSeatIds, matchSeatIds.size(), holdExpiresAt);
 	}
 }

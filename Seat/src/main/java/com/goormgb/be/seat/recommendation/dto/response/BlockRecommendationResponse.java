@@ -36,7 +36,7 @@ public record BlockRecommendationResponse(
 		public static RecommendedBlock from(BlockRecommendation recommendation, int rank) {
 			var block = recommendation.block();
 			return new RecommendedBlock(
-				block.getId(),
+				block.getBlockNum(),
 				block.getBlockCode(),
 				block.getSection().getName(),
 				block.getArea().getName(),

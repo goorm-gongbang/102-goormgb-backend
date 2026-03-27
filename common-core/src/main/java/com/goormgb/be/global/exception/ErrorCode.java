@@ -8,6 +8,10 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {
+	// A004
+	// aop 가로채듯 404로 감싸버리는방법. 500 빼고는 전부다 감싸서 바꿔치기. (hotfix) 퇴근하다 일터졋을떄
+	// invalided parameter 하고, 메세지만 바꿔치는 구조 // 온보딩 완료, 이미 완료됨. 이런건 있어야하는데, 파라미터 잘못 입력한건 친절하게 줄 필요가 없다.
+
 	// Common
 	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 에러입니다. 백엔드팀에 문의하세요."),
 	BAD_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
@@ -18,6 +22,8 @@ public enum ErrorCode {
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
 	USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 사용자입니다."),
 	USER_DEACTIVATED(HttpStatus.FORBIDDEN, "비활성화된 사용자입니다."),
+	USER_ALREADY_BLOCKED(HttpStatus.CONFLICT, "이미 차단된 사용자입니다."),
+	USER_ALREADY_ACTIVE(HttpStatus.CONFLICT, "이미 활성 상태인 사용자입니다."),
 
 	// Onboarding
 	ONBOARDING_NOT_COMPLETED(HttpStatus.FORBIDDEN, "온보딩이 완료되지 않았습니다."),
@@ -38,6 +44,11 @@ public enum ErrorCode {
 	PREFERENCE_NOT_FOUND(HttpStatus.NOT_FOUND, "온보딩 선호도 정보를 찾을 수 없습니다."),
 
 	// Auth
+
+	// TODO: 묶을 수 있는 공통 에러사항에 대해서는 한가지 키워드로 묶기. 백엔드 보안처리.
+
+	// HTTP UNAUTHORIZED 401
+	// AUTHORIZED_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않습니다."),
 	INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
 	EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 토큰입니다."),
 	INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "잘못된 인증 정보입니다."),
@@ -45,6 +56,7 @@ public enum ErrorCode {
 	REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "Refresh Token이 일치하지 않습니다."),
 	INVALID_TOKEN_TYPE(HttpStatus.UNAUTHORIZED, "잘못된 토큰 타입입니다."),
 	BLACKLISTED_TOKEN(HttpStatus.UNAUTHORIZED, "로그아웃된 토큰입니다."),
+	INVALID_INTERNAL_API_KEY(HttpStatus.UNAUTHORIZED, "유효하지 않은 내부 API 키입니다."),
 	OAUTH_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "토큰 발급에 실패했습니다."),
 	OAUTH_CODE_REQUEST_FAILED(HttpStatus.BAD_REQUEST, "인가 코드는 필수입니다."),
 	OAUTH_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "인가 코드가 만료되었거나 이미 사용되었습니다."),
@@ -65,6 +77,7 @@ public enum ErrorCode {
 	QUEUE_ENTRY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 경기의 대기열에 등록되어 있지 않습니다."),
 	ADMISSION_TOKEN_EXPIRED(HttpStatus.GONE, "입장 가능 시간이 만료되었습니다. 다시 대기열에 진입해주세요."),
 	INVALID_TICKET_COUNT(HttpStatus.BAD_REQUEST, "예매 티켓 수가 올바르지 않습니다."),
+	INVALID_BOOKING_OPTIONS(HttpStatus.BAD_REQUEST, "예매 옵션이 올바르지 않습니다."),
 	INVALID_PROMOTE_COUNT(HttpStatus.BAD_REQUEST, "승급 인원 수가 올바르지 않습니다."),
 	QUEUE_PROMOTION_NOT_ALLOWED(HttpStatus.CONFLICT, "현재 대기열 승급 처리가 불가능합니다."),
 
@@ -105,6 +118,9 @@ public enum ErrorCode {
 	// Mypage
 	INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "size는 최대 10까지 허용됩니다."),
 	INVALID_TICKET_TAB(HttpStatus.BAD_REQUEST, "유효하지 않은 탭 값입니다."),
+	TICKET_CANCEL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "취소 가능한 기간이 아닙니다."),
+	ENTRY_QR_NOT_AVAILABLE_YET(HttpStatus.BAD_REQUEST, "아직 입장 가능 시간이 아닙니다."),
+	ENTRY_QR_MATCH_STARTED(HttpStatus.BAD_REQUEST, "경기 시작 이후에는 QR을 발급할 수 없습니다."),
 
 	;
 

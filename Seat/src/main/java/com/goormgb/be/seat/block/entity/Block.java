@@ -52,6 +52,9 @@ public class Block extends BaseEntity {
 	@Column(name = "block_code", nullable = false, length = 20)
 	private String blockCode;
 
+	@Column(name = "block_num", nullable = false, unique = true)
+	private Long blockNum;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "viewpoint", nullable = false, length = 30)
 	private Viewpoint viewpoint;
@@ -67,6 +70,7 @@ public class Block extends BaseEntity {
 		Area area,
 		Section section,
 		String blockCode,
+		Long blockNum,
 		Viewpoint viewpoint,
 		Integer homeCheerRank,
 		Integer awayCheerRank
@@ -74,6 +78,7 @@ public class Block extends BaseEntity {
 		this.area = area;
 		this.section = section;
 		this.blockCode = blockCode;
+		this.blockNum = blockNum;
 		this.viewpoint = viewpoint;
 		this.homeCheerRank = homeCheerRank;
 		this.awayCheerRank = awayCheerRank;

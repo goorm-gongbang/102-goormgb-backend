@@ -32,7 +32,8 @@ spring:
       port: ${REDIS_PORT}
 
 queue:
-  ready-ttl-seconds: 30
+  ready-ttl-seconds: 60
+  admission-ttl-seconds: 900
   expired-marker-ttl-seconds: 300
   promotion-batch-size: 100
   promotion-interval-ms: 1000
@@ -55,7 +56,14 @@ queue:
       public-key: ${ADMISSION_PUBLIC_KEY}
       issuer: queue-service
 
+encryption:
+  db-key: ${DB_ENCRYPTION_KEY}
+
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
   endpoint:
     health:
       probes:
@@ -63,6 +71,12 @@ management:
       group:
         readiness:
           include: readinessState, db
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 logging:
   config: classpath:logback-spring.xml
+  level:
+    org.springframework.web: DEBUG
