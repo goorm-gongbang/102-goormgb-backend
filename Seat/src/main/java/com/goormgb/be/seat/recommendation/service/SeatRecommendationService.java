@@ -46,6 +46,7 @@ public class SeatRecommendationService {
 	private final OnboardingPreferenceRepository onboardingPreferenceRepository;
 	private final OnboardingViewpointPriorityRepository onboardingViewpointPriorityRepository;
 	private final ConsecutiveSeatCounter consecutiveSeatCounter;
+	private final SemiConsecutiveSeatCounter semiConsecutiveSeatCounter;
 	private final PreferenceScoreCalculator preferenceScoreCalculator;
 	private final SeatMetricsService seatMetricsService;
 
@@ -80,11 +81,13 @@ public class SeatRecommendationService {
 			List<OnboardingViewpointPriority> viewpoints =
 				onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId);
 
-			List<BlockRecommendation> recommendations = buildRecommendations(matchId, ticketCount, preferredBlocks);
+			boolean nearAdjacentToggle = seatSession.isNearAdjacentToggle();
+			List<BlockRecommendation> recommendations = buildRecommendations(
+				matchId, ticketCount, preferredBlocks, nearAdjacentToggle);
 
 			Preconditions.validate(!recommendations.isEmpty(), ErrorCode.NO_AVAILABLE_BLOCK);
 
-			sortRecommendations(recommendations, pref, viewpoints, match);
+			sortRecommendations(recommendations, pref, viewpoints, match, nearAdjacentToggle);
 
 			// 추천 좌석 탐색 성공 횟수 증가
 			seatMetricsService.increaseRecommendSuccess();
@@ -101,7 +104,9 @@ public class SeatRecommendationService {
 
 	}
 
-	private List<BlockRecommendation> buildRecommendations(Long matchId, int ticketCount, List<Block> blocks) {
+	private List<BlockRecommendation> buildRecommendations(
+		Long matchId, int ticketCount, List<Block> blocks, boolean nearAdjacentToggle
+	) {
 		List<Long> blockIds = blocks.stream().map(Block::getId).toList();
 
 		Map<Long, Long> remainingMap = matchSeatRepository
@@ -114,10 +119,20 @@ public class SeatRecommendationService {
 
 		List<BlockRecommendation> recommendations = new ArrayList<>();
 		for (Block block : blocks) {
-			int count = consecutiveSeatCounter.countRealConsecutiveSeats(matchId, block.getId(), ticketCount);
-			if (count > 0) {
+			int realCount = consecutiveSeatCounter.countRealConsecutiveSeats(matchId, block.getId(), ticketCount);
+			int semiCount = 0;
+
+			if (nearAdjacentToggle) {
+				semiCount = semiConsecutiveSeatCounter.countSemiConsecutiveSeats(matchId, block.getId(), ticketCount);
+			}
+
+			boolean included = nearAdjacentToggle
+				? (realCount > 0 || semiCount > 0)
+				: (realCount > 0);
+
+			if (included) {
 				long remaining = remainingMap.getOrDefault(block.getId(), 0L);
-				recommendations.add(new BlockRecommendation(block, count, remaining));
+				recommendations.add(new BlockRecommendation(block, realCount, semiCount, remaining));
 			}
 		}
 
@@ -128,10 +143,13 @@ public class SeatRecommendationService {
 		List<BlockRecommendation> recommendations,
 		OnboardingPreference pref,
 		List<OnboardingViewpointPriority> viewpoints,
-		Match match
+		Match match,
+		boolean nearAdjacentToggle
 	) {
 		recommendations.sort((b1, b2) -> {
-			int countDiff = b2.realConsecutiveCount() - b1.realConsecutiveCount();
+			int count1 = nearAdjacentToggle ? b1.combinedCount() : b1.realConsecutiveCount();
+			int count2 = nearAdjacentToggle ? b2.combinedCount() : b2.realConsecutiveCount();
+			int countDiff = count2 - count1;
 
 			if (Math.abs(countDiff) > CONSECUTIVE_COUNT_THRESHOLD) {
 				return countDiff;
