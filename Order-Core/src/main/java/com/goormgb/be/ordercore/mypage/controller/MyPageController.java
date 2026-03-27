@@ -16,7 +16,8 @@ import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
-import com.goormgb.be.ordercore.mypage.service.MyPageService;
+import com.goormgb.be.ordercore.mypage.service.MyPageProfileService;
+import com.goormgb.be.ordercore.mypage.service.MyPageTicketService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,7 +34,8 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/mypage")
 public class MyPageController {
 
-	private final MyPageService myPageService;
+	private final MyPageProfileService myPageProfileService;
+	private final MyPageTicketService myPageTicketService;
 
 	@Operation(
 		summary = "마이페이지 프로필 요약 조회",
@@ -50,7 +52,7 @@ public class MyPageController {
 	public ApiResult<MyPageProfileResponse> getProfile(
 		@AuthenticationPrincipal Long userId
 	) {
-		return ApiResult.ok("조회 성공", myPageService.getProfile(userId));
+		return ApiResult.ok("조회 성공", myPageProfileService.getProfile(userId));
 	}
 
 	@Operation(
@@ -74,7 +76,7 @@ public class MyPageController {
 		@Parameter(description = "페이지 크기 (최대 10)", example = "10")
 		@RequestParam(defaultValue = "10") int size
 	) {
-		return ApiResult.ok("조회 성공", myPageService.getTickets(userId, tab, page, size));
+		return ApiResult.ok("조회 성공", myPageTicketService.getTickets(userId, tab, page, size));
 	}
 
 	@Operation(
@@ -94,7 +96,7 @@ public class MyPageController {
 		@AuthenticationPrincipal Long userId,
 		@PathVariable Long ticketId
 	) {
-		return ApiResult.ok("조회 성공", myPageService.getTicketDetail(userId, ticketId));
+		return ApiResult.ok("조회 성공", myPageTicketService.getTicketDetail(userId, ticketId));
 	}
 
 	@Operation(
@@ -115,7 +117,7 @@ public class MyPageController {
 		@AuthenticationPrincipal Long userId,
 		@PathVariable Long ticketId
 	) {
-		return ApiResult.ok("QR 발급 성공", myPageService.getTicketEntryQr(userId, ticketId));
+		return ApiResult.ok("QR 발급 성공", myPageTicketService.getTicketEntryQr(userId, ticketId));
 	}
 
 	@Operation(
@@ -136,6 +138,6 @@ public class MyPageController {
 		@AuthenticationPrincipal Long userId,
 		@PathVariable Long ticketId
 	) {
-		return ApiResult.ok("취소 요청이 완료되었습니다.", myPageService.requestTicketCancel(userId, ticketId));
+		return ApiResult.ok("취소 요청이 완료되었습니다.", myPageTicketService.requestTicketCancel(userId, ticketId));
 	}
 }
