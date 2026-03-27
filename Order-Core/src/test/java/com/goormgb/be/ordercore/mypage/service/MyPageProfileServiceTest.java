@@ -11,6 +11,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -19,6 +20,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.order.OrderFixture;
+import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.user.entity.User;
@@ -58,6 +61,46 @@ class MyPageProfileServiceTest {
 			.provider(SocialProvider.KAKAO)
 			.providerUserId("kakao-12345")
 			.build();
+	}
+
+	@Nested
+	@DisplayName("updateAccount — 개인정보 수정")
+	class UpdateAccount {
+
+		@Test
+		@DisplayName("유효한 닉네임이면 계정 정보가 수정된다")
+		void updateAccount_성공() {
+			Long userId = 1L;
+			User user = OrderFixture.createUser();
+			UserSns userSns = createUserSns(user);
+
+			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+			given(userSnsRepository.findByUserId(userId)).willReturn(Optional.of(userSns));
+
+			MyPageAccountResponse response = myPageProfileService.updateAccount(
+				userId,
+				new MyPageAccountUpdateRequest("  goorm_new  ")
+			);
+
+			assertThat(response.nickname()).isEqualTo("goorm_new");
+			assertThat(response.email()).isEqualTo("test@test.com");
+			assertThat(response.snsAccount()).isNotNull();
+			assertThat(response.snsAccount().provider()).isEqualTo("KAKAO");
+			assertThat(user.getNickname()).isEqualTo("goorm_new");
+		}
+
+		@Test
+		@DisplayName("사용자가 없으면 USER_NOT_FOUND 예외가 발생한다")
+		void updateAccount_사용자없음_예외() {
+			Long userId = 999L;
+			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND))
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+
+			assertThatThrownBy(
+				() -> myPageProfileService.updateAccount(userId, new MyPageAccountUpdateRequest("goorm_new")))
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.USER_NOT_FOUND.getMessage());
+		}
 	}
 
 	@Test

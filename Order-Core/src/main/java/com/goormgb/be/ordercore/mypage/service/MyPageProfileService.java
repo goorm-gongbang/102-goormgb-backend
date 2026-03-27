@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
@@ -41,6 +43,18 @@ public class MyPageProfileService {
 	private final UserSnsRepository userSnsRepository;
 	private final OrderRepository orderRepository;
 	private final Clock clock;
+
+	@Transactional
+	public MyPageAccountResponse updateAccount(Long userId, MyPageAccountUpdateRequest request) {
+		String nickname = request.nickname().trim();
+
+		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+		user.updateNickname(nickname);
+
+		UserSns userSns = userSnsRepository.findByUserId(userId).orElse(null);
+
+		return MyPageAccountResponse.of(user, userSns);
+	}
 
 	public MyPageProfileResponse getProfile(Long userId) {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);

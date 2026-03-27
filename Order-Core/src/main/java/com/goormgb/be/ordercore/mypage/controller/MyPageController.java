@@ -5,14 +5,18 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.goormgb.be.global.response.ApiResult;
-import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
+import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
@@ -26,6 +30,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Tag(name = "MyPage", description = "마이페이지 API")
@@ -36,6 +41,26 @@ public class MyPageController {
 
 	private final MyPageProfileService myPageProfileService;
 	private final MyPageTicketService myPageTicketService;
+
+	@Operation(
+		summary = "개인정보 수정",
+		description = "로그인한 사용자의 닉네임을 수정합니다.",
+		security = @SecurityRequirement(name = "BearerAuth")
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "수정 성공"),
+		@ApiResponse(responseCode = "400", description = "닉네임 입력값 오류", content = @Content),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+		@ApiResponse(responseCode = "404", description = "사용자 없음", content = @Content)
+	})
+	@PutMapping("/account")
+	@ResponseStatus(HttpStatus.OK)
+	public ApiResult<MyPageAccountResponse> updateAccount(
+		@AuthenticationPrincipal Long userId,
+		@Valid @RequestBody MyPageAccountUpdateRequest request
+	) {
+		return ApiResult.ok("수정 성공", myPageProfileService.updateAccount(userId, request));
+	}
 
 	@Operation(
 		summary = "마이페이지 프로필 요약 조회",
