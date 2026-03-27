@@ -22,6 +22,7 @@ import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
+import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.repository.BlockRemainingSeatProjection;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.metrics.SeatMetricsService;
@@ -119,11 +120,16 @@ public class SeatRecommendationService {
 
 		List<BlockRecommendation> recommendations = new ArrayList<>();
 		for (Block block : blocks) {
-			int realCount = consecutiveSeatCounter.countRealConsecutiveSeats(matchId, block.getId(), ticketCount);
+			// 블럭당 AVAILABLE 좌석을 1회 조회하여 real/semi 두 카운터에 재사용
+			// (nearAdjacentToggle=true 시 각 카운터가 독립적으로 조회하면 2×N 쿼리 발생)
+			List<MatchSeat> availableSeats =
+				matchSeatRepository.findAvailableSeatsByMatchIdAndBlockId(matchId, block.getId());
+
+			int realCount = consecutiveSeatCounter.countRealConsecutiveSeats(availableSeats, ticketCount);
 			int semiCount = 0;
 
 			if (nearAdjacentToggle) {
-				semiCount = semiConsecutiveSeatCounter.countSemiConsecutiveSeats(matchId, block.getId(), ticketCount);
+				semiCount = semiConsecutiveSeatCounter.countSemiConsecutiveSeats(availableSeats, ticketCount);
 			}
 
 			boolean included = nearAdjacentToggle

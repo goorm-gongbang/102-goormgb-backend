@@ -204,8 +204,8 @@ public class SeatAssignmentTransactionalService {
 
 		List<Long> matchSeatIds = existingHolds.stream().map(SeatHold::getMatchSeatId).toList();
 
-		List<MatchSeat> seatsToRelease = matchSeatRepository.findAllById(matchSeatIds);
-		seatsToRelease.forEach(MatchSeat::markAvailable);
+		// findAllById + forEach(markAvailable) 대신 직접 UPDATE 1쿼리로 좌석 상태 복원
+		matchSeatRepository.markAvailableIfBlockedInBatch(matchSeatIds);
 
 		seatHoldRepository.deleteAllByMatchSeatIdIn(matchSeatIds);
 		seatHoldRepository.flush();
