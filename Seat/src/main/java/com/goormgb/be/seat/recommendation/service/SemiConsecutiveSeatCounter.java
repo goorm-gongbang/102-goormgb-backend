@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
-import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,33 +17,17 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>준연석이란, 인접한 2개 열(row)에 걸쳐 좌석을 배치하되
  * 수평 겹침(overlap)이 존재하는 좌석 묶음을 말한다.</p>
- *
- * <h3>계산 방식</h3>
- * <ol>
- *   <li>해당 블럭의 AVAILABLE 좌석을 열(row)별로 그룹화한다.</li>
- *   <li>인접한 row 쌍(lowerRow - upperRow == 1)에 대해 연속 세그먼트를 추출한다.</li>
- *   <li>각 (upperSeg, lowerSeg) 조합에서 N석을 upper/lower로 분배하는 모든 경우를 탐색한다.</li>
- *   <li>수평 겹침(overlap)이 존재하는 유효한 조합만 카운트한다.</li>
- * </ol>
  */
 @Component
 @RequiredArgsConstructor
 public class SemiConsecutiveSeatCounter {
 
-	private final MatchSeatRepository matchSeatRepository;
 	private final SeatSegmentExtractor seatSegmentExtractor;
 
 	/**
-	 * 특정 경기·블럭에서 준연석 N석이 가능한 묶음의 총 개수를 반환한다.
-	 *
-	 * @param matchId       경기 ID
-	 * @param blockId       블럭 ID
-	 * @param requiredSeats 필요 좌석 수 (N)
-	 * @return 준연석 N석 가능 묶음 수 (0이면 해당 블럭에서 준연석 불가)
+	 * AVAILABLE 좌석 목록에서 준연석 N석이 가능한 묶음의 총 개수를 반환한다.
 	 */
-	public int countSemiConsecutiveSeats(Long matchId, Long blockId, int requiredSeats) {
-		List<MatchSeat> availableSeats = matchSeatRepository.findAvailableSeatsByMatchIdAndBlockId(matchId, blockId);
-
+	public int countSemiConsecutiveSeats(List<MatchSeat> availableSeats, int requiredSeats) {
 		if (availableSeats.size() < requiredSeats) {
 			return 0;
 		}
@@ -80,33 +63,34 @@ public class SemiConsecutiveSeatCounter {
 		return totalCount;
 	}
 
+	/**
+	 * 세그먼트 내부가 연속 정수(base + index)인 점을 이용하여,
+	 * lowerIdx 유효 범위를 산술로 직접 계산한다. O(K × N)
+	 */
 	private int countOverlappingCombinations(
 		List<MatchSeat> upperSeg,
 		List<MatchSeat> lowerSeg,
 		int requiredSeats
 	) {
 		int count = 0;
+		int upperBase = upperSeg.get(0).getTemplateColNo();
+		int lowerBase = lowerSeg.get(0).getTemplateColNo();
+		int upperSize = upperSeg.size();
+		int lowerSize = lowerSeg.size();
 
 		for (int upperCount = 1; upperCount < requiredSeats; upperCount++) {
 			int lowerCount = requiredSeats - upperCount;
 
-			if (upperCount > upperSeg.size() || lowerCount > lowerSeg.size()) {
+			if (upperCount > upperSize || lowerCount > lowerSize) {
 				continue;
 			}
 
-			for (int upperIdx = 0; upperIdx <= upperSeg.size() - upperCount; upperIdx++) {
-				int upperStart = upperSeg.get(upperIdx).getTemplateColNo();
-				int upperEnd = upperSeg.get(upperIdx + upperCount - 1).getTemplateColNo();
+			for (int ui = 0; ui <= upperSize - upperCount; ui++) {
+				int liMin = Math.max(0, upperBase + ui - lowerBase - lowerCount + 1);
+				int liMax = Math.min(lowerSize - lowerCount, upperBase + ui + upperCount - 1 - lowerBase);
 
-				for (int lowerIdx = 0; lowerIdx <= lowerSeg.size() - lowerCount; lowerIdx++) {
-					int lowerStart = lowerSeg.get(lowerIdx).getTemplateColNo();
-					int lowerEnd = lowerSeg.get(lowerIdx + lowerCount - 1).getTemplateColNo();
-
-					int overlap = Math.min(upperEnd, lowerEnd) - Math.max(upperStart, lowerStart) + 1;
-
-					if (overlap > 0) {
-						count++;
-					}
+				if (liMax >= liMin) {
+					count += liMax - liMin + 1;
 				}
 			}
 		}
