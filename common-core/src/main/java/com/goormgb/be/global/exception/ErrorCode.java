@@ -118,7 +118,6 @@ public enum ErrorCode {
 	// Mypage
 	INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "size는 최대 10까지 허용됩니다."),
 	INVALID_TICKET_TAB(HttpStatus.BAD_REQUEST, "유효하지 않은 탭 값입니다."),
-	INVALID_NICKNAME(HttpStatus.BAD_REQUEST, "닉네임은 공백일 수 없고 15자 이하여야 합니다."),
 	TICKET_CANCEL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "취소 가능한 기간이 아닙니다."),
 	ENTRY_QR_NOT_AVAILABLE_YET(HttpStatus.BAD_REQUEST, "아직 입장 가능 시간이 아닙니다."),
 	ENTRY_QR_MATCH_STARTED(HttpStatus.BAD_REQUEST, "경기 시작 이후에는 QR을 발급할 수 없습니다."),

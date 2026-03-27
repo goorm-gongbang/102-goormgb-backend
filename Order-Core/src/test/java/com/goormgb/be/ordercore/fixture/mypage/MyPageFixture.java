@@ -35,7 +35,7 @@ public final class MyPageFixture {
 		return new MyPageAccountResponse(
 			"user@example.com",
 			"goorm_new",
-			List.of(new MyPageAccountResponse.SnsAccount("KAKAO", "kakao-user-id-12345"))
+			new MyPageAccountResponse.SnsAccount("KAKAO", "kakao-user-id-12345")
 		);
 	}
 

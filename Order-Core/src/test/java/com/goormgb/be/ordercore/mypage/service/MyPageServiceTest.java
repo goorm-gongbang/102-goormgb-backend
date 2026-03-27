@@ -116,8 +116,8 @@ class MyPageServiceTest {
 
 			assertThat(response.nickname()).isEqualTo("goorm_new");
 			assertThat(response.email()).isEqualTo("test@test.com");
-			assertThat(response.snsAccounts()).hasSize(1);
-			assertThat(response.snsAccounts().get(0).provider()).isEqualTo("KAKAO");
+			assertThat(response.snsAccount()).isNotNull();
+			assertThat(response.snsAccount().provider()).isEqualTo("KAKAO");
 			assertThat(user.getNickname()).isEqualTo("goorm_new");
 		}
 

@@ -91,11 +91,9 @@ public class MyPageService {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		user.updateNickname(nickname);
 
-		List<UserSns> userSnsList = userSnsRepository.findByUserId(userId)
-			.map(List::of)
-			.orElseGet(List::of);
+		UserSns userSns = userSnsRepository.findByUserId(userId).orElse(null);
 
-		return MyPageAccountResponse.of(user, userSnsList);
+		return MyPageAccountResponse.of(user, userSns);
 	}
 
 	/**

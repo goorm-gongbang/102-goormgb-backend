@@ -1,14 +1,12 @@
 package com.goormgb.be.ordercore.mypage.dto.response;
 
-import java.util.List;
-
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.entity.UserSns;
 
 public record MyPageAccountResponse(
 	String email,
 	String nickname,
-	List<SnsAccount> snsAccounts
+	SnsAccount snsAccount
 ) {
 
 	public record SnsAccount(
@@ -17,14 +15,14 @@ public record MyPageAccountResponse(
 	) {
 	}
 
-	public static MyPageAccountResponse of(User user, List<UserSns> userSnsList) {
-		List<SnsAccount> snsAccounts = userSnsList.stream()
-			.map(sns -> new SnsAccount(sns.getProvider().name(), sns.getProviderUserId()))
-			.toList();
+	public static MyPageAccountResponse of(User user, UserSns userSns) {
+		SnsAccount snsAccount = userSns == null
+			? null
+			: new SnsAccount(userSns.getProvider().name(), userSns.getProviderUserId());
 		return new MyPageAccountResponse(
 			user.getEmail(),
 			user.getNickname(),
-			snsAccounts
+			snsAccount
 		);
 	}
 }
