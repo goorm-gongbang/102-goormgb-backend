@@ -30,6 +30,8 @@ import com.goormgb.be.ordercore.cancellation.entity.CancellationFeePolicy;
 import com.goormgb.be.ordercore.cancellation.repository.CancellationFeePolicyRepository;
 import com.goormgb.be.ordercore.fixture.mypage.MyPageFixture;
 import com.goormgb.be.ordercore.fixture.order.OrderFixture;
+import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.query.TicketDetailBaseRow;
 import com.goormgb.be.ordercore.mypage.dto.query.TicketSeatDetailRow;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
@@ -91,6 +93,61 @@ class MyPageServiceTest {
 			.provider(SocialProvider.KAKAO)
 			.providerUserId("kakao-12345")
 			.build();
+	}
+
+	@Nested
+	@DisplayName("updateAccount — 개인정보 수정")
+	class UpdateAccount {
+
+		@Test
+		@DisplayName("유효한 닉네임이면 계정 정보가 수정된다")
+		void updateAccount_성공() {
+			Long userId = 1L;
+			User user = OrderFixture.createUser();
+			UserSns userSns = createUserSns(user);
+
+			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+			given(userSnsRepository.findByUserId(userId)).willReturn(Optional.of(userSns));
+
+			MyPageAccountResponse response = myPageService.updateAccount(
+				userId,
+				new MyPageAccountUpdateRequest("  goorm_new  ")
+			);
+
+			assertThat(response.nickname()).isEqualTo("goorm_new");
+			assertThat(response.email()).isEqualTo("test@test.com");
+			assertThat(response.snsAccounts()).hasSize(1);
+			assertThat(response.snsAccounts().get(0).provider()).isEqualTo("KAKAO");
+			assertThat(user.getNickname()).isEqualTo("goorm_new");
+		}
+
+		@Test
+		@DisplayName("닉네임이 공백이면 INVALID_NICKNAME 예외가 발생한다")
+		void updateAccount_닉네임공백_예외() {
+			assertThatThrownBy(() -> myPageService.updateAccount(1L, new MyPageAccountUpdateRequest("   ")))
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.INVALID_NICKNAME.getMessage());
+		}
+
+		@Test
+		@DisplayName("닉네임이 20자를 초과하면 INVALID_NICKNAME 예외가 발생한다")
+		void updateAccount_닉네임길이초과_예외() {
+			assertThatThrownBy(() -> myPageService.updateAccount(1L, new MyPageAccountUpdateRequest("abcdefghijklmnopqrstu")))
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.INVALID_NICKNAME.getMessage());
+		}
+
+		@Test
+		@DisplayName("사용자가 없으면 USER_NOT_FOUND 예외가 발생한다")
+		void updateAccount_사용자없음_예외() {
+			Long userId = 999L;
+			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND))
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+
+			assertThatThrownBy(() -> myPageService.updateAccount(userId, new MyPageAccountUpdateRequest("goorm_new")))
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.USER_NOT_FOUND.getMessage());
+		}
 	}
 
 	@Nested
