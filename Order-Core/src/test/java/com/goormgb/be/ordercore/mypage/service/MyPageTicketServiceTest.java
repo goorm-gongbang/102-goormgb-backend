@@ -30,11 +30,8 @@ import com.goormgb.be.ordercore.cancellation.entity.CancellationFeePolicy;
 import com.goormgb.be.ordercore.cancellation.repository.CancellationFeePolicyRepository;
 import com.goormgb.be.ordercore.fixture.mypage.MyPageFixture;
 import com.goormgb.be.ordercore.fixture.order.OrderFixture;
-import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
-import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.query.TicketDetailBaseRow;
 import com.goormgb.be.ordercore.mypage.dto.query.TicketSeatDetailRow;
-import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
@@ -44,23 +41,16 @@ import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.qrtoken.entity.QrToken;
 import com.goormgb.be.ordercore.qrtoken.repository.QrTokenRepository;
 import com.goormgb.be.user.entity.User;
-import com.goormgb.be.user.entity.UserSns;
-import com.goormgb.be.user.enums.SocialProvider;
-import com.goormgb.be.user.repository.UserRepository;
-import com.goormgb.be.user.repository.UserSnsRepository;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("MyPageService 서비스 단위 테스트")
-class MyPageServiceTest {
+@DisplayName("MyPageTicketService 서비스 단위 테스트")
+class MyPageTicketServiceTest {
 
-	@Mock
-	private UserRepository userRepository;
-	@Mock
-	private UserSnsRepository userSnsRepository;
 	@Mock
 	private OrderRepository orderRepository;
 	@Mock
@@ -70,15 +60,13 @@ class MyPageServiceTest {
 	@Mock
 	private QrTokenRepository qrTokenRepository;
 
-	private MyPageService myPageService;
+	private MyPageTicketService myPageService;
 	private Clock clock;
 
 	@BeforeEach
 	void setUp() {
 		clock = Clock.fixed(Instant.parse("2026-03-26T00:00:00Z"), ZoneOffset.UTC);
-		myPageService = new MyPageService(
-			userRepository,
-			userSnsRepository,
+		myPageService = new MyPageTicketService(
 			orderRepository,
 			qrTokenRepository,
 			myPageQueryService,
@@ -87,129 +75,21 @@ class MyPageServiceTest {
 		);
 	}
 
-	private UserSns createUserSns(User user) {
-		return UserSns.builder()
-			.user(user)
-			.provider(SocialProvider.KAKAO)
-			.providerUserId("kakao-12345")
-			.build();
-	}
-
-	@Nested
-	@DisplayName("updateAccount — 개인정보 수정")
-	class UpdateAccount {
-
-		@Test
-		@DisplayName("유효한 닉네임이면 계정 정보가 수정된다")
-		void updateAccount_성공() {
-			Long userId = 1L;
-			User user = OrderFixture.createUser();
-			UserSns userSns = createUserSns(user);
-
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
-			given(userSnsRepository.findByUserId(userId)).willReturn(Optional.of(userSns));
-
-			MyPageAccountResponse response = myPageService.updateAccount(
-				userId,
-				new MyPageAccountUpdateRequest("  goorm_new  ")
-			);
-
-			assertThat(response.nickname()).isEqualTo("goorm_new");
-			assertThat(response.email()).isEqualTo("test@test.com");
-			assertThat(response.snsAccount()).isNotNull();
-			assertThat(response.snsAccount().provider()).isEqualTo("KAKAO");
-			assertThat(user.getNickname()).isEqualTo("goorm_new");
-		}
-
-		@Test
-		@DisplayName("사용자가 없으면 USER_NOT_FOUND 예외가 발생한다")
-		void updateAccount_사용자없음_예외() {
-			Long userId = 999L;
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND))
-				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
-
-			assertThatThrownBy(() -> myPageService.updateAccount(userId, new MyPageAccountUpdateRequest("goorm_new")))
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.USER_NOT_FOUND.getMessage());
-		}
-	}
-
-	@Nested
-	@DisplayName("getProfile — 프로필 요약 조회")
-	class GetProfile {
-
-		@Test
-		@DisplayName("유효한 userId이면 프로필과 티켓 요약을 반환한다")
-		void getProfile_성공() {
-			Long userId = 1L;
-			User user = OrderFixture.createUser();
-			UserSns userSns = createUserSns(user);
-			Instant now = Instant.now();
-
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
-			given(userSnsRepository.findByUserId(userId)).willReturn(Optional.of(userSns));
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(2L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(1L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(5L);
-
-			MyPageProfileResponse response = myPageService.getProfile(userId);
-
-			assertThat(response).isNotNull();
-			assertThat(response.profile().nickname()).isEqualTo("테스터");
-			assertThat(response.profile().snsProvider()).isEqualTo("KAKAO");
-			assertThat(response.ticketSummary().upcomingCount()).isEqualTo(2);
-			assertThat(response.ticketSummary().cancelRefundCount()).isEqualTo(1);
-			assertThat(response.ticketSummary().completedCount()).isEqualTo(5);
-		}
-
-		@Test
-		@DisplayName("SNS 정보가 없으면 snsProvider는 null이다")
-		void getProfile_SNS없음_null() {
-			Long userId = 1L;
-			User user = OrderFixture.createUser();
-
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
-			given(userSnsRepository.findByUserId(userId)).willReturn(Optional.empty());
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(0L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(0L);
-
-			MyPageProfileResponse response = myPageService.getProfile(userId);
-
-			assertThat(response.profile().snsProvider()).isNull();
-		}
-
-		@Test
-		@DisplayName("존재하지 않는 userId이면 USER_NOT_FOUND 예외가 발생한다")
-		void getProfile_사용자_미발견_예외() {
-			Long userId = 999L;
-
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND))
-				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
-
-			assertThatThrownBy(() -> myPageService.getProfile(userId))
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.USER_NOT_FOUND.getMessage());
-		}
-
-		@Test
-		@DisplayName("모든 카운트가 0이어도 정상 반환한다")
-		void getProfile_카운트_모두_0() {
-			Long userId = 1L;
-			User user = OrderFixture.createUser();
-
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
-			given(userSnsRepository.findByUserId(userId)).willReturn(Optional.empty());
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(0L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(0L);
-
-			MyPageProfileResponse response = myPageService.getProfile(userId);
-
-			assertThat(response.ticketSummary().upcomingCount()).isEqualTo(0);
-			assertThat(response.ticketSummary().cancelRefundCount()).isEqualTo(0);
-			assertThat(response.ticketSummary().completedCount()).isEqualTo(0);
-		}
+	private void givenSummaryCounts(
+		Long userId,
+		long totalCount,
+		long upcomingCount,
+		long cancelProcessingCount,
+		long completedCount
+	) {
+		given(orderRepository.findMyPageSummaryCounts(eq(userId), any(), any(), any(), any(), any()))
+			.willReturn(new OrderMyPageSummaryCounts(
+				totalCount,
+				upcomingCount,
+				0L,
+				cancelProcessingCount,
+				completedCount
+			));
 	}
 
 	@Nested
@@ -223,10 +103,7 @@ class MyPageServiceTest {
 			TicketRow ticketRow = MyPageFixture.createTicketRow(101L, OrderStatus.PAID);
 			OrderSeatRow seatRow = MyPageFixture.createOrderSeatRow(101L);
 
-			given(orderRepository.countByUserId(userId)).willReturn(8L);
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(2L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(1L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(5L);
+			givenSummaryCounts(userId, 8L, 2L, 1L, 5L);
 			given(myPageQueryService.countTickets(eq(userId), any())).willReturn(3L);
 			given(myPageQueryService.findTickets(eq(userId), any(), eq(0), eq(10))).willReturn(List.of(ticketRow));
 			given(myPageQueryService.findOrderSeatRowsByOrderIds(List.of(101L))).willReturn(List.of(seatRow));
@@ -249,10 +126,7 @@ class MyPageServiceTest {
 			Long userId = 1L;
 			TicketRow cancelledRow = MyPageFixture.createPastTicketRow(102L, OrderStatus.CANCELLED);
 
-			given(orderRepository.countByUserId(userId)).willReturn(5L);
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(0L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(3L);
+			givenSummaryCounts(userId, 5L, 0L, 0L, 3L);
 			given(myPageQueryService.countTickets(eq(userId), any())).willReturn(2L);
 			given(myPageQueryService.findTickets(eq(userId), any(), eq(0), eq(10))).willReturn(List.of(cancelledRow));
 			given(myPageQueryService.findOrderSeatRowsByOrderIds(List.of(102L))).willReturn(Collections.emptyList());
@@ -272,10 +146,7 @@ class MyPageServiceTest {
 			Long userId = 1L;
 			TicketRow pendingRow = MyPageFixture.createTicketRow(103L, OrderStatus.PAYMENT_PENDING);
 
-			given(orderRepository.countByUserId(userId)).willReturn(1L);
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(1L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(0L);
+			givenSummaryCounts(userId, 1L, 1L, 0L, 0L);
 			given(myPageQueryService.countTickets(eq(userId), any())).willReturn(1L);
 			given(myPageQueryService.findTickets(eq(userId), any(), eq(0), eq(10))).willReturn(List.of(pendingRow));
 			given(myPageQueryService.findOrderSeatRowsByOrderIds(List.of(103L))).willReturn(Collections.emptyList());
@@ -291,10 +162,7 @@ class MyPageServiceTest {
 		void getTickets_빈목록_반환() {
 			Long userId = 1L;
 
-			given(orderRepository.countByUserId(userId)).willReturn(0L);
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(0L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(0L);
+			givenSummaryCounts(userId, 0L, 0L, 0L, 0L);
 			given(myPageQueryService.countTickets(eq(userId), any())).willReturn(0L);
 			given(myPageQueryService.findTickets(eq(userId), any(), eq(0), eq(10))).willReturn(Collections.emptyList());
 
@@ -313,10 +181,7 @@ class MyPageServiceTest {
 			TicketRow row1 = MyPageFixture.createTicketRow(101L, OrderStatus.PAID);
 			TicketRow row2 = MyPageFixture.createTicketRow(102L, OrderStatus.PAID);
 
-			given(orderRepository.countByUserId(userId)).willReturn(15L);
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(5L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(10L);
+			givenSummaryCounts(userId, 15L, 5L, 0L, 10L);
 			given(myPageQueryService.countTickets(eq(userId), any())).willReturn(15L);
 			given(myPageQueryService.findTickets(eq(userId), any(), eq(0), eq(2))).willReturn(List.of(row1, row2));
 			given(myPageQueryService.findOrderSeatRowsByOrderIds(any())).willReturn(Collections.emptyList());
@@ -351,10 +216,7 @@ class MyPageServiceTest {
 		void getTickets_summary_탭무관_전체통계() {
 			Long userId = 1L;
 
-			given(orderRepository.countByUserId(userId)).willReturn(10L);
-			given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(3L);
-			given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(2L);
-			given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(5L);
+			givenSummaryCounts(userId, 10L, 3L, 2L, 5L);
 			given(myPageQueryService.countTickets(eq(userId), any())).willReturn(0L);
 			given(myPageQueryService.findTickets(eq(userId), any(), eq(0), eq(10))).willReturn(Collections.emptyList());
 
@@ -510,7 +372,8 @@ class MyPageServiceTest {
 		void getTicketEntryQr_existingToken_성공() {
 			Long userId = 1L;
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(10, ChronoUnit.MINUTES));
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID,
+				Instant.now(clock).plus(10, ChronoUnit.MINUTES));
 			List<TicketSeatDetailRow> seatRows = MyPageFixture.createTicketSeatDetailRows();
 			QrToken existing = QrToken.builder()
 				.qrToken("existing-qr-token")
@@ -518,7 +381,8 @@ class MyPageServiceTest {
 				.build();
 
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
-			given(qrTokenRepository.findByOrderIdAndExpiresAtAfter(eq(ticketId), any())).willReturn(Optional.of(existing));
+			given(qrTokenRepository.findByOrderIdAndExpiresAtAfter(eq(ticketId), any())).willReturn(
+				Optional.of(existing));
 			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId)).willReturn(seatRows);
 
 			MyPageTicketQrResponse response = myPageService.getTicketEntryQr(userId, ticketId);
@@ -533,7 +397,8 @@ class MyPageServiceTest {
 		void getTicketEntryQr_issueNewToken_성공() {
 			Long userId = 1L;
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(10, ChronoUnit.MINUTES));
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID,
+				Instant.now(clock).plus(10, ChronoUnit.MINUTES));
 			List<TicketSeatDetailRow> seatRows = MyPageFixture.createTicketSeatDetailRows();
 
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
@@ -553,7 +418,8 @@ class MyPageServiceTest {
 		@DisplayName("PAID 상태가 아니면 INVALID_ORDER_STATUS 예외가 발생한다")
 		void getTicketEntryQr_notPaid_예외() {
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, 1L, OrderStatus.PAYMENT_PENDING, Instant.now(clock).plus(10, ChronoUnit.MINUTES));
+			Order order = createOrder(ticketId, 1L, OrderStatus.PAYMENT_PENDING,
+				Instant.now(clock).plus(10, ChronoUnit.MINUTES));
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(() -> myPageService.getTicketEntryQr(1L, ticketId))
@@ -615,7 +481,7 @@ class MyPageServiceTest {
 		void requestTicketCancel_d1to6_성공() {
 			Long userId = 1L;
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now().plus(2, ChronoUnit.DAYS));
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(2, ChronoUnit.DAYS));
 			CancellationFeePolicy policy = CancellationFeePolicy.builder()
 				.daysBeforeMatchMin(1)
 				.daysBeforeMatchMax(6)
@@ -644,7 +510,7 @@ class MyPageServiceTest {
 		void requestTicketCancel_d7plus_전액환불() {
 			Long userId = 1L;
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now().plus(10, ChronoUnit.DAYS));
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(10, ChronoUnit.DAYS));
 			CancellationFeePolicy policy = CancellationFeePolicy.builder()
 				.daysBeforeMatchMin(7)
 				.daysBeforeMatchMax(null)
@@ -667,7 +533,7 @@ class MyPageServiceTest {
 		void requestTicketCancel_d7plus_notBookingDay_bookingFee미환불() {
 			Long userId = 1L;
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now().plus(10, ChronoUnit.DAYS));
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(10, ChronoUnit.DAYS));
 			ReflectionTestUtils.setField(order, "createdAt", Instant.now(clock).minus(1, ChronoUnit.DAYS));
 
 			CancellationFeePolicy policy = CancellationFeePolicy.builder()
@@ -691,7 +557,7 @@ class MyPageServiceTest {
 		@DisplayName("취소 불가 정책이면 TICKET_CANCEL_NOT_ALLOWED 예외가 발생한다")
 		void requestTicketCancel_notCancellable_예외() {
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, 1L, OrderStatus.PAID, Instant.now().plus(1, ChronoUnit.HOURS));
+			Order order = createOrder(ticketId, 1L, OrderStatus.PAID, Instant.now(clock).plus(1, ChronoUnit.HOURS));
 			CancellationFeePolicy policy = CancellationFeePolicy.builder()
 				.daysBeforeMatchMin(0)
 				.daysBeforeMatchMax(0)
@@ -712,7 +578,7 @@ class MyPageServiceTest {
 		@DisplayName("PAID 상태가 아니면 INVALID_ORDER_STATUS 예외가 발생한다")
 		void requestTicketCancel_notPaid_예외() {
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, 1L, OrderStatus.CANCELLED, Instant.now().plus(2, ChronoUnit.DAYS));
+			Order order = createOrder(ticketId, 1L, OrderStatus.CANCELLED, Instant.now(clock).plus(2, ChronoUnit.DAYS));
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(() -> myPageService.requestTicketCancel(1L, ticketId))
@@ -724,7 +590,7 @@ class MyPageServiceTest {
 		@DisplayName("본인 소유가 아니면 ORDER_ACCESS_DENIED 예외가 발생한다")
 		void requestTicketCancel_권한없음_예외() {
 			Long ticketId = 101L;
-			Order order = createOrder(ticketId, 2L, OrderStatus.PAID, Instant.now().plus(2, ChronoUnit.DAYS));
+			Order order = createOrder(ticketId, 2L, OrderStatus.PAID, Instant.now(clock).plus(2, ChronoUnit.DAYS));
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(() -> myPageService.requestTicketCancel(1L, ticketId))
