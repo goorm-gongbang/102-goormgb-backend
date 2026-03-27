@@ -56,6 +56,8 @@ class SeatRecommendationServiceTest {
 	@Mock
 	private ConsecutiveSeatCounter consecutiveSeatCounter;
 	@Mock
+	private SemiConsecutiveSeatCounter semiConsecutiveSeatCounter;
+	@Mock
 	private PreferenceScoreCalculator preferenceScoreCalculator;
 
 	@Mock
