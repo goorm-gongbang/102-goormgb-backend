@@ -38,11 +38,11 @@ import jakarta.persistence.EntityManager;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@DisplayName("MyPageService 동시성 통합 테스트")
+@DisplayName("MyPageTicketService 동시성 통합 테스트")
 class MyPageServiceConcurrencyTest {
 
 	@Autowired
-	private MyPageService myPageService;
+	private MyPageTicketService myPageTicketService;
 	@Autowired
 	private QrTokenRepository qrTokenRepository;
 	@Autowired
@@ -74,7 +74,7 @@ class MyPageServiceConcurrencyTest {
 			tasks.add(() -> {
 				ready.countDown();
 				start.await(5, TimeUnit.SECONDS);
-				return myPageService.getTicketEntryQr(seed.userId(), seed.orderId());
+				return myPageTicketService.getTicketEntryQr(seed.userId(), seed.orderId());
 			});
 		}
 

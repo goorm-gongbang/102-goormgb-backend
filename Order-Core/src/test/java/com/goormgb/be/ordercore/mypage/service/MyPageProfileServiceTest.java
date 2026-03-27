@@ -1,0 +1,134 @@
+package com.goormgb.be.ordercore.mypage.service;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.goormgb.be.global.exception.CustomException;
+import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.ordercore.fixture.order.OrderFixture;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
+import com.goormgb.be.ordercore.order.repository.OrderRepository;
+import com.goormgb.be.user.entity.User;
+import com.goormgb.be.user.entity.UserSns;
+import com.goormgb.be.user.enums.SocialProvider;
+import com.goormgb.be.user.repository.UserRepository;
+import com.goormgb.be.user.repository.UserSnsRepository;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("MyPageProfileService 서비스 단위 테스트")
+class MyPageProfileServiceTest {
+
+	@Mock
+	private UserRepository userRepository;
+	@Mock
+	private UserSnsRepository userSnsRepository;
+	@Mock
+	private OrderRepository orderRepository;
+
+	private MyPageProfileService myPageProfileService;
+	private Clock clock;
+
+	@BeforeEach
+	void setUp() {
+		clock = Clock.fixed(Instant.parse("2026-03-26T00:00:00Z"), ZoneOffset.UTC);
+		myPageProfileService = new MyPageProfileService(
+			userRepository,
+			userSnsRepository,
+			orderRepository,
+			clock
+		);
+	}
+
+	private UserSns createUserSns(User user) {
+		return UserSns.builder()
+			.user(user)
+			.provider(SocialProvider.KAKAO)
+			.providerUserId("kakao-12345")
+			.build();
+	}
+
+	@Test
+	@DisplayName("유효한 userId이면 프로필과 티켓 요약을 반환한다")
+	void getProfile_성공() {
+		Long userId = 1L;
+		User user = OrderFixture.createUser();
+		UserSns userSns = createUserSns(user);
+
+		given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+		given(userSnsRepository.findByUserId(userId)).willReturn(Optional.of(userSns));
+		given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(2L);
+		given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(1L);
+		given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(5L);
+
+		MyPageProfileResponse response = myPageProfileService.getProfile(userId);
+
+		assertThat(response).isNotNull();
+		assertThat(response.profile().nickname()).isEqualTo("테스터");
+		assertThat(response.profile().snsProvider()).isEqualTo("KAKAO");
+		assertThat(response.ticketSummary().upcomingCount()).isEqualTo(2);
+		assertThat(response.ticketSummary().cancelRefundCount()).isEqualTo(1);
+		assertThat(response.ticketSummary().completedCount()).isEqualTo(5);
+	}
+
+	@Test
+	@DisplayName("SNS 정보가 없으면 snsProvider는 null이다")
+	void getProfile_SNS없음_null() {
+		Long userId = 1L;
+		User user = OrderFixture.createUser();
+
+		given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+		given(userSnsRepository.findByUserId(userId)).willReturn(Optional.empty());
+		given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(0L);
+		given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
+		given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(0L);
+
+		MyPageProfileResponse response = myPageProfileService.getProfile(userId);
+
+		assertThat(response.profile().snsProvider()).isNull();
+	}
+
+	@Test
+	@DisplayName("존재하지 않는 userId이면 USER_NOT_FOUND 예외가 발생한다")
+	void getProfile_사용자_미발견_예외() {
+		Long userId = 999L;
+
+		given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND))
+			.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+
+		assertThatThrownBy(() -> myPageProfileService.getProfile(userId))
+			.isInstanceOf(CustomException.class)
+			.hasMessage(ErrorCode.USER_NOT_FOUND.getMessage());
+	}
+
+	@Test
+	@DisplayName("모든 카운트가 0이어도 정상 반환한다")
+	void getProfile_카운트_모두_0() {
+		Long userId = 1L;
+		User user = OrderFixture.createUser();
+
+		given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+		given(userSnsRepository.findByUserId(userId)).willReturn(Optional.empty());
+		given(orderRepository.countUpcomingOrders(eq(userId), any(), any())).willReturn(0L);
+		given(orderRepository.countByUserIdAndStatusIn(eq(userId), any())).willReturn(0L);
+		given(orderRepository.countCompletedOrders(eq(userId), any())).willReturn(0L);
+
+		MyPageProfileResponse response = myPageProfileService.getProfile(userId);
+
+		assertThat(response.ticketSummary().upcomingCount()).isEqualTo(0);
+		assertThat(response.ticketSummary().cancelRefundCount()).isEqualTo(0);
+		assertThat(response.ticketSummary().completedCount()).isEqualTo(0);
+	}
+}
