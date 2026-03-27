@@ -21,6 +21,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.mypage.MyPageFixture;
+import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
@@ -42,6 +44,68 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			new UsernamePasswordAuthenticationToken(userId, null,
 				List.of(new SimpleGrantedAuthority("ROLE_USER")))
 		);
+	}
+
+	@Nested
+	@DisplayName("PUT /mypage/account — 개인정보 수정")
+	class UpdateAccount {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 수정된 계정 정보를 반환한다")
+		void updateAccount_성공() throws Exception {
+			MyPageAccountResponse response = MyPageFixture.createAccountResponse();
+			given(myPageService.updateAccount(eq(1L), any(MyPageAccountUpdateRequest.class))).willReturn(response);
+
+			mockMvc.perform(put("/mypage/account")
+					.contentType("application/json")
+					.content("""
+						{
+						  "nickname": "goorm_new"
+						}
+						"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("수정 성공"))
+				.andExpect(jsonPath("$.data.email").value("user@example.com"))
+				.andExpect(jsonPath("$.data.nickname").value("goorm_new"))
+				.andExpect(jsonPath("$.data.snsAccount.provider").value("KAKAO"));
+		}
+
+		@Test
+		@DisplayName("닉네임이 유효하지 않으면 400을 반환한다")
+		void updateAccount_닉네임오류_400() throws Exception {
+			mockMvc.perform(put("/mypage/account")
+					.contentType("application/json")
+					.content("""
+						{
+						  "nickname": "   "
+						}
+						"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("nickname: 닉네임은 공백일 수 없습니다."));
+		}
+
+		@Test
+		@DisplayName("사용자가 없으면 404를 반환한다")
+		void updateAccount_사용자없음_404() throws Exception {
+			given(myPageService.updateAccount(eq(1L), any(MyPageAccountUpdateRequest.class)))
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+
+			mockMvc.perform(put("/mypage/account")
+					.contentType("application/json")
+					.content("""
+						{
+						  "nickname": "goorm_new"
+						}
+						"""))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+		}
 	}
 
 	@Nested

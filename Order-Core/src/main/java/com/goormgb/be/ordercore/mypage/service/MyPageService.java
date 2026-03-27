@@ -1,12 +1,12 @@
 package com.goormgb.be.ordercore.mypage.service;
 
 import java.math.BigDecimal;
-import java.time.Clock;
 import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +23,8 @@ import com.goormgb.be.ordercore.cancellation.entity.CancellationFeePolicy;
 import com.goormgb.be.ordercore.cancellation.repository.CancellationFeePolicyRepository;
 import com.goormgb.be.ordercore.mypage.dto.query.TicketDetailBaseRow;
 import com.goormgb.be.ordercore.mypage.dto.query.TicketSeatDetailRow;
+import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
@@ -34,10 +36,10 @@ import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
-import com.goormgb.be.ordercore.qrtoken.entity.QrToken;
-import com.goormgb.be.ordercore.qrtoken.repository.QrTokenRepository;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.payment.enums.PaymentMethod;
+import com.goormgb.be.ordercore.qrtoken.entity.QrToken;
+import com.goormgb.be.ordercore.qrtoken.repository.QrTokenRepository;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.entity.UserSns;
 import com.goormgb.be.user.repository.UserRepository;
@@ -81,6 +83,18 @@ public class MyPageService {
 	private final MyPageQueryService myPageQueryService;
 	private final CancellationFeePolicyRepository cancellationFeePolicyRepository;
 	private final Clock clock;
+
+	@Transactional
+	public MyPageAccountResponse updateAccount(Long userId, MyPageAccountUpdateRequest request) {
+		String nickname = request.nickname().trim();
+
+		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+		user.updateNickname(nickname);
+
+		UserSns userSns = userSnsRepository.findByUserId(userId).orElse(null);
+
+		return MyPageAccountResponse.of(user, userSns);
+	}
 
 	/**
 	 * 마이페이지 프로필 요약 조회
@@ -317,7 +331,8 @@ public class MyPageService {
 
 	private void validateQrIssuableTime(Instant matchAt, Instant now) {
 		Preconditions.validate(now.isBefore(matchAt), ErrorCode.ENTRY_QR_MATCH_STARTED);
-		Preconditions.validate(!now.isBefore(matchAt.minus(ENTRY_OPEN_BEFORE_MATCH)), ErrorCode.ENTRY_QR_NOT_AVAILABLE_YET);
+		Preconditions.validate(!now.isBefore(matchAt.minus(ENTRY_OPEN_BEFORE_MATCH)),
+			ErrorCode.ENTRY_QR_NOT_AVAILABLE_YET);
 	}
 
 	private QrToken issueNewQrToken(Order order, Instant now) {
