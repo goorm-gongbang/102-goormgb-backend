@@ -27,13 +27,11 @@ public class CookieUtils {
 		long maxAgeSeconds = TimeUnit.DAYS.toSeconds(jwtProperties.getRefreshToken().getExpirationDays());
 
 		return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
-				.httpOnly(true)     // XSS 방지
-				.secure(jwtProperties.getCookie().isSecure())
-				// TODO: 프론트 배포 환경이 동일 도메인(goormgb.space)으로 확정되면
-				//  SameSite=Lax, secure=false로 되돌릴 것.
-				.sameSite("None")   // cross-site 요청에서도 쿠키 전송 (HTTPS 필수)
-				.path("/")          // 모든 경로에서 쿠키전송
-				.maxAge(maxAgeSeconds)// 7일 만료
+				.httpOnly(true)
+				.secure(true)
+				.sameSite("Lax")    // prod 환경
+				.path("/")
+				.maxAge(maxAgeSeconds)
 				.build();
 	}
 
@@ -43,10 +41,8 @@ public class CookieUtils {
 	public ResponseCookie deleteRefreshTokenCookie() {
 		return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, "")
 				.httpOnly(true)
-				.secure(jwtProperties.getCookie().isSecure())
-				// TODO: 프론트 배포 환경이 동일 도메인(goormgb.space)으로 확정되면
-				//  SameSite=Lax, secure=false로 되돌릴 것.
-				.sameSite("None")
+				.secure(true)
+				.sameSite("Lax")    // prod 환경
 				.path("/")
 				.maxAge(0)    // 즉시 만료 -> 브라우저에서 삭제
 				.build();
