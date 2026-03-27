@@ -130,7 +130,7 @@ class MyPageServiceTest {
 		}
 
 		@Test
-		@DisplayName("닉네임이 20자를 초과하면 INVALID_NICKNAME 예외가 발생한다")
+		@DisplayName("닉네임이 15자를 초과하면 INVALID_NICKNAME 예외가 발생한다")
 		void updateAccount_닉네임길이초과_예외() {
 			assertThatThrownBy(() -> myPageService.updateAccount(1L, new MyPageAccountUpdateRequest("abcdefghijklmnopqrstu")))
 				.isInstanceOf(CustomException.class)
@@ -516,6 +516,7 @@ class MyPageServiceTest {
 
 			User user = OrderFixture.createUserWithId(userId);
 			Order order = OrderFixture.createOrderWithId(ticketId, user, match, 42000);
+			ReflectionTestUtils.setField(order, "createdAt", Instant.now(clock));
 			order.updateStatus(status);
 			return order;
 		}
@@ -620,6 +621,7 @@ class MyPageServiceTest {
 
 			User user = OrderFixture.createUserWithId(userId);
 			Order order = OrderFixture.createOrderWithId(ticketId, user, match, 42000);
+			ReflectionTestUtils.setField(order, "createdAt", Instant.now(clock));
 			order.updateStatus(status);
 			return order;
 		}
@@ -682,7 +684,7 @@ class MyPageServiceTest {
 			Long userId = 1L;
 			Long ticketId = 101L;
 			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now().plus(10, ChronoUnit.DAYS));
-			ReflectionTestUtils.setField(order, "createdAt", Instant.now().minus(1, ChronoUnit.DAYS));
+			ReflectionTestUtils.setField(order, "createdAt", Instant.now(clock).minus(1, ChronoUnit.DAYS));
 
 			CancellationFeePolicy policy = CancellationFeePolicy.builder()
 				.daysBeforeMatchMin(7)

@@ -90,7 +90,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 						}
 						"""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.message").value("닉네임은 공백일 수 없고 20자 이하여야 합니다."));
+				.andExpect(jsonPath("$.message").value("닉네임은 공백일 수 없고 15자 이하여야 합니다."));
 		}
 
 		@Test
