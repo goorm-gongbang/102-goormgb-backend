@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -47,6 +48,21 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 		@Param("cancelProcessingStatuses") List<OrderStatus> cancelProcessingStatuses,
 		@Param("completedStatus") OrderStatus completedStatus,
 		@Param("now") Instant now
+	);
+
+	@Modifying(clearAutomatically = true)
+	@Query("""
+		UPDATE Order o
+		SET o.status = :newStatus
+		WHERE o.user.id = :userId
+		  AND o.match.id = :matchId
+		  AND o.status = :oldStatus
+		""")
+	int bulkUpdateStatus(
+		@Param("userId") Long userId,
+		@Param("matchId") Long matchId,
+		@Param("oldStatus") OrderStatus oldStatus,
+		@Param("newStatus") OrderStatus newStatus
 	);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
