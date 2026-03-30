@@ -17,17 +17,20 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.mock.web.MockMultipartFile;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.mypage.MyPageFixture;
 import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
+import com.goormgb.be.ordercore.mypage.service.MyPageInquiryService;
 import com.goormgb.be.ordercore.mypage.service.MyPageProfileService;
 import com.goormgb.be.ordercore.mypage.service.MyPageTicketService;
 import com.goormgb.be.ordercore.support.WebMvcTestSupport;
@@ -42,6 +45,8 @@ class MyPageControllerTest extends WebMvcTestSupport {
 
 	@MockitoBean
 	private MyPageTicketService myPageTicketService;
+	@MockitoBean
+	private MyPageInquiryService myPageInquiryService;
 
 	private void setAuthentication(Long userId) {
 		SecurityContextHolder.getContext().setAuthentication(
@@ -447,6 +452,84 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			mockMvc.perform(post("/mypage/tickets/101/cancel"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message").value("취소 가능한 기간이 아닙니다."));
+		}
+	}
+
+	@Nested
+	@DisplayName("POST /mypage/inquiries — 1:1 문의 작성")
+	class CreateInquiry {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 멀티파트 요청이면 201과 inquiryId를 반환한다")
+		void createInquiry_성공() throws Exception {
+			given(myPageInquiryService.createInquiry(eq(1L), any(), any()))
+				.willReturn(MyPageInquiryCreateResponse.of(11L));
+
+			MockMultipartFile inquiryPart = new MockMultipartFile(
+				"inquiry",
+				"inquiry.json",
+				"application/json",
+				"""
+					{
+					  "category": "BOOKING",
+					  "title": "좌석 변경 문의",
+					  "content": "좌석 변경이 가능한지 확인 부탁드립니다.",
+					  "phoneNumber": "010-1234-5678"
+					}
+					""".getBytes()
+			);
+			MockMultipartFile filePart = new MockMultipartFile(
+				"file",
+				"seat.jpg",
+				"image/jpeg",
+				new byte[] {(byte)0xFF, (byte)0xD8, (byte)0xFF, 0x00}
+			);
+
+			mockMvc.perform(multipart("/mypage/inquiries")
+					.file(inquiryPart)
+					.file(filePart))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.code").value("CREATED"))
+				.andExpect(jsonPath("$.message").value("문의가 등록되었습니다."))
+				.andExpect(jsonPath("$.data.inquiryId").value(11));
+		}
+
+		@Test
+		@DisplayName("유효하지 않은 카테고리면 400을 반환한다")
+		void createInquiry_카테고리오류_400() throws Exception {
+			given(myPageInquiryService.createInquiry(eq(1L), any(), any()))
+				.willThrow(new CustomException(ErrorCode.INVALID_INQUIRY_CATEGORY));
+
+			MockMultipartFile inquiryPart = new MockMultipartFile(
+				"inquiry",
+				"inquiry.json",
+				"application/json",
+				"""
+					{
+					  "category": "INVALID",
+					  "title": "좌석 변경 문의",
+					  "content": "문의 내용"
+					}
+					""".getBytes()
+			);
+
+			mockMvc.perform(multipart("/mypage/inquiries")
+					.file(inquiryPart))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("유효하지 않은 문의 카테고리입니다."));
+		}
+
+		@Test
+		@DisplayName("필수 inquiry 파트가 없으면 400을 반환한다")
+		void createInquiry_필수파트누락_400() throws Exception {
+			mockMvc.perform(multipart("/mypage/inquiries"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("필수 파트 'inquiry'이(가) 누락되었습니다."));
 		}
 	}
 }
