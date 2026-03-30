@@ -71,6 +71,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 				.andExpect(jsonPath("$.message").value("조회 성공"))
 				.andExpect(jsonPath("$.data.email").value("user@example.com"))
 				.andExpect(jsonPath("$.data.nickname").value("goorm_new"))
+				.andExpect(jsonPath("$.data.profileImageUrl").value("https://cdn.goormgb.com/profile/user-1.png"))
 				.andExpect(jsonPath("$.data.snsAccount.provider").value("KAKAO"));
 		}
 
@@ -114,6 +115,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 				.andExpect(jsonPath("$.message").value("수정 성공"))
 				.andExpect(jsonPath("$.data.email").value("user@example.com"))
 				.andExpect(jsonPath("$.data.nickname").value("goorm_new"))
+				.andExpect(jsonPath("$.data.profileImageUrl").value("https://cdn.goormgb.com/profile/user-1.png"))
 				.andExpect(jsonPath("$.data.snsAccount.provider").value("KAKAO"));
 		}
 

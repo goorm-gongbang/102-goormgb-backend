@@ -6,6 +6,7 @@ import com.goormgb.be.user.entity.UserSns;
 public record MyPageAccountResponse(
 	String email,
 	String nickname,
+	String profileImageUrl,
 	SnsAccount snsAccount
 ) {
 
@@ -22,6 +23,7 @@ public record MyPageAccountResponse(
 		return new MyPageAccountResponse(
 			user.getEmail(),
 			user.getNickname(),
+			user.getProfileImageUrl(),
 			snsAccount
 		);
 	}

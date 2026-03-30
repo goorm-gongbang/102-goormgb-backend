@@ -85,6 +85,7 @@ class MyPageProfileServiceTest {
 
 			assertThat(response.nickname()).isEqualTo("goorm_new");
 			assertThat(response.email()).isEqualTo("test@test.com");
+			assertThat(response.profileImageUrl()).isNull();
 			assertThat(response.snsAccount()).isNotNull();
 			assertThat(response.snsAccount().provider()).isEqualTo("KAKAO");
 			assertThat(user.getNickname()).isEqualTo("goorm_new");
@@ -122,6 +123,7 @@ class MyPageProfileServiceTest {
 
 			assertThat(response.email()).isEqualTo("test@test.com");
 			assertThat(response.nickname()).isEqualTo("테스터");
+			assertThat(response.profileImageUrl()).isNull();
 			assertThat(response.snsAccount()).isNotNull();
 			assertThat(response.snsAccount().provider()).isEqualTo("KAKAO");
 		}
