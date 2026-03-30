@@ -81,6 +81,14 @@ public class PaymentService {
 				ErrorCode.PAYMENT_ALREADY_COMPLETED
 			);
 
+			if (request.paymentMethod() == PaymentMethod.BANK_TRANSFER) {
+				Instant matchDeadline = order.getMatch().getMatchAt().minus(MATCH_DAY_DEADLINE_BEFORE);
+				Preconditions.validate(
+					Instant.now().isBefore(matchDeadline),
+					ErrorCode.BANK_TRANSFER_NOT_AVAILABLE
+				);
+			}
+
 			Payment payment = buildPayment(order, request.paymentMethod());
 			paymentRepository.save(payment);
 

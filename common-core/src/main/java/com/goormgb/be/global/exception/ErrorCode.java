@@ -114,6 +114,7 @@ public enum ErrorCode {
 	PAYMENT_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 결제가 완료된 주문입니다."),
 	CASH_RECEIPT_ALREADY_EXISTS(HttpStatus.CONFLICT, "현금영수증이 이미 신청되었습니다."),
 	INVALID_PAYMENT_METHOD(HttpStatus.BAD_REQUEST, "지원하지 않는 결제 수단입니다."),
+	BANK_TRANSFER_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "경기 시작 3시간 이내에는 무통장 입금을 이용할 수 없습니다."),
 
 	// Mypage
 	INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "size는 최대 10까지 허용됩니다."),
