@@ -49,6 +49,18 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 		@Param("now") Instant now
 	);
 
+	@Query("""
+		SELECT o FROM Order o
+		WHERE o.user.id = :userId
+		  AND o.match.id = :matchId
+		  AND o.status = :status
+		""")
+	List<Order> findAllByUserIdAndMatchIdAndStatus(
+		@Param("userId") Long userId,
+		@Param("matchId") Long matchId,
+		@Param("status") OrderStatus status
+	);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""
 		SELECT o

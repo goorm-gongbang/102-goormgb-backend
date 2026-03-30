@@ -19,6 +19,7 @@ import com.goormgb.be.ordercore.order.dto.response.OrderCreateResponse;
 import com.goormgb.be.ordercore.order.dto.response.OrderSheetGetResponse;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.entity.OrderSeat;
+import com.goormgb.be.ordercore.order.enums.OrderStatus;
 import com.goormgb.be.ordercore.order.query.SeatHoldInfo;
 import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
@@ -76,6 +77,8 @@ public class OrderService {
 	public OrderCreateResponse createOrder(Long userId, OrderCreateRequest request) {
 		Preconditions.validate(!request.matchSeatIds().isEmpty(), ErrorCode.ORDER_SEAT_EMPTY);
 
+		cancelExistingPendingOrders(userId, request.matchId());
+
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		Match match = matchRepository.findDetailByIdOrThrow(request.matchId());
 
@@ -124,6 +127,26 @@ public class OrderService {
 				order.getId(), userId, orderSeats.size(), request.totalPrice());
 
 		return OrderCreateResponse.of(order, orderSeats.size());
+	}
+
+	/**
+	 * 같은 유저 + 같은 경기의 미결제 주문(PAYMENT_PENDING)을 자동 취소한다.
+	 * 결제 없이 이탈한 유저가 동일 좌석으로 재주문할 수 있도록 이전 주문을 정리한다.
+	 */
+	private void cancelExistingPendingOrders(Long userId, Long matchId) {
+		List<Order> pendingOrders = orderRepository
+				.findAllByUserIdAndMatchIdAndStatus(userId, matchId, OrderStatus.PAYMENT_PENDING);
+
+		if (pendingOrders.isEmpty()) {
+			return;
+		}
+
+		for (Order order : pendingOrders) {
+			order.updateStatus(OrderStatus.CANCELLED);
+		}
+
+		log.info("[OrderService] 미결제 주문 {}건 자동 취소 - userId={}, matchId={}",
+				pendingOrders.size(), userId, matchId);
 	}
 
 	private String determineDayType(Instant matchAt) {
