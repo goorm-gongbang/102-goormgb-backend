@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 
 import com.goormgb.be.domain.match.entity.Match;
+import com.goormgb.be.domain.stadium.entity.Stadium;
 import com.goormgb.be.ordercore.order.query.SeatHoldInfo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -21,23 +22,15 @@ public record OrderSheetGetResponse(
 			@Schema(description = "경기 일시 (UTC)", example = "2026-03-29T05:00:00Z") Instant matchAt,
 			@Schema(description = "홈 구단 정보") ClubInfo homeClub,
 			@Schema(description = "원정 구단 정보") ClubInfo awayClub,
-			@Schema(description = "경기장 정보 (잠실야구장 고정)") StadiumInfo stadium
+			@Schema(description = "경기장 정보") StadiumInfo stadium
 	) {
-		private static final Long JAMSIL_STADIUM_ID = 1L;
-		private static final String JAMSIL_STADIUM_NAME = "잠실종합운동장 잠실야구장";
-		private static final String JAMSIL_STADIUM_ADDRESS = "서울 송파구 올림픽로 19-2 서울종합운동장";
-
 		public static MatchInfo from(Match match) {
 			return new MatchInfo(
 					match.getId(),
 					match.getMatchAt(),
 					new ClubInfo(match.getHomeClub().getId(), match.getHomeClub().getKoName()),
 					new ClubInfo(match.getAwayClub().getId(), match.getAwayClub().getKoName()),
-					new StadiumInfo(
-							JAMSIL_STADIUM_ID,
-							JAMSIL_STADIUM_NAME,
-							JAMSIL_STADIUM_ADDRESS
-					)
+					StadiumInfo.from(match.getStadium())
 			);
 		}
 	}
@@ -55,6 +48,13 @@ public record OrderSheetGetResponse(
 			@Schema(description = "경기장명", example = "잠실종합운동장 잠실야구장") String koName,
 			@Schema(description = "경기장 주소", example = "서울 송파구 올림픽로 19-2 서울종합운동장") String address
 	) {
+		public static StadiumInfo from(Stadium stadium) {
+			return new StadiumInfo(
+					stadium.getId(),
+					stadium.getKoName(),
+					stadium.getAddress()
+			);
+		}
 	}
 
 	@Schema(description = "좌석 정보")
