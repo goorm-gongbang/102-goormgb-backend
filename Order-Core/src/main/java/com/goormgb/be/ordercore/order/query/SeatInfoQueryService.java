@@ -82,6 +82,54 @@ public class SeatInfoQueryService {
 	}
 
 	/**
+	 * BLOCKED 상태인 좌석들을 SOLD로 일괄 전환한다.
+	 * 결제 확정 시 호출되며, BLOCKED가 아닌 좌석은 건드리지 않는다.
+	 *
+	 * @return 변경된 행 수
+	 */
+	public int markSoldIfBlocked(List<Long> matchSeatIds) {
+		if (matchSeatIds.isEmpty()) {
+			return 0;
+		}
+
+		String sql = """
+				UPDATE match_seats
+				SET sale_status = 'SOLD'
+				WHERE id IN (:matchSeatIds)
+				  AND sale_status = 'BLOCKED'
+				""";
+
+		var params = new MapSqlParameterSource()
+				.addValue("matchSeatIds", matchSeatIds);
+
+		return namedJdbc.update(sql, params);
+	}
+
+	/**
+	 * SOLD 상태인 좌석들을 AVAILABLE로 일괄 복원한다.
+	 * 주문 취소 시 호출되며, SOLD가 아닌 좌석은 건드리지 않는다.
+	 *
+	 * @return 변경된 행 수
+	 */
+	public int markAvailableIfSold(List<Long> matchSeatIds) {
+		if (matchSeatIds.isEmpty()) {
+			return 0;
+		}
+
+		String sql = """
+				UPDATE match_seats
+				SET sale_status = 'AVAILABLE'
+				WHERE id IN (:matchSeatIds)
+				  AND sale_status = 'SOLD'
+				""";
+
+		var params = new MapSqlParameterSource()
+				.addValue("matchSeatIds", matchSeatIds);
+
+		return namedJdbc.update(sql, params);
+	}
+
+	/**
 	 * matchSeatId로 이미 주문된 좌석인지 확인한다.
 	 */
 	public boolean isAlreadyOrdered(Long matchSeatId) {
