@@ -1,5 +1,6 @@
 package com.goormgb.be.ordercore.payment.service;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -50,6 +51,7 @@ public class PaymentService {
 	// 무통장 입금 기한: 다음날 23:59 KST, 경기 당일이면 경기 3시간 전
 	private static final Duration MATCH_DAY_DEADLINE_BEFORE = Duration.ofHours(3);
 
+	private final Clock clock;
 	private final OrderMetricsService orderMetricsService;
 	private final OrderRepository orderRepository;
 	private final OrderSeatRepository orderSeatRepository;
@@ -84,7 +86,7 @@ public class PaymentService {
 			if (request.paymentMethod() == PaymentMethod.BANK_TRANSFER) {
 				Instant matchDeadline = order.getMatch().getMatchAt().minus(MATCH_DAY_DEADLINE_BEFORE);
 				Preconditions.validate(
-					Instant.now().isBefore(matchDeadline),
+					clock.instant().isBefore(matchDeadline),
 					ErrorCode.BANK_TRANSFER_NOT_AVAILABLE
 				);
 			}
@@ -164,6 +166,10 @@ public class PaymentService {
 		List<Long> matchSeatIds = orderSeatRepository.findMatchSeatIdsByOrderId(orderId);
 		int updated = seatInfoQueryService.markSoldIfBlocked(matchSeatIds);
 		log.info("[PaymentService] 좌석 SOLD 전환 - orderId={}, count={}", orderId, updated);
+		if (updated != matchSeatIds.size()) {
+			log.warn("[PaymentService] 좌석 SOLD 전환 개수 불일치 - orderId={}, expected={}, updated={}",
+				orderId, matchSeatIds.size(), updated);
+		}
 	}
 
 	private Payment buildPayment(Order order, PaymentMethod method) {
@@ -193,7 +199,7 @@ public class PaymentService {
 	 * - 둘 중 빠른 시각을 적용
 	 */
 	private Instant calculateDepositDeadline(Instant matchAt) {
-		ZonedDateTime now = ZonedDateTime.now(KST);
+		ZonedDateTime now = clock.instant().atZone(KST);
 
 		// 일반 기한: 다음날 23:59 KST
 		Instant tomorrowEnd = now.toLocalDate().plusDays(1)

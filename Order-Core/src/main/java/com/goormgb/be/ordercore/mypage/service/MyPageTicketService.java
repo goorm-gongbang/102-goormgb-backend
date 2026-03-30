@@ -174,7 +174,10 @@ public class MyPageTicketService {
 		// 결제된 좌석을 SOLD → AVAILABLE로 복원
 		List<Long> matchSeatIds = orderSeatRepository.findMatchSeatIdsByOrderId(ticketId);
 		int restored = seatInfoQueryService.markAvailableIfSold(matchSeatIds);
-		log.info("[MyPageTicketService] 좌석 AVAILABLE 복원 - orderId={}, count={}", ticketId, restored);
+		if (restored != matchSeatIds.size()) {
+			log.warn("[MyPageTicketService] 좌석 AVAILABLE 복원 개수 불일치 - orderId={}, expected={}, restored={}",
+				ticketId, matchSeatIds.size(), restored);
+		}
 
 		return MyPageTicketCancelResponse.of(order);
 	}
