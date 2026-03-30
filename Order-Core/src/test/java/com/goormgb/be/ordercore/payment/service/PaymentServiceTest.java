@@ -4,6 +4,11 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +27,9 @@ import com.goormgb.be.ordercore.fixture.payment.PaymentFixture;
 import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
+import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
 import com.goormgb.be.ordercore.payment.dto.request.CashReceiptCreateRequest;
 import com.goormgb.be.ordercore.payment.dto.request.PaymentProcessRequest;
 import com.goormgb.be.ordercore.payment.dto.response.CashReceiptCreateResponse;
@@ -43,18 +50,25 @@ class PaymentServiceTest {
 	@Mock
 	private OrderRepository orderRepository;
 	@Mock
+	private OrderSeatRepository orderSeatRepository;
+	@Mock
 	private PaymentRepository paymentRepository;
 	@Mock
 	private CashReceiptRepository cashReceiptRepository;
 	@Mock
 	private OrderMetricsService orderMetricsService;
+	@Mock
+	private SeatInfoQueryService seatInfoQueryService;
 
 	private PaymentService paymentService;
+	private Clock clock;
 
 	@BeforeEach
 	void setUp() {
-		paymentService = new PaymentService(orderMetricsService, orderRepository, paymentRepository,
-			cashReceiptRepository);
+		// 경기(2026-03-11 09:30 UTC)보다 이전 시점으로 고정
+		clock = Clock.fixed(Instant.parse("2026-03-04T00:00:00Z"), ZoneId.of("Asia/Seoul"));
+		paymentService = new PaymentService(clock, orderMetricsService, orderRepository, orderSeatRepository,
+				paymentRepository, cashReceiptRepository, seatInfoQueryService);
 	}
 
 	private Order createOrderWithUser(Long orderId, Long userId) {
@@ -79,6 +93,7 @@ class PaymentServiceTest {
 			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
+			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(java.util.List.of());
 
 			PaymentProcessResponse response = paymentService.processPayment(userId, orderId, request);
 
@@ -100,6 +115,7 @@ class PaymentServiceTest {
 			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
+			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(java.util.List.of());
 
 			PaymentProcessResponse response = paymentService.processPayment(userId, orderId, request);
 
@@ -120,6 +136,7 @@ class PaymentServiceTest {
 			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
+			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(List.of());
 
 			PaymentProcessResponse response = paymentService.processPayment(userId, orderId, request);
 
@@ -134,15 +151,61 @@ class PaymentServiceTest {
 		}
 
 		@Test
+		@DisplayName("결제 시 좌석을 BLOCKED에서 SOLD로 전환된다")
+		void processPayment_좌석_SOLD_전환() {
+			Long userId = 1L;
+			Long orderId = 1L;
+			Order order = createOrderWithUser(orderId, userId);
+			List<Long> matchSeatIds = List.of(101L, 102L);
+			PaymentProcessRequest request = PaymentFixture.createTossPayRequest();
+
+			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
+			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
+			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(matchSeatIds);
+			given(seatInfoQueryService.markSoldIfBlocked(matchSeatIds)).willReturn(2);
+
+			paymentService.processPayment(userId, orderId, request);
+
+			then(seatInfoQueryService).should().markSoldIfBlocked(matchSeatIds);
+		}
+
+		@Test
+		@DisplayName("경기 시작 3시간 이내에 무통장 입금을 선택하면 BANK_TRANSFER_NOT_AVAILABLE 예외가 발생한다")
+		void processPayment_무통장입금_3시간이내_차단() {
+			Long userId = 1L;
+			Long orderId = 1L;
+
+			// 경기 시작 2시간 전으로 Clock 고정
+			Instant matchAt = Instant.parse("2026-03-11T09:30:00Z");
+			Clock nearMatchClock = Clock.fixed(matchAt.minus(Duration.ofHours(2)), ZoneId.of("Asia/Seoul"));
+			PaymentService nearMatchPaymentService = new PaymentService(nearMatchClock, orderMetricsService,
+					orderRepository, orderSeatRepository, paymentRepository, cashReceiptRepository,
+					seatInfoQueryService);
+
+			Order order = createOrderWithUser(orderId, userId);
+			PaymentProcessRequest request = PaymentFixture.createBankTransferRequest();
+
+			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
+
+			assertThatThrownBy(
+					() -> nearMatchPaymentService.processPayment(userId, orderId, request)
+			)
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.BANK_TRANSFER_NOT_AVAILABLE.getMessage());
+		}
+
+		@Test
 		@DisplayName("주문이 없으면 ORDER_NOT_FOUND 예외가 발생한다")
 		void processPayment_주문_미발견_예외() {
 			given(orderRepository.findById(99L)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
-				() -> paymentService.processPayment(1L, 99L, PaymentFixture.createTossPayRequest())
+					() -> paymentService.processPayment(1L, 99L, PaymentFixture.createTossPayRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
 		}
 
 		@Test
@@ -155,10 +218,10 @@ class PaymentServiceTest {
 			given(orderRepository.findById(1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(
-				() -> paymentService.processPayment(attackerId, 1L, PaymentFixture.createTossPayRequest())
+					() -> paymentService.processPayment(attackerId, 1L, PaymentFixture.createTossPayRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
 		}
 
 		@Test
@@ -171,10 +234,10 @@ class PaymentServiceTest {
 			given(orderRepository.findById(1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(
-				() -> paymentService.processPayment(userId, 1L, PaymentFixture.createTossPayRequest())
+					() -> paymentService.processPayment(userId, 1L, PaymentFixture.createTossPayRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
 		}
 
 		@Test
@@ -189,10 +252,10 @@ class PaymentServiceTest {
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.of(existingPayment));
 
 			assertThatThrownBy(
-				() -> paymentService.processPayment(userId, orderId, PaymentFixture.createTossPayRequest())
+					() -> paymentService.processPayment(userId, orderId, PaymentFixture.createTossPayRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.PAYMENT_ALREADY_COMPLETED.getMessage());
 		}
 	}
 
@@ -252,11 +315,11 @@ class PaymentServiceTest {
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
-				() -> paymentService.createCashReceipt(userId, orderId,
-					PaymentFixture.createPersonalDeductionRequest())
+					() -> paymentService.createCashReceipt(userId, orderId,
+							PaymentFixture.createPersonalDeductionRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.PAYMENT_NOT_FOUND.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.PAYMENT_NOT_FOUND.getMessage());
 		}
 
 		@Test
@@ -273,11 +336,11 @@ class PaymentServiceTest {
 			given(cashReceiptRepository.findByPaymentId(payment.getId())).willReturn(Optional.of(existing));
 
 			assertThatThrownBy(
-				() -> paymentService.createCashReceipt(userId, orderId,
-					PaymentFixture.createPersonalDeductionRequest())
+					() -> paymentService.createCashReceipt(userId, orderId,
+							PaymentFixture.createPersonalDeductionRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.CASH_RECEIPT_ALREADY_EXISTS.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.CASH_RECEIPT_ALREADY_EXISTS.getMessage());
 		}
 
 		@Test
@@ -290,11 +353,11 @@ class PaymentServiceTest {
 			given(orderRepository.findById(1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(
-				() -> paymentService.createCashReceipt(attackerId, 1L,
-					PaymentFixture.createPersonalDeductionRequest())
+					() -> paymentService.createCashReceipt(attackerId, 1L,
+							PaymentFixture.createPersonalDeductionRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
 		}
 
 		@Test
@@ -303,10 +366,10 @@ class PaymentServiceTest {
 			given(orderRepository.findById(99L)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
-				() -> paymentService.createCashReceipt(1L, 99L, PaymentFixture.createPersonalDeductionRequest())
+					() -> paymentService.createCashReceipt(1L, 99L, PaymentFixture.createPersonalDeductionRequest())
 			)
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
 		}
 	}
 }
