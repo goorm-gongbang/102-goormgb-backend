@@ -22,6 +22,7 @@ import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
+import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.repository.BlockRemainingSeatProjection;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.metrics.SeatMetricsService;
@@ -46,6 +47,7 @@ public class SeatRecommendationService {
 	private final OnboardingPreferenceRepository onboardingPreferenceRepository;
 	private final OnboardingViewpointPriorityRepository onboardingViewpointPriorityRepository;
 	private final ConsecutiveSeatCounter consecutiveSeatCounter;
+	private final SemiConsecutiveSeatCounter semiConsecutiveSeatCounter;
 	private final PreferenceScoreCalculator preferenceScoreCalculator;
 	private final SeatMetricsService seatMetricsService;
 
@@ -80,11 +82,13 @@ public class SeatRecommendationService {
 			List<OnboardingViewpointPriority> viewpoints =
 				onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId);
 
-			List<BlockRecommendation> recommendations = buildRecommendations(matchId, ticketCount, preferredBlocks);
+			boolean nearAdjacentToggle = seatSession.isNearAdjacentToggle();
+			List<BlockRecommendation> recommendations = buildRecommendations(
+				matchId, ticketCount, preferredBlocks, nearAdjacentToggle);
 
 			Preconditions.validate(!recommendations.isEmpty(), ErrorCode.NO_AVAILABLE_BLOCK);
 
-			sortRecommendations(recommendations, pref, viewpoints, match);
+			sortRecommendations(recommendations, pref, viewpoints, match, nearAdjacentToggle);
 
 			// 추천 좌석 탐색 성공 횟수 증가
 			seatMetricsService.increaseRecommendSuccess();
@@ -101,7 +105,9 @@ public class SeatRecommendationService {
 
 	}
 
-	private List<BlockRecommendation> buildRecommendations(Long matchId, int ticketCount, List<Block> blocks) {
+	private List<BlockRecommendation> buildRecommendations(
+		Long matchId, int ticketCount, List<Block> blocks, boolean nearAdjacentToggle
+	) {
 		List<Long> blockIds = blocks.stream().map(Block::getId).toList();
 
 		Map<Long, Long> remainingMap = matchSeatRepository
@@ -114,10 +120,25 @@ public class SeatRecommendationService {
 
 		List<BlockRecommendation> recommendations = new ArrayList<>();
 		for (Block block : blocks) {
-			int count = consecutiveSeatCounter.countRealConsecutiveSeats(matchId, block.getId(), ticketCount);
-			if (count > 0) {
+			// 블럭당 AVAILABLE 좌석을 1회 조회하여 real/semi 두 카운터에 재사용
+			// (nearAdjacentToggle=true 시 각 카운터가 독립적으로 조회하면 2×N 쿼리 발생)
+			List<MatchSeat> availableSeats =
+				matchSeatRepository.findAvailableSeatsByMatchIdAndBlockId(matchId, block.getId());
+
+			int realCount = consecutiveSeatCounter.countRealConsecutiveSeats(availableSeats, ticketCount);
+			int semiCount = 0;
+
+			if (nearAdjacentToggle) {
+				semiCount = semiConsecutiveSeatCounter.countSemiConsecutiveSeats(availableSeats, ticketCount);
+			}
+
+			boolean included = nearAdjacentToggle
+				? (realCount > 0 || semiCount > 0)
+				: (realCount > 0);
+
+			if (included) {
 				long remaining = remainingMap.getOrDefault(block.getId(), 0L);
-				recommendations.add(new BlockRecommendation(block, count, remaining));
+				recommendations.add(new BlockRecommendation(block, realCount, semiCount, remaining));
 			}
 		}
 
@@ -128,10 +149,13 @@ public class SeatRecommendationService {
 		List<BlockRecommendation> recommendations,
 		OnboardingPreference pref,
 		List<OnboardingViewpointPriority> viewpoints,
-		Match match
+		Match match,
+		boolean nearAdjacentToggle
 	) {
 		recommendations.sort((b1, b2) -> {
-			int countDiff = b2.realConsecutiveCount() - b1.realConsecutiveCount();
+			int count1 = nearAdjacentToggle ? b1.combinedCount() : b1.realConsecutiveCount();
+			int count2 = nearAdjacentToggle ? b2.combinedCount() : b2.realConsecutiveCount();
+			int countDiff = count2 - count1;
 
 			if (Math.abs(countDiff) > CONSECUTIVE_COUNT_THRESHOLD) {
 				return countDiff;

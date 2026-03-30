@@ -56,6 +56,9 @@ queue:
       public-key: ${ADMISSION_PUBLIC_KEY}
       issuer: queue-service
 
+encryption:
+  db-key: ${DB_ENCRYPTION_KEY}
+
 management:
   endpoints:
     web:
@@ -75,3 +78,5 @@ management:
 
 logging:
   config: classpath:logback-spring.xml
+  level:
+    org.springframework.web: DEBUG

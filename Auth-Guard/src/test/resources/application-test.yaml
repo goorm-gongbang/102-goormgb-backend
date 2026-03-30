@@ -36,6 +36,9 @@ jwt:
   cookie:
     secure: false
 
+internal:
+  api-key: test-internal-api-key
+
 kakao:
   client-id: test-client-id
   client-secret: test-client-secret

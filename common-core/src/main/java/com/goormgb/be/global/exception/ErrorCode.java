@@ -44,6 +44,11 @@ public enum ErrorCode {
 	PREFERENCE_NOT_FOUND(HttpStatus.NOT_FOUND, "온보딩 선호도 정보를 찾을 수 없습니다."),
 
 	// Auth
+
+	// TODO: 묶을 수 있는 공통 에러사항에 대해서는 한가지 키워드로 묶기. 백엔드 보안처리.
+
+	// HTTP UNAUTHORIZED 401
+	// AUTHORIZED_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않습니다."),
 	INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
 	EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 토큰입니다."),
 	INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "잘못된 인증 정보입니다."),
@@ -51,6 +56,7 @@ public enum ErrorCode {
 	REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "Refresh Token이 일치하지 않습니다."),
 	INVALID_TOKEN_TYPE(HttpStatus.UNAUTHORIZED, "잘못된 토큰 타입입니다."),
 	BLACKLISTED_TOKEN(HttpStatus.UNAUTHORIZED, "로그아웃된 토큰입니다."),
+	INVALID_INTERNAL_API_KEY(HttpStatus.UNAUTHORIZED, "유효하지 않은 내부 API 키입니다."),
 	OAUTH_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "토큰 발급에 실패했습니다."),
 	OAUTH_CODE_REQUEST_FAILED(HttpStatus.BAD_REQUEST, "인가 코드는 필수입니다."),
 	OAUTH_CODE_EXPIRED(HttpStatus.BAD_REQUEST, "인가 코드가 만료되었거나 이미 사용되었습니다."),
@@ -108,10 +114,12 @@ public enum ErrorCode {
 	PAYMENT_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 결제가 완료된 주문입니다."),
 	CASH_RECEIPT_ALREADY_EXISTS(HttpStatus.CONFLICT, "현금영수증이 이미 신청되었습니다."),
 	INVALID_PAYMENT_METHOD(HttpStatus.BAD_REQUEST, "지원하지 않는 결제 수단입니다."),
+	BANK_TRANSFER_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "경기 시작 3시간 이내에는 무통장 입금을 이용할 수 없습니다."),
 
 	// Mypage
 	INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "size는 최대 10까지 허용됩니다."),
 	INVALID_TICKET_TAB(HttpStatus.BAD_REQUEST, "유효하지 않은 탭 값입니다."),
+	TICKET_CANCEL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "취소 가능한 기간이 아닙니다."),
 	ENTRY_QR_NOT_AVAILABLE_YET(HttpStatus.BAD_REQUEST, "아직 입장 가능 시간이 아닙니다."),
 	ENTRY_QR_MATCH_STARTED(HttpStatus.BAD_REQUEST, "경기 시작 이후에는 QR을 발급할 수 없습니다."),
 

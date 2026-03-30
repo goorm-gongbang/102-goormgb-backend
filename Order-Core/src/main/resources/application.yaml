@@ -30,6 +30,9 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
+encryption:
+  db-key: ${DB_ENCRYPTION_KEY}
+
 management:
   endpoints:
     web:
@@ -49,3 +52,5 @@ management:
 
 logging:
   config: classpath:logback-spring.xml
+  level:
+    org.springframework.web: DEBUG

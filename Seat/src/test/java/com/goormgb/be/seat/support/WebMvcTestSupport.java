@@ -5,6 +5,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.goormgb.be.global.environment.ErrorResponseStrategy;
 import com.goormgb.be.global.security.filter.XUserIdAuthenticationFilter;
 
 import tools.jackson.databind.ObjectMapper;

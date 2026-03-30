@@ -73,6 +73,7 @@
             <appender-ref ref="ASYNC_FILE_DEV"/>
         </root>
         <logger name="com.goormgb.be" level="DEBUG"/>
+        <logger name="org.springframework.web" level="DEBUG"/>
     </springProfile>
 
     <springProfile name="staging">

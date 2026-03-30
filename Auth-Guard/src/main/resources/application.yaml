@@ -43,6 +43,12 @@ jwt:
   cookie:
     secure: false
 
+internal:
+  api-key: ${INTERNAL_API_KEY}
+
+encryption:
+  db-key: ${DB_ENCRYPTION_KEY}
+
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret: ${KAKAO_CLIENT_SECRET}
@@ -71,3 +77,5 @@ management:
 
 logging:
   config: classpath:logback-spring.xml
+  level:
+    org.springframework.web: DEBUG

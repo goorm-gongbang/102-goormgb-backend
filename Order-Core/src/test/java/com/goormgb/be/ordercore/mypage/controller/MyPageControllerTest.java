@@ -21,11 +21,15 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.mypage.MyPageFixture;
+import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
-import com.goormgb.be.ordercore.mypage.service.MyPageService;
+import com.goormgb.be.ordercore.mypage.service.MyPageProfileService;
+import com.goormgb.be.ordercore.mypage.service.MyPageTicketService;
 import com.goormgb.be.ordercore.support.WebMvcTestSupport;
 
 @WebMvcTest(controllers = MyPageController.class)
@@ -34,13 +38,117 @@ import com.goormgb.be.ordercore.support.WebMvcTestSupport;
 class MyPageControllerTest extends WebMvcTestSupport {
 
 	@MockitoBean
-	private MyPageService myPageService;
+	private MyPageProfileService myPageProfileService;
+
+	@MockitoBean
+	private MyPageTicketService myPageTicketService;
 
 	private void setAuthentication(Long userId) {
 		SecurityContextHolder.getContext().setAuthentication(
 			new UsernamePasswordAuthenticationToken(userId, null,
 				List.of(new SimpleGrantedAuthority("ROLE_USER")))
 		);
+	}
+
+	@Nested
+	@DisplayName("GET /mypage/account — 개인정보 조회")
+	class GetAccount {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 계정 정보를 반환한다")
+		void getAccount_성공() throws Exception {
+			MyPageAccountResponse response = MyPageFixture.createAccountResponse();
+			given(myPageProfileService.getAccount(1L)).willReturn(response);
+
+			mockMvc.perform(get("/mypage/account"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("조회 성공"))
+				.andExpect(jsonPath("$.data.email").value("user@example.com"))
+				.andExpect(jsonPath("$.data.nickname").value("goorm_new"))
+				.andExpect(jsonPath("$.data.profileImageUrl").value("https://cdn.goormgb.com/profile/user-1.png"))
+				.andExpect(jsonPath("$.data.snsAccount.provider").value("KAKAO"));
+		}
+
+		@Test
+		@DisplayName("사용자가 없으면 404를 반환한다")
+		void getAccount_사용자없음_404() throws Exception {
+			given(myPageProfileService.getAccount(1L))
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+
+			mockMvc.perform(get("/mypage/account"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+		}
+	}
+
+	@Nested
+	@DisplayName("PUT /mypage/account — 개인정보 수정")
+	class UpdateAccount {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 수정된 계정 정보를 반환한다")
+		void updateAccount_성공() throws Exception {
+			MyPageAccountResponse response = MyPageFixture.createAccountResponse();
+			given(myPageProfileService.updateAccount(eq(1L), any(MyPageAccountUpdateRequest.class))).willReturn(
+				response);
+
+			mockMvc.perform(put("/mypage/account")
+					.contentType("application/json")
+					.content("""
+						{
+						  "nickname": "goorm_new"
+						}
+						"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("수정 성공"))
+				.andExpect(jsonPath("$.data.email").value("user@example.com"))
+				.andExpect(jsonPath("$.data.nickname").value("goorm_new"))
+				.andExpect(jsonPath("$.data.profileImageUrl").value("https://cdn.goormgb.com/profile/user-1.png"))
+				.andExpect(jsonPath("$.data.snsAccount.provider").value("KAKAO"));
+		}
+
+		@Test
+		@DisplayName("닉네임이 유효하지 않으면 400을 반환한다")
+		void updateAccount_닉네임오류_400() throws Exception {
+			mockMvc.perform(put("/mypage/account")
+					.contentType("application/json")
+					.content("""
+						{
+						  "nickname": "   "
+						}
+						"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("nickname: 닉네임은 공백일 수 없습니다."));
+		}
+
+		@Test
+		@DisplayName("사용자가 없으면 404를 반환한다")
+		void updateAccount_사용자없음_404() throws Exception {
+			given(myPageProfileService.updateAccount(eq(1L), any(MyPageAccountUpdateRequest.class)))
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+
+			mockMvc.perform(put("/mypage/account")
+					.contentType("application/json")
+					.content("""
+						{
+						  "nickname": "goorm_new"
+						}
+						"""))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+		}
 	}
 
 	@Nested
@@ -56,7 +164,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@DisplayName("유효한 요청이면 200과 프로필 정보를 반환한다")
 		void getProfile_성공() throws Exception {
 			MyPageProfileResponse response = MyPageFixture.createProfileResponse();
-			given(myPageService.getProfile(1L)).willReturn(response);
+			given(myPageProfileService.getProfile(1L)).willReturn(response);
 
 			mockMvc.perform(get("/mypage/profile"))
 				.andExpect(status().isOk())
@@ -72,7 +180,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("사용자가 없으면 404를 반환한다")
 		void getProfile_사용자_미발견_404() throws Exception {
-			given(myPageService.getProfile(any()))
+			given(myPageProfileService.getProfile(any()))
 				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
 
 			mockMvc.perform(get("/mypage/profile"))
@@ -94,7 +202,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@DisplayName("기본 파라미터로 예매 내역 목록을 반환한다")
 		void getTickets_기본파라미터_성공() throws Exception {
 			MyPageTicketListResponse response = MyPageFixture.createTicketListResponse();
-			given(myPageService.getTickets(eq(1L), eq("BOOKED"), eq(0), eq(10))).willReturn(response);
+			given(myPageTicketService.getTickets(eq(1L), eq("BOOKED"), eq(0), eq(10))).willReturn(response);
 
 			mockMvc.perform(get("/mypage/tickets"))
 				.andExpect(status().isOk())
@@ -112,7 +220,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@DisplayName("CANCEL_REFUND 탭으로 조회할 수 있다")
 		void getTickets_CANCEL_REFUND탭_성공() throws Exception {
 			MyPageTicketListResponse response = MyPageFixture.createTicketListResponse();
-			given(myPageService.getTickets(eq(1L), eq("CANCEL_REFUND"), eq(0), eq(10))).willReturn(response);
+			given(myPageTicketService.getTickets(eq(1L), eq("CANCEL_REFUND"), eq(0), eq(10))).willReturn(response);
 
 			mockMvc.perform(get("/mypage/tickets")
 					.param("tab", "CANCEL_REFUND"))
@@ -123,7 +231,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@DisplayName("page와 size 파라미터를 명시적으로 지정할 수 있다")
 		void getTickets_페이지네이션_파라미터_지정() throws Exception {
 			MyPageTicketListResponse response = MyPageFixture.createTicketListResponse();
-			given(myPageService.getTickets(eq(1L), eq("BOOKED"), eq(1), eq(5))).willReturn(response);
+			given(myPageTicketService.getTickets(eq(1L), eq("BOOKED"), eq(1), eq(5))).willReturn(response);
 
 			mockMvc.perform(get("/mypage/tickets")
 					.param("page", "1")
@@ -134,7 +242,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("size가 10을 초과하면 400을 반환한다")
 		void getTickets_size초과_400() throws Exception {
-			given(myPageService.getTickets(any(), any(), anyInt(), anyInt()))
+			given(myPageTicketService.getTickets(any(), any(), anyInt(), anyInt()))
 				.willThrow(new CustomException(ErrorCode.INVALID_PAGE_SIZE));
 
 			mockMvc.perform(get("/mypage/tickets")
@@ -146,7 +254,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("유효하지 않은 탭 값이면 400을 반환한다")
 		void getTickets_잘못된탭_400() throws Exception {
-			given(myPageService.getTickets(any(), eq("INVALID"), anyInt(), anyInt()))
+			given(myPageTicketService.getTickets(any(), eq("INVALID"), anyInt(), anyInt()))
 				.willThrow(new CustomException(ErrorCode.INVALID_TICKET_TAB));
 
 			mockMvc.perform(get("/mypage/tickets")
@@ -161,7 +269,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			MyPageTicketListResponse emptyResponse = MyPageTicketListResponse.of(
 				0, 0, 0, 0, "BOOKED", 0, 10, 0L, 0, false, List.of()
 			);
-			given(myPageService.getTickets(eq(1L), eq("BOOKED"), eq(0), eq(10))).willReturn(emptyResponse);
+			given(myPageTicketService.getTickets(eq(1L), eq("BOOKED"), eq(0), eq(10))).willReturn(emptyResponse);
 
 			mockMvc.perform(get("/mypage/tickets"))
 				.andExpect(status().isOk())
@@ -175,7 +283,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@DisplayName("티켓 actions 필드가 올바르게 반환된다")
 		void getTickets_actions_필드_확인() throws Exception {
 			MyPageTicketListResponse response = MyPageFixture.createTicketListResponse();
-			given(myPageService.getTickets(eq(1L), eq("BOOKED"), eq(0), eq(10))).willReturn(response);
+			given(myPageTicketService.getTickets(eq(1L), eq("BOOKED"), eq(0), eq(10))).willReturn(response);
 
 			mockMvc.perform(get("/mypage/tickets"))
 				.andExpect(status().isOk())
@@ -198,7 +306,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@DisplayName("유효한 요청이면 200과 상세 정보를 반환한다")
 		void getTicketDetail_성공() throws Exception {
 			MyPageTicketDetailResponse response = MyPageFixture.createTicketDetailResponse();
-			given(myPageService.getTicketDetail(1L, 101L)).willReturn(response);
+			given(myPageTicketService.getTicketDetail(1L, 101L)).willReturn(response);
 
 			mockMvc.perform(get("/mypage/tickets/101"))
 				.andExpect(status().isOk())
@@ -214,7 +322,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("존재하지 않는 ticketId면 404를 반환한다")
 		void getTicketDetail_주문없음_404() throws Exception {
-			given(myPageService.getTicketDetail(1L, 999L))
+			given(myPageTicketService.getTicketDetail(1L, 999L))
 				.willThrow(new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
 			mockMvc.perform(get("/mypage/tickets/999"))
@@ -225,7 +333,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("본인 소유가 아니면 403을 반환한다")
 		void getTicketDetail_권한없음_403() throws Exception {
-			given(myPageService.getTicketDetail(1L, 101L))
+			given(myPageTicketService.getTicketDetail(1L, 101L))
 				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
 
 			mockMvc.perform(get("/mypage/tickets/101"))
@@ -247,7 +355,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@DisplayName("유효한 요청이면 200과 QR 정보를 반환한다")
 		void getTicketEntryQr_성공() throws Exception {
 			MyPageTicketQrResponse response = MyPageFixture.createTicketQrResponse();
-			given(myPageService.getTicketEntryQr(1L, 101L)).willReturn(response);
+			given(myPageTicketService.getTicketEntryQr(1L, 101L)).willReturn(response);
 
 			mockMvc.perform(get("/mypage/tickets/101/qr"))
 				.andExpect(status().isOk())
@@ -262,7 +370,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("본인 소유가 아니면 403을 반환한다")
 		void getTicketEntryQr_권한없음_403() throws Exception {
-			given(myPageService.getTicketEntryQr(1L, 101L))
+			given(myPageTicketService.getTicketEntryQr(1L, 101L))
 				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
 
 			mockMvc.perform(get("/mypage/tickets/101/qr"))
@@ -273,7 +381,7 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("입장 가능 시간이 아니면 400을 반환한다")
 		void getTicketEntryQr_입장시간아님_400() throws Exception {
-			given(myPageService.getTicketEntryQr(1L, 101L))
+			given(myPageTicketService.getTicketEntryQr(1L, 101L))
 				.willThrow(new CustomException(ErrorCode.ENTRY_QR_NOT_AVAILABLE_YET));
 
 			mockMvc.perform(get("/mypage/tickets/101/qr"))
@@ -284,12 +392,61 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("경기 시작 이후면 400을 반환한다")
 		void getTicketEntryQr_경기시작이후_400() throws Exception {
-			given(myPageService.getTicketEntryQr(1L, 101L))
+			given(myPageTicketService.getTicketEntryQr(1L, 101L))
 				.willThrow(new CustomException(ErrorCode.ENTRY_QR_MATCH_STARTED));
 
 			mockMvc.perform(get("/mypage/tickets/101/qr"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message").value("경기 시작 이후에는 QR을 발급할 수 없습니다."));
+		}
+	}
+
+	@Nested
+	@DisplayName("POST /mypage/tickets/{ticketId}/cancel — 티켓 취소 요청")
+	class RequestTicketCancel {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 취소 결과를 반환한다")
+		void requestTicketCancel_성공() throws Exception {
+			MyPageTicketCancelResponse response = MyPageFixture.createTicketCancelResponse();
+			given(myPageTicketService.requestTicketCancel(1L, 101L)).willReturn(response);
+
+			mockMvc.perform(post("/mypage/tickets/101/cancel"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("취소 요청이 완료되었습니다."))
+				.andExpect(jsonPath("$.data.ticketId").value(101))
+				.andExpect(jsonPath("$.data.status").value("CANCEL_REQUESTED"))
+				.andExpect(jsonPath("$.data.totalAmount").value(42000))
+				.andExpect(jsonPath("$.data.cancellationFee").value(6000))
+				.andExpect(jsonPath("$.data.refundedAmount").value(36000));
+		}
+
+		@Test
+		@DisplayName("본인 소유가 아니면 403을 반환한다")
+		void requestTicketCancel_권한없음_403() throws Exception {
+			given(myPageTicketService.requestTicketCancel(1L, 101L))
+				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
+
+			mockMvc.perform(post("/mypage/tickets/101/cancel"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
+		}
+
+		@Test
+		@DisplayName("취소 가능한 기간이 아니면 400을 반환한다")
+		void requestTicketCancel_취소불가기간_400() throws Exception {
+			given(myPageTicketService.requestTicketCancel(1L, 101L))
+				.willThrow(new CustomException(ErrorCode.TICKET_CANCEL_NOT_ALLOWED));
+
+			mockMvc.perform(post("/mypage/tickets/101/cancel"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("취소 가능한 기간이 아닙니다."));
 		}
 	}
 }
