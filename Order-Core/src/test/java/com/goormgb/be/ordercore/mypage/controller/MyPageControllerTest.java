@@ -51,6 +51,42 @@ class MyPageControllerTest extends WebMvcTestSupport {
 	}
 
 	@Nested
+	@DisplayName("GET /mypage/account — 개인정보 조회")
+	class GetAccount {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 계정 정보를 반환한다")
+		void getAccount_성공() throws Exception {
+			MyPageAccountResponse response = MyPageFixture.createAccountResponse();
+			given(myPageProfileService.getAccount(1L)).willReturn(response);
+
+			mockMvc.perform(get("/mypage/account"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("조회 성공"))
+				.andExpect(jsonPath("$.data.email").value("user@example.com"))
+				.andExpect(jsonPath("$.data.nickname").value("goorm_new"))
+				.andExpect(jsonPath("$.data.snsAccount.provider").value("KAKAO"));
+		}
+
+		@Test
+		@DisplayName("사용자가 없으면 404를 반환한다")
+		void getAccount_사용자없음_404() throws Exception {
+			given(myPageProfileService.getAccount(1L))
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+
+			mockMvc.perform(get("/mypage/account"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+		}
+	}
+
+	@Nested
 	@DisplayName("PUT /mypage/account — 개인정보 수정")
 	class UpdateAccount {
 
