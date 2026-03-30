@@ -1,5 +1,7 @@
 package com.goormgb.be.global.environment;
 
+import org.springframework.http.HttpStatus;
+
 import com.goormgb.be.global.exception.ErrorCode;
 
 /**
@@ -19,4 +21,8 @@ import com.goormgb.be.global.exception.ErrorCode;
  */
 public interface ErrorResponseStrategy {
 	String resolveCode(ErrorCode errorCode);
+
+	String resolveMessage(ErrorCode errorCode);
+
+	String resolveMessage(String detailedMessage, HttpStatus status);
 }

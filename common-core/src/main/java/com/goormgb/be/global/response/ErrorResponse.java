@@ -21,7 +21,13 @@ public class ErrorResponse {
 
 	public static ResponseEntity<ErrorData> error(ErrorCode errorCode, ErrorResponseStrategy strategy) {
 		return ResponseEntity.status(errorCode.getStatus())
-				.body(ErrorData.of(strategy.resolveCode(errorCode), errorCode.getMessage()));
+			.body(ErrorData.of(strategy.resolveCode(errorCode), strategy.resolveMessage(errorCode)));
+	}
+
+	public static ResponseEntity<ErrorData> error(HttpStatus status, String detailedMessage,
+		ErrorResponseStrategy strategy) {
+		return ResponseEntity.status(status)
+			.body(ErrorData.of(status.series().name(), strategy.resolveMessage(detailedMessage, status)));
 	}
 
 	@Getter

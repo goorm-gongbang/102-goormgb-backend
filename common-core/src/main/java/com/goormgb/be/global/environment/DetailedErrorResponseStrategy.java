@@ -1,6 +1,7 @@
 package com.goormgb.be.global.environment;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import com.goormgb.be.global.exception.ErrorCode;
@@ -28,5 +29,15 @@ public class DetailedErrorResponseStrategy implements ErrorResponseStrategy {
 	@Override
 	public String resolveCode(ErrorCode errorCode) {
 		return errorCode.name();
+	}
+
+	@Override
+	public String resolveMessage(ErrorCode errorCode) {
+		return errorCode.getMessage();
+	}
+
+	@Override
+	public String resolveMessage(String detailedMessage, HttpStatus status) {
+		return detailedMessage;
 	}
 }
