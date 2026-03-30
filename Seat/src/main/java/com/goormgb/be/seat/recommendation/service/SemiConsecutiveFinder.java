@@ -88,6 +88,10 @@ public class SemiConsecutiveFinder {
 				.thenComparingInt(SemiGroup::avgAisleDistance));
 	}
 
+	/**
+	 * 세그먼트 내부가 연속 정수인 점을 이용하여 overlap > 0인 lowerIdx 범위를
+	 * 산술로 직접 계산하고, 해당 범위만 순회한다.
+	 */
 	private void emitCandidates(
 		Consumer<SemiGroup> consumer,
 		List<MatchSeat> upperSeg,
@@ -96,6 +100,9 @@ public class SemiConsecutiveFinder {
 		int lowerRow,
 		int requiredSeats
 	) {
+		int upperBase = upperSeg.get(0).getTemplateColNo();
+		int lowerBase = lowerSeg.get(0).getTemplateColNo();
+
 		for (int upperCount = 1; upperCount < requiredSeats; upperCount++) {
 			int lowerCount = requiredSeats - upperCount;
 
@@ -105,19 +112,19 @@ public class SemiConsecutiveFinder {
 
 			for (int ui = 0; ui <= upperSeg.size() - upperCount; ui++) {
 				List<MatchSeat> upperGroup = upperSeg.subList(ui, ui + upperCount);
-				int upperStart = upperGroup.get(0).getTemplateColNo();
-				int upperEnd = upperGroup.get(upperGroup.size() - 1).getTemplateColNo();
+				int upperStart = upperBase + ui;
+				int upperEnd = upperBase + ui + upperCount - 1;
 
-				for (int li = 0; li <= lowerSeg.size() - lowerCount; li++) {
+				// overlap > 0을 만족하는 lowerIdx 유효 범위를 산술로 계산
+				int liMin = Math.max(0, upperStart - lowerBase - lowerCount + 1);
+				int liMax = Math.min(lowerSeg.size() - lowerCount, upperEnd - lowerBase);
+
+				for (int li = liMin; li <= liMax; li++) {
 					List<MatchSeat> lowerGroup = lowerSeg.subList(li, li + lowerCount);
-					int lowerStart = lowerGroup.get(0).getTemplateColNo();
-					int lowerEnd = lowerGroup.get(lowerGroup.size() - 1).getTemplateColNo();
+					int lowerStart = lowerBase + li;
+					int lowerEnd = lowerBase + li + lowerCount - 1;
 
 					int overlap = Math.min(upperEnd, lowerEnd) - Math.max(upperStart, lowerStart) + 1;
-
-					if (overlap <= 0) {
-						continue;
-					}
 
 					int upperAisle = aisleDistanceCalculator.calculateAisleDistance(upperRow, upperStart, upperEnd);
 					int lowerAisle = aisleDistanceCalculator.calculateAisleDistance(lowerRow, lowerStart, lowerEnd);
