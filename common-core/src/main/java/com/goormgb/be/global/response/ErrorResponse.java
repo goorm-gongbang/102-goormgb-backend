@@ -24,6 +24,12 @@ public class ErrorResponse {
 			.body(ErrorData.of(strategy.resolveCode(errorCode), strategy.resolveMessage(errorCode)));
 	}
 
+	public static ResponseEntity<ErrorData> error(HttpStatus status, String detailedMessage,
+		ErrorResponseStrategy strategy) {
+		return ResponseEntity.status(status)
+			.body(ErrorData.of(status.series().name(), strategy.resolveMessage(detailedMessage, status)));
+	}
+
 	@Getter
 	@AllArgsConstructor
 	public static class ErrorData {

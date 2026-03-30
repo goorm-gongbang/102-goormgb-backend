@@ -1,6 +1,7 @@
 package com.goormgb.be.global.environment;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import com.goormgb.be.global.exception.ErrorCode;
@@ -81,6 +82,16 @@ public class AbstractErrorResponseStrategy implements ErrorResponseStrategy {
 				case SERVER_ERROR -> "서버 통신에 일시적 오류가 발생했습니다.";
 				default -> "요청을 처리할 수 없습니다.";
 			};
+		};
+	}
+
+	@Override
+	public String resolveMessage(String detailedMessage, HttpStatus status) {
+		return switch (status) {
+			case UNAUTHORIZED -> "인증 정보가 유효하지 않습니다.";
+			case FORBIDDEN -> "접근 권한이 없습니다.";
+			case INTERNAL_SERVER_ERROR, BAD_GATEWAY -> "서버 통신에 일시적 오류가 발생했습니다.";
+			default -> "요청을 처리할 수 없습니다.";
 		};
 	}
 }
