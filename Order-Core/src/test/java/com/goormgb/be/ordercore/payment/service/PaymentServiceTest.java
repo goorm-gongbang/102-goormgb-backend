@@ -22,7 +22,9 @@ import com.goormgb.be.ordercore.fixture.payment.PaymentFixture;
 import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
+import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
 import com.goormgb.be.ordercore.payment.dto.request.CashReceiptCreateRequest;
 import com.goormgb.be.ordercore.payment.dto.request.PaymentProcessRequest;
 import com.goormgb.be.ordercore.payment.dto.response.CashReceiptCreateResponse;
@@ -43,18 +45,22 @@ class PaymentServiceTest {
 	@Mock
 	private OrderRepository orderRepository;
 	@Mock
+	private OrderSeatRepository orderSeatRepository;
+	@Mock
 	private PaymentRepository paymentRepository;
 	@Mock
 	private CashReceiptRepository cashReceiptRepository;
 	@Mock
 	private OrderMetricsService orderMetricsService;
+	@Mock
+	private SeatInfoQueryService seatInfoQueryService;
 
 	private PaymentService paymentService;
 
 	@BeforeEach
 	void setUp() {
-		paymentService = new PaymentService(orderMetricsService, orderRepository, paymentRepository,
-			cashReceiptRepository);
+		paymentService = new PaymentService(orderMetricsService, orderRepository, orderSeatRepository,
+			paymentRepository, cashReceiptRepository, seatInfoQueryService);
 	}
 
 	private Order createOrderWithUser(Long orderId, Long userId) {
@@ -79,6 +85,7 @@ class PaymentServiceTest {
 			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
+			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(java.util.List.of());
 
 			PaymentProcessResponse response = paymentService.processPayment(userId, orderId, request);
 
@@ -100,6 +107,7 @@ class PaymentServiceTest {
 			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
+			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(java.util.List.of());
 
 			PaymentProcessResponse response = paymentService.processPayment(userId, orderId, request);
 

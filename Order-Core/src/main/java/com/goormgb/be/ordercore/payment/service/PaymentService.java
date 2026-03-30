@@ -3,6 +3,7 @@ package com.goormgb.be.ordercore.payment.service;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,7 +15,9 @@ import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.metrics.enums.PaymentMethodType;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
+import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
 import com.goormgb.be.ordercore.payment.dto.request.CashReceiptCreateRequest;
 import com.goormgb.be.ordercore.payment.dto.request.PaymentProcessRequest;
 import com.goormgb.be.ordercore.payment.dto.response.CashReceiptCreateResponse;
@@ -42,8 +45,10 @@ public class PaymentService {
 
 	private final OrderMetricsService orderMetricsService;
 	private final OrderRepository orderRepository;
+	private final OrderSeatRepository orderSeatRepository;
 	private final PaymentRepository paymentRepository;
 	private final CashReceiptRepository cashReceiptRepository;
+	private final SeatInfoQueryService seatInfoQueryService;
 
 	/**
 	 * 결제 처리.
@@ -76,6 +81,7 @@ public class PaymentService {
 				// 간편결제(토스페이, 카카오페이) 목업 즉시 완료
 				payment.complete();
 				order.updateStatus(OrderStatus.PAID);
+				markSeatsAsSold(orderId);
 				log.info("[PaymentService] 간편결제 완료(목업) - orderId={}, method={}", orderId, request.paymentMethod());
 
 				// 즉시 결제 완료 건수 증가 (간편결제 목업 성공)
@@ -138,6 +144,12 @@ public class PaymentService {
 		);
 
 		return order;
+	}
+
+	private void markSeatsAsSold(Long orderId) {
+		List<Long> matchSeatIds = orderSeatRepository.findMatchSeatIdsByOrderId(orderId);
+		int updated = seatInfoQueryService.markSoldIfBlocked(matchSeatIds);
+		log.info("[PaymentService] 좌석 SOLD 전환 - orderId={}, count={}", orderId, updated);
 	}
 
 	private Payment buildPayment(Order order, PaymentMethod method) {
