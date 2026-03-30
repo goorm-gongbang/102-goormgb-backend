@@ -43,6 +43,24 @@ public class MyPageController {
 	private final MyPageTicketService myPageTicketService;
 
 	@Operation(
+		summary = "개인정보 조회",
+		description = "로그인한 사용자의 계정 기본 정보를 조회합니다.",
+		security = @SecurityRequirement(name = "BearerAuth")
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "조회 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+		@ApiResponse(responseCode = "404", description = "사용자 없음", content = @Content)
+	})
+	@GetMapping("/account")
+	@ResponseStatus(HttpStatus.OK)
+	public ApiResult<MyPageAccountResponse> getAccount(
+		@AuthenticationPrincipal Long userId
+	) {
+		return ApiResult.ok("조회 성공", myPageProfileService.getAccount(userId));
+	}
+
+	@Operation(
 		summary = "개인정보 수정",
 		description = "로그인한 사용자의 닉네임을 수정합니다.",
 		security = @SecurityRequirement(name = "BearerAuth")

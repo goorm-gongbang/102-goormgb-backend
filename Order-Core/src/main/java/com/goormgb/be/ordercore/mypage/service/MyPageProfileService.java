@@ -57,6 +57,13 @@ public class MyPageProfileService {
 		return MyPageAccountResponse.of(user, userSns);
 	}
 
+	public MyPageAccountResponse getAccount(Long userId) {
+		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+		UserSns userSns = userSnsRepository.findByUserId(userId).orElse(null);
+
+		return MyPageAccountResponse.of(user, userSns);
+	}
+
 	public MyPageProfileResponse getProfile(Long userId) {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		UserSns userSns = userSnsRepository.findByUserId(userId).orElse(null);
