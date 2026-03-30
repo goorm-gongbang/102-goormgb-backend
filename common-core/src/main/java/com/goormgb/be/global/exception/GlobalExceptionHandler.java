@@ -12,6 +12,8 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import com.goormgb.be.global.environment.ErrorResponseStrategy;
 import com.goormgb.be.global.response.ErrorResponse;
@@ -64,6 +66,17 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ErrorResponse.ErrorData> handleMissingParam(MissingServletRequestParameterException e) {
 		String message = String.format("필수 파라미터 '%s'이(가) 누락되었습니다.", e.getParameterName());
 		return ErrorResponse.error(HttpStatus.BAD_REQUEST, message, errorResponseStrategy);
+	}
+
+	@ExceptionHandler(MissingServletRequestPartException.class)
+	public ResponseEntity<ErrorResponse.ErrorData> handleMissingPart(MissingServletRequestPartException e) {
+		String message = String.format("필수 파트 '%s'이(가) 누락되었습니다.", e.getRequestPartName());
+		return ErrorResponse.error(HttpStatus.BAD_REQUEST, message, errorResponseStrategy);
+	}
+
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	public ResponseEntity<ErrorResponse.ErrorData> handleMaxUploadSize(MaxUploadSizeExceededException e) {
+		return ErrorResponse.error(HttpStatus.CONTENT_TOO_LARGE, "파일 크기 제한을 초과했습니다.", errorResponseStrategy);
 	}
 
 	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
