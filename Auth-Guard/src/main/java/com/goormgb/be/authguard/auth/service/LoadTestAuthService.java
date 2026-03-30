@@ -61,7 +61,7 @@ public class LoadTestAuthService {
 
 			log.info("[LoadTest] 부하테스트 유저 생성 - loginId: {}, userId: {}", loginId, user.getId());
 		} catch (DataIntegrityViolationException e) {
-			log.warn("[LoadTest] 부하테스트 동시 요청으로 인한 중복 충돌 - loginId: {} (Race Condition 발생)", loginId);
+            log.warn("[LoadTest] 부하테스트 동시 요청으로 인한 중복 충돌 - loginId: {} (Race Condition 발생)", loginId, e);
 			throw new CustomException(ErrorCode.USER_ALREADY_EXISTS);
 		}
 	}
