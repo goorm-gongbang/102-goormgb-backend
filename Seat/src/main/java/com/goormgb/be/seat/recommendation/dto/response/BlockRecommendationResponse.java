@@ -29,6 +29,7 @@ public record BlockRecommendationResponse(
 		String areaName,
 		String viewpoint,
 		int realConsecutiveCount,
+		int semiConsecutiveCount,
 		long remainingSeatCount,
 		int rank
 	) {
@@ -42,6 +43,7 @@ public record BlockRecommendationResponse(
 				block.getArea().getName(),
 				block.getViewpoint().name(),
 				recommendation.realConsecutiveCount(),
+				recommendation.semiConsecutiveCount(),
 				recommendation.remainingSeatCount(),
 				rank
 			);

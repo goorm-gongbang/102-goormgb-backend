@@ -1,6 +1,7 @@
 package com.goormgb.be.seat.recommendation.service;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.Instant;
@@ -26,11 +27,11 @@ import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.area.enums.AreaCode;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
+import com.goormgb.be.seat.booking.model.BookingOptions;
+import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 import com.goormgb.be.seat.fixture.BlockFixture;
 import com.goormgb.be.seat.fixture.CommonFixture;
 import com.goormgb.be.seat.fixture.OnboardingFixture;
-import com.goormgb.be.seat.booking.model.BookingOptions;
-import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.metrics.SeatMetricsService;
 import com.goormgb.be.seat.recommendation.dto.response.BlockRecommendationResponse;
@@ -55,6 +56,8 @@ class SeatRecommendationServiceTest {
 	private OnboardingViewpointPriorityRepository onboardingViewpointPriorityRepository;
 	@Mock
 	private ConsecutiveSeatCounter consecutiveSeatCounter;
+	@Mock
+	private SemiConsecutiveSeatCounter semiConsecutiveSeatCounter;
 	@Mock
 	private PreferenceScoreCalculator preferenceScoreCalculator;
 
@@ -91,10 +94,11 @@ class SeatRecommendationServiceTest {
 		given(onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId)).willReturn(List.of());
 
 		given(matchSeatRepository.countRemainingSeatsByMatchIdAndBlockIdIn(eq(matchId), any())).willReturn(List.of());
+		given(matchSeatRepository.findAvailableSeatsByMatchIdAndBlockId(eq(matchId), anyLong())).willReturn(List.of());
 
-		// block206이 연석 더 많음 (차이 > 10)
-		given(consecutiveSeatCounter.countRealConsecutiveSeats(matchId, 205L, 5)).willReturn(5);
-		given(consecutiveSeatCounter.countRealConsecutiveSeats(matchId, 206L, 5)).willReturn(20);
+		// block205 먼저 처리(5연석), block206 다음 처리(20연석) — 차이 > 10이므로 연석 수 기준 정렬
+		// List.of()는 싱글톤이므로 same()으로 구분 불가 → 블럭 처리 순서 기반 순차 반환
+		given(consecutiveSeatCounter.countRealConsecutiveSeats(any(), eq(5))).willReturn(5, 20);
 
 		// when
 		BlockRecommendationResponse response = seatRecommendationService.getRecommendedBlocks(matchId, userId);
@@ -136,10 +140,10 @@ class SeatRecommendationServiceTest {
 			.willReturn(List.of(OnboardingFixture.viewpointPriority(user, Viewpoint.INFIELD_1B, 1)));
 
 		given(matchSeatRepository.countRemainingSeatsByMatchIdAndBlockIdIn(eq(matchId), any())).willReturn(List.of());
+		given(matchSeatRepository.findAvailableSeatsByMatchIdAndBlockId(eq(matchId), anyLong())).willReturn(List.of());
 
-		// 연석 차이 10 이내
-		given(consecutiveSeatCounter.countRealConsecutiveSeats(matchId, 205L, 3)).willReturn(12);
-		given(consecutiveSeatCounter.countRealConsecutiveSeats(matchId, 408L, 3)).willReturn(15);
+		// block205 먼저(12연석), block408 다음(15연석) — 차이 10 이내이므로 선호도 점수로 정렬
+		given(consecutiveSeatCounter.countRealConsecutiveSeats(any(), eq(3))).willReturn(12, 15);
 
 		// block205의 선호도 점수가 더 높음
 		given(preferenceScoreCalculator.calculatePreferenceScore(eq(block205), any(), any(), any())).willReturn(70);
@@ -179,9 +183,10 @@ class SeatRecommendationServiceTest {
 		given(onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId)).willReturn(List.of());
 
 		given(matchSeatRepository.countRemainingSeatsByMatchIdAndBlockIdIn(eq(matchId), any())).willReturn(List.of());
+		given(matchSeatRepository.findAvailableSeatsByMatchIdAndBlockId(eq(matchId), anyLong())).willReturn(List.of());
 
 		// 모든 블럭에 연석 없음
-		given(consecutiveSeatCounter.countRealConsecutiveSeats(matchId, 205L, 5)).willReturn(0);
+		given(consecutiveSeatCounter.countRealConsecutiveSeats(any(), eq(5))).willReturn(0);
 
 		// when & then
 		assertThatThrownBy(() -> seatRecommendationService.getRecommendedBlocks(matchId, userId))
