@@ -130,13 +130,16 @@ public class SeatInfoQueryService {
 	}
 
 	/**
-	 * matchSeatId로 이미 주문된 좌석인지 확인한다.
+	 * matchSeatId로 이미 유효한 주문이 존재하는 좌석인지 확인한다.
+	 * 결제 완료(PAID), 취소 요청(CANCEL_REQUESTED), 환불 처리 중(REFUND_PROCESSING) 상태만 유효 주문으로 간주한다.
 	 */
 	public boolean isAlreadyOrdered(Long matchSeatId) {
 		String sql = """
 				SELECT COUNT(*)
-				FROM order_seats
-				WHERE match_seat_id = :matchSeatId
+				FROM order_seats os
+				JOIN orders o ON os.order_id = o.id
+				WHERE os.match_seat_id = :matchSeatId
+				  AND o.status IN ('PAID', 'CANCEL_REQUESTED', 'REFUND_PROCESSING')
 				""";
 
 		var params = Map.of("matchSeatId", matchSeatId);
