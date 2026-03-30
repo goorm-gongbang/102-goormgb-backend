@@ -35,6 +35,7 @@ public final class MyPageFixture {
 		return new MyPageAccountResponse(
 			"user@example.com",
 			"goorm_new",
+			"https://cdn.goormgb.com/profile/user-1.png",
 			new MyPageAccountResponse.SnsAccount("KAKAO", "kakao-user-id-12345")
 		);
 	}
