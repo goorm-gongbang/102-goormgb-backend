@@ -85,6 +85,7 @@ class MyPageProfileServiceTest {
 
 			assertThat(response.nickname()).isEqualTo("goorm_new");
 			assertThat(response.email()).isEqualTo("test@test.com");
+			assertThat(response.profileImageUrl()).isNull();
 			assertThat(response.snsAccount()).isNotNull();
 			assertThat(response.snsAccount().provider()).isEqualTo("KAKAO");
 			assertThat(user.getNickname()).isEqualTo("goorm_new");
@@ -99,6 +100,57 @@ class MyPageProfileServiceTest {
 
 			assertThatThrownBy(
 				() -> myPageProfileService.updateAccount(userId, new MyPageAccountUpdateRequest("goorm_new")))
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.USER_NOT_FOUND.getMessage());
+		}
+	}
+
+	@Nested
+	@DisplayName("getAccount — 개인정보 조회")
+	class GetAccount {
+
+		@Test
+		@DisplayName("유효한 userId이면 계정 정보를 반환한다")
+		void getAccount_성공() {
+			Long userId = 1L;
+			User user = OrderFixture.createUser();
+			UserSns userSns = createUserSns(user);
+
+			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+			given(userSnsRepository.findByUserId(userId)).willReturn(Optional.of(userSns));
+
+			MyPageAccountResponse response = myPageProfileService.getAccount(userId);
+
+			assertThat(response.email()).isEqualTo("test@test.com");
+			assertThat(response.nickname()).isEqualTo("테스터");
+			assertThat(response.profileImageUrl()).isNull();
+			assertThat(response.snsAccount()).isNotNull();
+			assertThat(response.snsAccount().provider()).isEqualTo("KAKAO");
+		}
+
+		@Test
+		@DisplayName("SNS 정보가 없으면 snsAccount는 null이다")
+		void getAccount_SNS없음_null() {
+			Long userId = 1L;
+			User user = OrderFixture.createUser();
+
+			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+			given(userSnsRepository.findByUserId(userId)).willReturn(Optional.empty());
+
+			MyPageAccountResponse response = myPageProfileService.getAccount(userId);
+
+			assertThat(response.snsAccount()).isNull();
+		}
+
+		@Test
+		@DisplayName("존재하지 않는 userId이면 USER_NOT_FOUND 예외가 발생한다")
+		void getAccount_사용자없음_예외() {
+			Long userId = 999L;
+
+			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND))
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+
+			assertThatThrownBy(() -> myPageProfileService.getAccount(userId))
 				.isInstanceOf(CustomException.class)
 				.hasMessage(ErrorCode.USER_NOT_FOUND.getMessage());
 		}

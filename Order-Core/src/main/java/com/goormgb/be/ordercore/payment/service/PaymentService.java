@@ -1,8 +1,13 @@
 package com.goormgb.be.ordercore.payment.service;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,7 +19,9 @@ import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.metrics.enums.PaymentMethodType;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
+import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
 import com.goormgb.be.ordercore.payment.dto.request.CashReceiptCreateRequest;
 import com.goormgb.be.ordercore.payment.dto.request.PaymentProcessRequest;
 import com.goormgb.be.ordercore.payment.dto.response.CashReceiptCreateResponse;
@@ -34,16 +41,23 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class PaymentService {
 
+	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
 	// 무통장 입금 목업 계좌 정보
 	private static final String ACCOUNT_BANK = "신한은행";
 	private static final String ACCOUNT_NUMBER = "110-123-456789";
 	private static final String ACCOUNT_HOLDER = "주식회사 구름공방";
-	private static final int DEPOSIT_DEADLINE_DAYS = 3;
 
+	// 무통장 입금 기한: 다음날 23:59 KST, 경기 당일이면 경기 3시간 전
+	private static final Duration MATCH_DAY_DEADLINE_BEFORE = Duration.ofHours(3);
+
+	private final Clock clock;
 	private final OrderMetricsService orderMetricsService;
 	private final OrderRepository orderRepository;
+	private final OrderSeatRepository orderSeatRepository;
 	private final PaymentRepository paymentRepository;
 	private final CashReceiptRepository cashReceiptRepository;
+	private final SeatInfoQueryService seatInfoQueryService;
 
 	/**
 	 * 결제 처리.
@@ -69,8 +83,19 @@ public class PaymentService {
 				ErrorCode.PAYMENT_ALREADY_COMPLETED
 			);
 
+			if (request.paymentMethod() == PaymentMethod.BANK_TRANSFER) {
+				Instant matchDeadline = order.getMatch().getMatchAt().minus(MATCH_DAY_DEADLINE_BEFORE);
+				Preconditions.validate(
+					clock.instant().isBefore(matchDeadline),
+					ErrorCode.BANK_TRANSFER_NOT_AVAILABLE
+				);
+			}
+
 			Payment payment = buildPayment(order, request.paymentMethod());
 			paymentRepository.save(payment);
+
+			// 결제 수단과 무관하게 좌석을 SOLD로 전환 (스케줄러가 풀지 못하도록)
+			markSeatsAsSold(orderId);
 
 			if (request.paymentMethod() != PaymentMethod.BANK_TRANSFER) {
 				// 간편결제(토스페이, 카카오페이) 목업 즉시 완료
@@ -82,11 +107,8 @@ public class PaymentService {
 				switch (request.paymentMethod()) {
 					case KAKAO_PAY -> orderMetricsService.increasePaymentSuccess(PaymentMethodType.KAKAOPAY);
 					case TOSS_PAY -> orderMetricsService.increasePaymentSuccess(PaymentMethodType.TOSSPAY);
-					// 다른 간편결제 수단이 추가될 경우 여기에 case를 추가할 수 있습니다.
 					default -> log.warn("[PaymentService] 알 수 없는 간편결제 타입에 대한 성공 메트릭이 누락되었습니다. - method={}", request.paymentMethod());
 				}
-			} else {
-				log.info("[PaymentService] 무통장 입금 계좌 안내 - orderId={}", orderId);
 			}
 
 			return PaymentProcessResponse.of(payment);
@@ -140,9 +162,19 @@ public class PaymentService {
 		return order;
 	}
 
+	private void markSeatsAsSold(Long orderId) {
+		List<Long> matchSeatIds = orderSeatRepository.findMatchSeatIdsByOrderId(orderId);
+		int updated = seatInfoQueryService.markSoldIfBlocked(matchSeatIds);
+		log.info("[PaymentService] 좌석 SOLD 전환 - orderId={}, count={}", orderId, updated);
+		if (updated != matchSeatIds.size()) {
+			log.warn("[PaymentService] 좌석 SOLD 전환 개수 불일치 - orderId={}, expected={}, updated={}",
+				orderId, matchSeatIds.size(), updated);
+		}
+	}
+
 	private Payment buildPayment(Order order, PaymentMethod method) {
 		if (method == PaymentMethod.BANK_TRANSFER) {
-			Instant depositDeadline = Instant.now().plus(DEPOSIT_DEADLINE_DAYS, ChronoUnit.DAYS);
+			Instant depositDeadline = calculateDepositDeadline(order.getMatch().getMatchAt());
 
 			return Payment.builder()
 				.order(order)
@@ -158,5 +190,27 @@ public class PaymentService {
 			.order(order)
 			.paymentMethod(method)
 			.build();
+	}
+
+	/**
+	 * 무통장 입금 기한을 계산한다.
+	 * - 일반: 다음날 23:59 KST
+	 * - 경기 당일 예매: 경기 시작 3시간 전
+	 * - 둘 중 빠른 시각을 적용
+	 */
+	private Instant calculateDepositDeadline(Instant matchAt) {
+		ZonedDateTime now = clock.instant().atZone(KST);
+
+		// 일반 기한: 다음날 23:59 KST
+		Instant tomorrowEnd = now.toLocalDate().plusDays(1)
+			.atTime(LocalTime.of(23, 59))
+			.atZone(KST)
+			.toInstant();
+
+		// 경기 기한: 경기 시작 3시간 전
+		Instant matchDeadline = matchAt.minus(MATCH_DAY_DEADLINE_BEFORE);
+
+		// 둘 중 빠른 시각 적용
+		return tomorrowEnd.isBefore(matchDeadline) ? tomorrowEnd : matchDeadline;
 	}
 }
