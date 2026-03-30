@@ -5,12 +5,7 @@ import java.util.List;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.goormgb.be.ordercore.order.entity.Order;
-import com.goormgb.be.ordercore.order.enums.OrderStatus;
-import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
-import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
 import com.goormgb.be.ordercore.payment.entity.Payment;
 import com.goormgb.be.ordercore.payment.enums.PaymentStatus;
 import com.goormgb.be.ordercore.payment.repository.PaymentRepository;
@@ -23,6 +18,9 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>입금 기한(depositDeadline)이 지났는데 여전히 PENDING 상태인 무통장 입금 건을 찾아
  * 주문을 자동 취소하고 좌석을 AVAILABLE로 복원한다.</p>
+ *
+ * <p>각 결제 취소는 {@link BankTransferCancelService}에서 개별 트랜잭션으로 처리되므로,
+ * 한 건의 실패가 다른 건에 영향을 주지 않는다.</p>
  *
  * <h3>입금 기한 규칙</h3>
  * <ul>
@@ -37,14 +35,12 @@ import lombok.extern.slf4j.Slf4j;
 public class BankTransferExpireScheduler {
 
 	private final PaymentRepository paymentRepository;
-	private final OrderSeatRepository orderSeatRepository;
-	private final SeatInfoQueryService seatInfoQueryService;
+	private final BankTransferCancelService bankTransferCancelService;
 
 	/**
 	 * 5분마다 만료된 무통장 입금 건을 조회하여 자동 취소한다.
 	 */
 	@Scheduled(fixedDelay = 300_000)
-	@Transactional
 	public void cancelExpiredBankTransfers() {
 		Instant now = Instant.now();
 		List<Payment> expiredPayments = paymentRepository.findExpiredBankTransfers(PaymentStatus.PENDING, now);
@@ -54,26 +50,26 @@ public class BankTransferExpireScheduler {
 		}
 
 		int cancelledCount = 0;
+		int failedCount = 0;
+
 		for (Payment payment : expiredPayments) {
-			Order order = payment.getOrder();
-
-			if (order.getStatus() != OrderStatus.PAYMENT_PENDING) {
-				continue;
+			try {
+				boolean cancelled = bankTransferCancelService.cancelSinglePayment(payment);
+				if (cancelled) {
+					cancelledCount++;
+				}
+			} catch (Exception e) {
+				failedCount++;
+				log.error("[BankTransferExpireScheduler] 자동 취소 실패 - paymentId={}: {}",
+						payment.getId(), e.getMessage(), e);
 			}
-
-			// 주문 취소 + 결제 취소
-			order.updateStatus(OrderStatus.CANCELLED);
-			payment.cancel();
-
-			// 좌석 SOLD → AVAILABLE 복원
-			List<Long> matchSeatIds = orderSeatRepository.findMatchSeatIdsByOrderId(order.getId());
-			seatInfoQueryService.markAvailableIfSold(matchSeatIds);
-
-			cancelledCount++;
 		}
 
 		if (cancelledCount > 0) {
 			log.info("[BankTransferExpireScheduler] 무통장 입금 기한 만료 자동 취소: {}건", cancelledCount);
+		}
+		if (failedCount > 0) {
+			log.warn("[BankTransferExpireScheduler] 자동 취소 실패: {}건", failedCount);
 		}
 	}
 }
