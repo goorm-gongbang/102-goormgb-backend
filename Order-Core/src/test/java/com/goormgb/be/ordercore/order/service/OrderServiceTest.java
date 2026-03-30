@@ -205,8 +205,9 @@ class OrderServiceTest {
 		}
 
 		private void stubNoPendingOrders() {
-			given(orderRepository.findAllByUserIdAndMatchIdAndStatus(anyLong(), anyLong(), eq(OrderStatus.PAYMENT_PENDING)))
-				.willReturn(Collections.emptyList());
+			given(orderRepository.bulkUpdateStatus(anyLong(), anyLong(),
+				eq(OrderStatus.PAYMENT_PENDING), eq(OrderStatus.CANCELLED)))
+				.willReturn(0);
 		}
 
 		@Test
@@ -427,7 +428,7 @@ class OrderServiceTest {
 		}
 
 		@Test
-		@DisplayName("미결제 주문이 존재하면 자동 취소 후 재주문에 성공한다")
+		@DisplayName("미결제 주문이 존재하면 벌크 취소 후 재주문에 성공한다")
 		void createOrder_미결제_주문_자동취소_후_재주문_성공() {
 			Long userId = 1L;
 			User user = OrderFixture.createUser();
@@ -435,14 +436,9 @@ class OrderServiceTest {
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
-			Order pendingOrder = Order.builder()
-				.user(user).match(match).totalAmount(24000)
-				.ordererName("홍길동").ordererEmail("hong@test.com")
-				.ordererPhone("010-1234-5678").ordererBirthDate("990831")
-				.build();
-
-			given(orderRepository.findAllByUserIdAndMatchIdAndStatus(userId, 1L, OrderStatus.PAYMENT_PENDING))
-				.willReturn(List.of(pendingOrder));
+			given(orderRepository.bulkUpdateStatus(userId, 1L,
+				OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED))
+				.willReturn(2);
 			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
@@ -452,8 +448,9 @@ class OrderServiceTest {
 
 			OrderCreateResponse response = orderService.createOrder(userId, request);
 
-			assertThat(pendingOrder.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 			assertThat(response.status()).isEqualTo(OrderStatus.PAYMENT_PENDING);
+			then(orderRepository).should().bulkUpdateStatus(userId, 1L,
+				OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED);
 		}
 
 		@Test
@@ -476,7 +473,8 @@ class OrderServiceTest {
 			OrderCreateResponse response = orderService.createOrder(userId, request);
 
 			assertThat(response.status()).isEqualTo(OrderStatus.PAYMENT_PENDING);
-			then(orderRepository).should().findAllByUserIdAndMatchIdAndStatus(userId, 1L, OrderStatus.PAYMENT_PENDING);
+			then(orderRepository).should().bulkUpdateStatus(userId, 1L,
+				OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED);
 		}
 	}
 }
