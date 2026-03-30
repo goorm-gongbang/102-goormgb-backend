@@ -1,25 +1,31 @@
 package com.goormgb.be.ordercore.mypage.controller;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.goormgb.be.global.response.ApiResult;
 import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
+import com.goormgb.be.ordercore.mypage.dto.request.MyPageInquiryCreateRequest;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
+import com.goormgb.be.ordercore.mypage.service.MyPageInquiryService;
 import com.goormgb.be.ordercore.mypage.service.MyPageProfileService;
 import com.goormgb.be.ordercore.mypage.service.MyPageTicketService;
 
@@ -41,6 +47,7 @@ public class MyPageController {
 
 	private final MyPageProfileService myPageProfileService;
 	private final MyPageTicketService myPageTicketService;
+	private final MyPageInquiryService myPageInquiryService;
 
 	@Operation(
 		summary = "개인정보 조회",
@@ -182,5 +189,27 @@ public class MyPageController {
 		@PathVariable Long ticketId
 	) {
 		return ApiResult.ok("취소 요청이 완료되었습니다.", myPageTicketService.requestTicketCancel(userId, ticketId));
+	}
+
+	@Operation(
+		summary = "1:1 문의 작성",
+		description = "문의 내용을 등록합니다. 첨부파일은 최대 1개까지 수신 및 검증만 수행하며, 현재 저장하지 않습니다.",
+		security = @SecurityRequirement(name = "BearerAuth")
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "201", description = "문의 등록 성공"),
+		@ApiResponse(responseCode = "400", description = "요청 값 오류 또는 파일 검증 실패", content = @Content),
+		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+		@ApiResponse(responseCode = "404", description = "사용자 없음", content = @Content),
+		@ApiResponse(responseCode = "413", description = "파일 크기 제한 초과", content = @Content)
+	})
+	@PostMapping(value = "/inquiries", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@ResponseStatus(HttpStatus.CREATED)
+	public ApiResult<MyPageInquiryCreateResponse> createInquiry(
+		@AuthenticationPrincipal Long userId,
+		@Valid @RequestPart("inquiry") MyPageInquiryCreateRequest request,
+		@RequestPart(value = "file", required = false) MultipartFile file
+	) {
+		return ApiResult.created("문의가 등록되었습니다.", myPageInquiryService.createInquiry(userId, request, file));
 	}
 }

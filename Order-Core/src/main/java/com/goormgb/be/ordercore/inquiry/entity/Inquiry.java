@@ -74,6 +74,22 @@ public class Inquiry extends BaseEntity {
 		this.phoneNumber = phoneNumber;
 	}
 
+	public static Inquiry create(
+		User user,
+		InquiryCategory category,
+		String title,
+		String content,
+		String phoneNumber
+	) {
+		return Inquiry.builder()
+			.user(user)
+			.category(category)
+			.title(title)
+			.content(content)
+			.phoneNumber(phoneNumber)
+			.build();
+	}
+
 	public void updateStatus(InquiryStatus status) {
 		this.status = status;
 	}
