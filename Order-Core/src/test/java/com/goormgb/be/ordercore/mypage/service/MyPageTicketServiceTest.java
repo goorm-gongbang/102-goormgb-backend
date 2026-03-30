@@ -41,8 +41,10 @@ import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
+import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
 import com.goormgb.be.ordercore.qrtoken.entity.QrToken;
 import com.goormgb.be.ordercore.qrtoken.repository.QrTokenRepository;
 import com.goormgb.be.user.entity.User;
@@ -54,11 +56,15 @@ class MyPageTicketServiceTest {
 	@Mock
 	private OrderRepository orderRepository;
 	@Mock
+	private OrderSeatRepository orderSeatRepository;
+	@Mock
 	private MyPageQueryService myPageQueryService;
 	@Mock
 	private CancellationFeePolicyRepository cancellationFeePolicyRepository;
 	@Mock
 	private QrTokenRepository qrTokenRepository;
+	@Mock
+	private SeatInfoQueryService seatInfoQueryService;
 
 	private MyPageTicketService myPageService;
 	private Clock clock;
@@ -68,9 +74,11 @@ class MyPageTicketServiceTest {
 		clock = Clock.fixed(Instant.parse("2026-03-26T00:00:00Z"), ZoneOffset.UTC);
 		myPageService = new MyPageTicketService(
 			orderRepository,
+			orderSeatRepository,
 			qrTokenRepository,
 			myPageQueryService,
 			cancellationFeePolicyRepository,
+			seatInfoQueryService,
 			clock
 		);
 	}
@@ -492,6 +500,7 @@ class MyPageTicketServiceTest {
 
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
+			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
 
 			MyPageTicketCancelResponse response = myPageService.requestTicketCancel(userId, ticketId);
 
@@ -521,6 +530,7 @@ class MyPageTicketServiceTest {
 
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
+			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
 
 			MyPageTicketCancelResponse response = myPageService.requestTicketCancel(userId, ticketId);
 
@@ -546,6 +556,7 @@ class MyPageTicketServiceTest {
 
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
+			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
 
 			MyPageTicketCancelResponse response = myPageService.requestTicketCancel(userId, ticketId);
 
