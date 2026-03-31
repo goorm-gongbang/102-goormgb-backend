@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,6 +29,7 @@ import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
+import com.goormgb.be.ordercore.mypage.service.InquiryFileService;
 import com.goormgb.be.ordercore.mypage.service.MyPageInquiryService;
 import com.goormgb.be.ordercore.mypage.service.MyPageProfileService;
 import com.goormgb.be.ordercore.mypage.service.MyPageTicketService;
@@ -48,6 +48,8 @@ class MyPageControllerTest extends WebMvcTestSupport {
 
 	@MockitoBean
 	private MyPageInquiryService myPageInquiryService;
+	@MockitoBean
+	private InquiryFileService inquiryFileService;
 
 	private void setAuthentication(Long userId) {
 		SecurityContextHolder.getContext().setAuthentication(
@@ -466,34 +468,21 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		}
 
 		@Test
-		@DisplayName("유효한 멀티파트 요청이면 201과 inquiryId를 반환한다")
+		@DisplayName("유효한 JSON 요청이면 201과 inquiryId를 반환한다")
 		void createInquiry_성공() throws Exception {
-			given(myPageInquiryService.createInquiry(eq(1L), any(), any()))
+			given(myPageInquiryService.createInquiry(eq(1L), any()))
 				.willReturn(MyPageInquiryCreateResponse.of(11L));
 
-			MockMultipartFile inquiryPart = new MockMultipartFile(
-				"inquiry",
-				"inquiry.json",
-				"application/json",
-				"""
-					{
-					  "category": "BOOKING",
-					  "title": "좌석 변경 문의",
-					  "content": "좌석 변경이 가능한지 확인 부탁드립니다.",
-					  "phoneNumber": "010-1234-5678"
-					}
-					""".getBytes()
-			);
-			MockMultipartFile filePart = new MockMultipartFile(
-				"file",
-				"seat.jpg",
-				"image/jpeg",
-				new byte[] {(byte)0xFF, (byte)0xD8, (byte)0xFF, 0x00}
-			);
-
-			mockMvc.perform(multipart("/mypage/inquiries")
-					.file(inquiryPart)
-					.file(filePart))
+			mockMvc.perform(post("/mypage/inquiries")
+					.contentType("application/json")
+					.content("""
+						{
+						  "category": "BOOKING",
+						  "title": "좌석 변경 문의",
+						  "content": "좌석 변경이 가능한지 확인 부탁드립니다.",
+						  "phoneNumber": "010-1234-5678"
+						}
+						"""))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.code").value("CREATED"))
 				.andExpect(jsonPath("$.message").value("문의가 등록되었습니다."))
@@ -503,34 +492,35 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("유효하지 않은 카테고리면 400을 반환한다")
 		void createInquiry_카테고리오류_400() throws Exception {
-			given(myPageInquiryService.createInquiry(eq(1L), any(), any()))
+			given(myPageInquiryService.createInquiry(eq(1L), any()))
 				.willThrow(new CustomException(ErrorCode.INVALID_INQUIRY_CATEGORY));
 
-			MockMultipartFile inquiryPart = new MockMultipartFile(
-				"inquiry",
-				"inquiry.json",
-				"application/json",
-				"""
-					{
-					  "category": "INVALID",
-					  "title": "좌석 변경 문의",
-					  "content": "문의 내용"
-					}
-					""".getBytes()
-			);
-
-			mockMvc.perform(multipart("/mypage/inquiries")
-					.file(inquiryPart))
+			mockMvc.perform(post("/mypage/inquiries")
+					.contentType("application/json")
+					.content("""
+						{
+						  "category": "INVALID",
+						  "title": "좌석 변경 문의",
+						  "content": "문의 내용"
+						}
+						"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message").value("유효하지 않은 문의 카테고리입니다."));
 		}
 
 		@Test
-		@DisplayName("필수 inquiry 파트가 없으면 400을 반환한다")
-		void createInquiry_필수파트누락_400() throws Exception {
-			mockMvc.perform(multipart("/mypage/inquiries"))
+		@DisplayName("필수 필드가 없으면 400을 반환한다")
+		void createInquiry_필수필드누락_400() throws Exception {
+			mockMvc.perform(post("/mypage/inquiries")
+					.contentType("application/json")
+					.content("""
+						{
+						  "category": "BOOKING",
+						  "content": "문의 내용"
+						}
+						"""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.message").value("필수 파트 'inquiry'이(가) 누락되었습니다."));
+				.andExpect(jsonPath("$.message").value("title: title은 필수입니다."));
 		}
 	}
 }
