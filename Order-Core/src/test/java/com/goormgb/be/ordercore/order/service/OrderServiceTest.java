@@ -204,6 +204,12 @@ class OrderServiceTest {
 			});
 		}
 
+		private void stubNoPendingOrders() {
+			given(orderRepository.bulkUpdateStatus(anyLong(), anyLong(),
+				eq(OrderStatus.PAYMENT_PENDING), eq(OrderStatus.CANCELLED)))
+				.willReturn(0);
+		}
+
 		@Test
 		@DisplayName("유효한 단일 좌석 주문 시 totalAmount = 티켓가격 + 2000이다")
 		void createOrder_단일좌석_totalAmount_계산() {
@@ -213,6 +219,7 @@ class OrderServiceTest {
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
+			stubNoPendingOrders();
 			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
@@ -248,6 +255,7 @@ class OrderServiceTest {
 				"홍길동", "hong@test.com", "010-1234-5678", "990831"
 			);
 
+			stubNoPendingOrders();
 			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L, 102L)))
@@ -277,6 +285,7 @@ class OrderServiceTest {
 				"홍길동", "hong@test.com", "010-1234-5678", "990831"
 			);
 
+			stubNoPendingOrders();
 			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(2L)).willReturn(weekendMatch);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
@@ -298,6 +307,7 @@ class OrderServiceTest {
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
+			stubNoPendingOrders();
 			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
@@ -330,6 +340,7 @@ class OrderServiceTest {
 			Long userId = 999L;
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
+			stubNoPendingOrders();
 			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND))
 				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -346,6 +357,7 @@ class OrderServiceTest {
 			Match match = OrderFixture.createWeekdayMatch();
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
+			stubNoPendingOrders();
 			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(Collections.emptyList());
@@ -364,6 +376,7 @@ class OrderServiceTest {
 			SeatHoldInfo expiredHold = OrderFixture.createExpiredSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
+			stubNoPendingOrders();
 			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(expiredHold));
@@ -382,6 +395,7 @@ class OrderServiceTest {
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
+			stubNoPendingOrders();
 			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
@@ -401,6 +415,7 @@ class OrderServiceTest {
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
+			stubNoPendingOrders();
 			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
@@ -410,6 +425,56 @@ class OrderServiceTest {
 			assertThatThrownBy(() -> orderService.createOrder(userId, request))
 				.isInstanceOf(CustomException.class)
 				.hasMessage(ErrorCode.PRICE_POLICY_NOT_FOUND.getMessage());
+		}
+
+		@Test
+		@DisplayName("미결제 주문이 존재하면 벌크 취소 후 재주문에 성공한다")
+		void createOrder_미결제_주문_자동취소_후_재주문_성공() {
+			Long userId = 1L;
+			User user = OrderFixture.createUser();
+			Match match = OrderFixture.createWeekdayMatch();
+			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
+			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
+
+			given(orderRepository.bulkUpdateStatus(userId, 1L,
+				OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED))
+				.willReturn(2);
+			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
+			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
+			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
+			stubSaveOrder(1L);
+
+			OrderCreateResponse response = orderService.createOrder(userId, request);
+
+			assertThat(response.status()).isEqualTo(OrderStatus.PAYMENT_PENDING);
+			then(orderRepository).should().bulkUpdateStatus(userId, 1L,
+				OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED);
+		}
+
+		@Test
+		@DisplayName("미결제 주문이 없으면 취소 없이 바로 주문이 생성된다")
+		void createOrder_미결제_주문_없음_정상_생성() {
+			Long userId = 1L;
+			User user = OrderFixture.createUser();
+			Match match = OrderFixture.createWeekdayMatch();
+			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
+			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
+
+			stubNoPendingOrders();
+			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
+			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
+			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
+			stubSaveOrder(1L);
+
+			OrderCreateResponse response = orderService.createOrder(userId, request);
+
+			assertThat(response.status()).isEqualTo(OrderStatus.PAYMENT_PENDING);
+			then(orderRepository).should().bulkUpdateStatus(userId, 1L,
+				OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED);
 		}
 	}
 }

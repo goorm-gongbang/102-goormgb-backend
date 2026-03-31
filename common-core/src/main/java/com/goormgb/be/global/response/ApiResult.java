@@ -38,6 +38,10 @@ public class ApiResult<T> {
 		return of("CREATED", "성공", data);
 	}
 
+	public static <T> ApiResult<T> created(String message, T data) {
+		return of("CREATED", message, data);
+	}
+
 	private static <T> ApiResult<T> of(String code, String message, T data) {
 		return new ApiResult<>(code, message, data);
 	}
