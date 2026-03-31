@@ -129,9 +129,7 @@ public class InquiryFileService {
 	}
 
 	private void validateKeyPrefix(String fileKey, Long inquiryId, Long userId) {
-		if (fileKey == null || fileKey.isBlank()) {
-			throw new CustomException(ErrorCode.INQUIRY_FILE_KEY_INVALID);
-		}
+		Preconditions.validate(fileKey != null && !fileKey.isBlank(), ErrorCode.INQUIRY_FILE_KEY_INVALID);
 		String expectedPrefix = getNormalizedPrefix() + inquiryId + "/" + userId + "/";
 		Preconditions.validate(fileKey.startsWith(expectedPrefix), ErrorCode.INQUIRY_FILE_KEY_INVALID);
 		Preconditions.validate(!fileKey.contains(".."), ErrorCode.INQUIRY_FILE_KEY_INVALID);
@@ -160,9 +158,7 @@ public class InquiryFileService {
 
 	private void validateObjectSignature(String fileKey, String extension) {
 		byte[] expectedSignature = SIGNATURES.get(extension);
-		if (expectedSignature == null) {
-			throw new CustomException(ErrorCode.INQUIRY_FILE_TYPE_NOT_ALLOWED);
-		}
+		Preconditions.validate(expectedSignature != null, ErrorCode.INQUIRY_FILE_TYPE_NOT_ALLOWED);
 
 		byte[] actualSignature;
 		try (ResponseInputStream<?> input = s3Client.getObject(GetObjectRequest.builder()
@@ -187,14 +183,10 @@ public class InquiryFileService {
 	}
 
 	private String extractExtension(String fileName) {
-		if (fileName == null || fileName.isBlank()) {
-			throw new CustomException(ErrorCode.INQUIRY_FILE_TYPE_NOT_ALLOWED);
-		}
+		Preconditions.validate(fileName != null && !fileName.isBlank(), ErrorCode.INQUIRY_FILE_TYPE_NOT_ALLOWED);
 
 		int dot = fileName.lastIndexOf('.');
-		if (dot < 0 || dot == fileName.length() - 1) {
-			throw new CustomException(ErrorCode.INQUIRY_FILE_TYPE_NOT_ALLOWED);
-		}
+		Preconditions.validate(dot >= 0 && dot < fileName.length() - 1, ErrorCode.INQUIRY_FILE_TYPE_NOT_ALLOWED);
 
 		String extension = fileName.substring(dot + 1).trim().toLowerCase(Locale.ROOT);
 		Preconditions.validate(!extension.isEmpty(), ErrorCode.INQUIRY_FILE_TYPE_NOT_ALLOWED);
