@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +24,9 @@ import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.mypage.MyPageFixture;
 import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.InquiryFilePresignedResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
@@ -521,6 +524,139 @@ class MyPageControllerTest extends WebMvcTestSupport {
 						"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message").value("title: title은 필수입니다."));
+		}
+	}
+
+	@Nested
+	@DisplayName("POST /mypage/inquiries/{inquiryId}/presigned-url — 파일 업로드 URL 발급")
+	class GetInquiryPresignedUrl {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 presignedUrl/fileKey를 반환한다")
+		void getInquiryPresignedUrl_성공() throws Exception {
+			given(inquiryFileService.generatePresignedUrl(1L, 11L, "seat.jpg"))
+				.willReturn(new InquiryFilePresignedResponse(
+					"https://signed.example.com/put",
+					"dev/11/1/uuid.jpg"
+				));
+
+			mockMvc.perform(post("/mypage/inquiries/11/presigned-url")
+					.contentType("application/json")
+					.content("""
+						{
+						  "fileName": "seat.jpg"
+						}
+						"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("Presigned URL 발급 성공"))
+				.andExpect(jsonPath("$.data.presignedUrl").value("https://signed.example.com/put"))
+				.andExpect(jsonPath("$.data.fileKey").value("dev/11/1/uuid.jpg"));
+		}
+
+		@Test
+		@DisplayName("요청 body가 비어 있으면 400을 반환한다")
+		void getInquiryPresignedUrl_요청검증실패_400() throws Exception {
+			mockMvc.perform(post("/mypage/inquiries/11/presigned-url")
+					.contentType("application/json")
+					.content("""
+						{
+						  "fileName": " "
+						}
+						"""))
+				.andExpect(status().isBadRequest());
+		}
+	}
+
+	@Nested
+	@DisplayName("PATCH /mypage/inquiries/{inquiryId}/file — 파일 확정")
+	class ConfirmInquiryFile {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200을 반환한다")
+		void confirmInquiryFile_성공() throws Exception {
+			mockMvc.perform(patch("/mypage/inquiries/11/file")
+					.contentType("application/json")
+					.content("""
+						{
+						  "fileKey": "dev/11/1/uuid.jpg"
+						}
+						"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("파일 등록 완료"));
+
+			then(inquiryFileService).should()
+				.confirmFile(1L, 11L, "dev/11/1/uuid.jpg");
+		}
+
+		@Test
+		@DisplayName("요청 body가 비어 있으면 400을 반환한다")
+		void confirmInquiryFile_요청검증실패_400() throws Exception {
+			mockMvc.perform(patch("/mypage/inquiries/11/file")
+					.contentType("application/json")
+					.content("""
+						{
+						  "fileKey": " "
+						}
+						"""))
+				.andExpect(status().isBadRequest());
+		}
+	}
+
+	@Nested
+	@DisplayName("GET /mypage/inquiries/{inquiryId} — 문의 상세 조회")
+	class GetInquiryDetail {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 문의 상세를 반환한다")
+		void getInquiryDetail_성공() throws Exception {
+			given(myPageInquiryService.getInquiryDetail(1L, 11L))
+				.willReturn(new MyPageInquiryDetailResponse(
+					11L,
+					"BOOKING",
+					"문의 제목",
+					"문의 내용",
+					"010-1234-5678",
+					"REGISTERED",
+					true,
+					"https://signed.example.com/get",
+					Instant.parse("2026-03-31T08:00:00Z")
+				));
+
+			mockMvc.perform(get("/mypage/inquiries/11"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("조회 성공"))
+				.andExpect(jsonPath("$.data.inquiryId").value(11))
+				.andExpect(jsonPath("$.data.fileAttached").value(true))
+				.andExpect(jsonPath("$.data.downloadUrl").value("https://signed.example.com/get"));
+		}
+
+		@Test
+		@DisplayName("타인 문의면 403을 반환한다")
+		void getInquiryDetail_권한없음_403() throws Exception {
+			given(myPageInquiryService.getInquiryDetail(1L, 11L))
+				.willThrow(new CustomException(ErrorCode.INQUIRY_ACCESS_DENIED));
+
+			mockMvc.perform(get("/mypage/inquiries/11"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("해당 문의에 접근할 권한이 없습니다."));
 		}
 	}
 }
