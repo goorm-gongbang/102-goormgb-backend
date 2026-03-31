@@ -36,27 +36,29 @@ public class PaymentEventPublisher {
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handlePaymentCompleted(PaymentCompletedInternalEvent internalEvent) {
+		Order order = internalEvent.getOrder();
+
 		PaymentCompletedEvent event = PaymentCompletedEvent.builder()
-			.orderId(internalEvent.getOrder().getId())
-			.userId(internalEvent.getOrder().getUser().getId())
-			.matchId(internalEvent.getOrder().getMatch().getId())
+			.orderId(order.getId())
+			.userId(order.getUser().getId())
+			.matchId(order.getMatch().getId())
 			.matchSeatIds(internalEvent.getMatchSeatIds())
 			.paymentMethod(internalEvent.getPaymentMethod())
-			.totalAmount(internalEvent.getOrder().getTotalAmount())
+			.totalAmount(order.getTotalAmount())
 			.occurredAt(Instant.now())
 			.build();
 
 		kafkaTemplate.send(
 			EventTopic.PAYMENT_COMPLETED,
-			String.valueOf(internalEvent.getOrder().getId()),
+			String.valueOf(order.getId()),
 			event
 		).whenComplete((result, ex) -> {
 			if (ex != null) {
 				log.error("[Kafka] 결제 완료 이벤트 발행 실패: orderId={}, error={}",
-					internalEvent.getOrder().getId(), ex.getMessage(), ex);
+					order.getId(), ex.getMessage(), ex);
 			} else {
 				log.info("[Kafka] 결제 완료 이벤트 발행 성공: orderId={}, seatCount={}, offset={}",
-					internalEvent.getOrder().getId(),
+					order.getId(),
 					internalEvent.getMatchSeatIds().size(),
 					result.getRecordMetadata().offset());
 			}

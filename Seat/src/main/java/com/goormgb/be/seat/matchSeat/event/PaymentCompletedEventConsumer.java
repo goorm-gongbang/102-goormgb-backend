@@ -25,7 +25,13 @@ public class PaymentCompletedEventConsumer {
 	@KafkaListener(topics = EventTopic.PAYMENT_COMPLETED, groupId = "seat-service")
 	@Transactional
 	public void handlePaymentCompleted(PaymentCompletedEvent event) {
-		List<MatchSeat> seats = matchSeatRepository.findAllById(event.getMatchSeatIds());
+		List<Long> requestedIds = event.getMatchSeatIds();
+		List<MatchSeat> seats = matchSeatRepository.findAllById(requestedIds);
+
+		if (seats.size() != requestedIds.size()) {
+			log.warn("[Kafka] 좌석 조회 수 불일치: orderId={}, 요청={}건, 조회={}건",
+				event.getOrderId(), requestedIds.size(), seats.size());
+		}
 
 		int soldCount = 0;
 		for (MatchSeat seat : seats) {
@@ -35,8 +41,9 @@ public class PaymentCompletedEventConsumer {
 			} else if (seat.getSaleStatus() == MatchSeatSaleStatus.SOLD) {
 				log.debug("[Kafka] 이미 SOLD 상태, 스킵: matchSeatId={}", seat.getId());
 			} else {
-				log.warn("[Kafka] 예상하지 못한 좌석 상태: matchSeatId={}, status={}",
-					seat.getId(), seat.getSaleStatus());
+				log.warn("[Kafka] 예상하지 못한 좌석 상태: matchSeatId={}, status={}, orderId={} — "
+						+ "Consumer Lag으로 인해 SeatHoldCleanupScheduler가 먼저 AVAILABLE로 복원했을 가능성 있음",
+					seat.getId(), seat.getSaleStatus(), event.getOrderId());
 			}
 		}
 
