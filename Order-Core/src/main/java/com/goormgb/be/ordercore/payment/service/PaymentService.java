@@ -19,9 +19,9 @@ import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.metrics.enums.PaymentMethodType;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
-import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
+import com.goormgb.be.ordercore.payment.event.PaymentEventPublisher;
 import com.goormgb.be.ordercore.payment.dto.request.CashReceiptCreateRequest;
 import com.goormgb.be.ordercore.payment.dto.request.PaymentProcessRequest;
 import com.goormgb.be.ordercore.payment.dto.response.CashReceiptCreateResponse;
@@ -57,7 +57,7 @@ public class PaymentService {
 	private final OrderSeatRepository orderSeatRepository;
 	private final PaymentRepository paymentRepository;
 	private final CashReceiptRepository cashReceiptRepository;
-	private final SeatInfoQueryService seatInfoQueryService;
+	private final PaymentEventPublisher paymentEventPublisher;
 
 	/**
 	 * 결제 처리.
@@ -105,8 +105,9 @@ public class PaymentService {
 				log.info("[PaymentService] 현금영수증 신청 완료 - orderId={}, purpose={}", orderId, request.cashReceiptPurpose());
 			}
 
-			// 결제 수단과 무관하게 좌석을 SOLD로 전환 (스케줄러가 풀지 못하도록)
-			markSeatsAsSold(orderId);
+			// 결제 수단과 무관하게 좌석 SOLD 전환 이벤트 발행 (스케줄러가 BLOCKED를 풀지 못하도록)
+			List<Long> matchSeatIds = orderSeatRepository.findMatchSeatIdsByOrderId(orderId);
+			paymentEventPublisher.publishPaymentCompleted(order, matchSeatIds, request.paymentMethod().name());
 
 			if (request.paymentMethod() != PaymentMethod.BANK_TRANSFER) {
 				// 간편결제(토스페이, 카카오페이) 목업 즉시 완료
@@ -172,16 +173,6 @@ public class PaymentService {
 		);
 
 		return order;
-	}
-
-	private void markSeatsAsSold(Long orderId) {
-		List<Long> matchSeatIds = orderSeatRepository.findMatchSeatIdsByOrderId(orderId);
-		int updated = seatInfoQueryService.markSoldIfBlocked(matchSeatIds);
-		log.info("[PaymentService] 좌석 SOLD 전환 - orderId={}, count={}", orderId, updated);
-		if (updated != matchSeatIds.size()) {
-			log.warn("[PaymentService] 좌석 SOLD 전환 개수 불일치 - orderId={}, expected={}, updated={}",
-				orderId, matchSeatIds.size(), updated);
-		}
 	}
 
 	private Payment buildPayment(Order order, PaymentMethod method) {
