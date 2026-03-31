@@ -28,8 +28,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -120,17 +120,19 @@ public class InquiryFileService {
 		return inquiry;
 	}
 
+	private String getNormalizedPrefix() {
+		return prefix.endsWith("/") ? prefix : prefix + "/";
+	}
+
 	private String buildFileKey(Long inquiryId, Long userId, String extension) {
-		String normalizedPrefix = prefix.endsWith("/") ? prefix : prefix + "/";
-		return normalizedPrefix + inquiryId + "/" + userId + "/" + UUID.randomUUID() + "." + extension;
+		return getNormalizedPrefix() + inquiryId + "/" + userId + "/" + UUID.randomUUID() + "." + extension;
 	}
 
 	private void validateKeyPrefix(String fileKey, Long inquiryId, Long userId) {
 		if (fileKey == null || fileKey.isBlank()) {
 			throw new CustomException(ErrorCode.INQUIRY_FILE_KEY_INVALID);
 		}
-		String normalizedPrefix = prefix.endsWith("/") ? prefix : prefix + "/";
-		String expectedPrefix = normalizedPrefix + inquiryId + "/" + userId + "/";
+		String expectedPrefix = getNormalizedPrefix() + inquiryId + "/" + userId + "/";
 		Preconditions.validate(fileKey.startsWith(expectedPrefix), ErrorCode.INQUIRY_FILE_KEY_INVALID);
 		Preconditions.validate(!fileKey.contains(".."), ErrorCode.INQUIRY_FILE_KEY_INVALID);
 	}
@@ -144,7 +146,8 @@ public class InquiryFileService {
 					.build()
 			);
 			Long fileSize = response.contentLength();
-			Preconditions.validate(fileSize != null && fileSize <= MAX_FILE_SIZE_BYTES, ErrorCode.INQUIRY_FILE_TOO_LARGE);
+			Preconditions.validate(fileSize != null && fileSize <= MAX_FILE_SIZE_BYTES,
+				ErrorCode.INQUIRY_FILE_TOO_LARGE);
 		} catch (S3Exception e) {
 			if (e.statusCode() == 404) {
 				throw new CustomException(ErrorCode.INQUIRY_FILE_NOT_FOUND, e);
