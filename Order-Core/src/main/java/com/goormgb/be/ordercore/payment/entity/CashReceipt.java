@@ -52,4 +52,9 @@ public class CashReceipt extends BaseEntity {
 		this.purpose = purpose;
 		this.number = number;
 	}
+
+	public void update(CashReceiptPurpose purpose, String number) {
+		this.purpose = purpose;
+		this.number = number;
+	}
 }

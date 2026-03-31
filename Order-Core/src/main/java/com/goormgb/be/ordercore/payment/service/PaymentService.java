@@ -134,8 +134,8 @@ public class PaymentService {
 	}
 
 	/**
-	 * 현금영수증 신청.
-	 * 결제가 완료된 주문에 한해 현금영수증을 신청한다.
+	 * 현금영수증 신청 (목업).
+	 * 결제 상태와 무관하게 현금영수증 정보를 저장한다.
 	 */
 	public CashReceiptCreateResponse createCashReceipt(Long userId, Long orderId, CashReceiptCreateRequest request) {
 		Order order = findOrderAndValidateOwnership(userId, orderId);
@@ -143,20 +143,21 @@ public class PaymentService {
 		Payment payment = paymentRepository.findByOrderId(orderId)
 			.orElseThrow(() -> new CustomException(ErrorCode.PAYMENT_NOT_FOUND));
 
-		Preconditions.validate(
-			!cashReceiptRepository.findByPaymentId(payment.getId()).isPresent(),
-			ErrorCode.CASH_RECEIPT_ALREADY_EXISTS
-		);
+		CashReceipt cashReceipt = cashReceiptRepository.findByPaymentId(payment.getId())
+			.orElse(null);
 
-		CashReceipt cashReceipt = CashReceipt.builder()
-			.payment(payment)
-			.purpose(request.purpose())
-			.number(request.number())
-			.build();
-
-		cashReceiptRepository.save(cashReceipt);
-
-		log.info("[PaymentService] 현금영수증 신청 완료 - orderId={}, purpose={}", orderId, request.purpose());
+		if (cashReceipt != null) {
+			cashReceipt.update(request.purpose(), request.number());
+			log.info("[PaymentService] 현금영수증 정보 수정 - orderId={}, purpose={}", orderId, request.purpose());
+		} else {
+			cashReceipt = CashReceipt.builder()
+				.payment(payment)
+				.purpose(request.purpose())
+				.number(request.number())
+				.build();
+			cashReceiptRepository.save(cashReceipt);
+			log.info("[PaymentService] 현금영수증 신청 완료 - orderId={}, purpose={}", orderId, request.purpose());
+		}
 
 		return CashReceiptCreateResponse.of(orderId, cashReceipt);
 	}
