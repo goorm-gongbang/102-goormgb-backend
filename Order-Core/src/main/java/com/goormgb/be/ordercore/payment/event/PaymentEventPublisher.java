@@ -30,35 +30,40 @@ public class PaymentEventPublisher {
 	 */
 	public void publishPaymentCompleted(Order order, List<Long> matchSeatIds, String paymentMethod) {
 		applicationEventPublisher.publishEvent(
-			new PaymentCompletedInternalEvent(order, matchSeatIds, paymentMethod)
+			new PaymentCompletedInternalEvent(
+				order.getId(),
+				order.getUser().getId(),
+				order.getMatch().getId(),
+				matchSeatIds,
+				order.getTotalAmount(),
+				paymentMethod
+			)
 		);
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handlePaymentCompleted(PaymentCompletedInternalEvent internalEvent) {
-		Order order = internalEvent.order();
-
 		PaymentCompletedEvent event = PaymentCompletedEvent.builder()
-			.orderId(order.getId())
-			.userId(order.getUser().getId())
-			.matchId(order.getMatch().getId())
+			.orderId(internalEvent.orderId())
+			.userId(internalEvent.userId())
+			.matchId(internalEvent.matchId())
 			.matchSeatIds(internalEvent.matchSeatIds())
 			.paymentMethod(internalEvent.paymentMethod())
-			.totalAmount(order.getTotalAmount())
+			.totalAmount(internalEvent.totalAmount())
 			.occurredAt(Instant.now())
 			.build();
 
 		kafkaTemplate.send(
 			EventTopic.PAYMENT_COMPLETED,
-			String.valueOf(order.getId()),
+			String.valueOf(internalEvent.orderId()),
 			event
 		).whenComplete((result, ex) -> {
 			if (ex != null) {
 				log.error("[Kafka] 결제 완료 이벤트 발행 실패: orderId={}, error={}",
-					order.getId(), ex.getMessage(), ex);
+					internalEvent.orderId(), ex.getMessage(), ex);
 			} else {
 				log.info("[Kafka] 결제 완료 이벤트 발행 성공: orderId={}, seatCount={}, offset={}",
-					order.getId(),
+					internalEvent.orderId(),
 					internalEvent.matchSeatIds().size(),
 					result.getRecordMetadata().offset());
 			}

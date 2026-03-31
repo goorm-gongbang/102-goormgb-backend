@@ -26,35 +26,40 @@ public class OrderEventPublisher {
 
 	public void publishOrderCancelled(Order order, List<Long> matchSeatIds) {
 		applicationEventPublisher.publishEvent(
-			new OrderCancelledInternalEvent(order, matchSeatIds)
+			new OrderCancelledInternalEvent(
+				order.getId(),
+				order.getUser().getId(),
+				order.getMatch().getId(),
+				order.getCancellationFee(),
+				order.getRefundedAmount(),
+				matchSeatIds
+			)
 		);
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handleOrderCancelled(OrderCancelledInternalEvent internalEvent) {
-		Order order = internalEvent.order();
-
 		OrderCancelledEvent event = OrderCancelledEvent.builder()
-			.orderId(order.getId())
-			.userId(order.getUser().getId())
-			.matchId(order.getMatch().getId())
+			.orderId(internalEvent.orderId())
+			.userId(internalEvent.userId())
+			.matchId(internalEvent.matchId())
 			.matchSeatIds(internalEvent.matchSeatIds())
-			.cancellationFee(order.getCancellationFee())
-			.refundedAmount(order.getRefundedAmount())
+			.cancellationFee(internalEvent.cancellationFee())
+			.refundedAmount(internalEvent.refundedAmount())
 			.occurredAt(Instant.now())
 			.build();
 
 		kafkaTemplate.send(
 			EventTopic.ORDER_CANCELLED,
-			String.valueOf(order.getId()),
+			String.valueOf(internalEvent.orderId()),
 			event
 		).whenComplete((result, ex) -> {
 			if (ex != null) {
 				log.error("[Kafka] 주문 취소 이벤트 발행 실패: orderId={}, error={}",
-					order.getId(), ex.getMessage(), ex);
+					internalEvent.orderId(), ex.getMessage(), ex);
 			} else {
 				log.info("[Kafka] 주문 취소 이벤트 발행 성공: orderId={}, seatCount={}, offset={}",
-					order.getId(),
+					internalEvent.orderId(),
 					internalEvent.matchSeatIds().size(),
 					result.getRecordMetadata().offset());
 			}
