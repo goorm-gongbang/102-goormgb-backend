@@ -36,14 +36,14 @@ public class PaymentEventPublisher {
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handlePaymentCompleted(PaymentCompletedInternalEvent internalEvent) {
-		Order order = internalEvent.getOrder();
+		Order order = internalEvent.order();
 
 		PaymentCompletedEvent event = PaymentCompletedEvent.builder()
 			.orderId(order.getId())
 			.userId(order.getUser().getId())
 			.matchId(order.getMatch().getId())
-			.matchSeatIds(internalEvent.getMatchSeatIds())
-			.paymentMethod(internalEvent.getPaymentMethod())
+			.matchSeatIds(internalEvent.matchSeatIds())
+			.paymentMethod(internalEvent.paymentMethod())
 			.totalAmount(order.getTotalAmount())
 			.occurredAt(Instant.now())
 			.build();
@@ -59,7 +59,7 @@ public class PaymentEventPublisher {
 			} else {
 				log.info("[Kafka] 결제 완료 이벤트 발행 성공: orderId={}, seatCount={}, offset={}",
 					order.getId(),
-					internalEvent.getMatchSeatIds().size(),
+					internalEvent.matchSeatIds().size(),
 					result.getRecordMetadata().offset());
 			}
 		});
