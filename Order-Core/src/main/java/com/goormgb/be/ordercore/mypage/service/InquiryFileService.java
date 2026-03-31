@@ -146,8 +146,10 @@ public class InquiryFileService {
 					.build()
 			);
 			Long fileSize = response.contentLength();
-			Preconditions.validate(fileSize != null && fileSize <= MAX_FILE_SIZE_BYTES,
-				ErrorCode.INQUIRY_FILE_TOO_LARGE);
+			if (fileSize == null || fileSize > MAX_FILE_SIZE_BYTES) {
+				deleteObjectQuietly(fileKey);
+				throw new CustomException(ErrorCode.INQUIRY_FILE_TOO_LARGE);
+			}
 		} catch (S3Exception e) {
 			if (e.statusCode() == 404) {
 				throw new CustomException(ErrorCode.INQUIRY_FILE_NOT_FOUND, e);

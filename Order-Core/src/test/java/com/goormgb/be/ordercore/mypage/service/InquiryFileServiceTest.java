@@ -156,6 +156,8 @@ class InquiryFileServiceTest {
 				.isInstanceOf(CustomException.class)
 				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
 					.isEqualTo(ErrorCode.INQUIRY_FILE_TOO_LARGE));
+
+			then(s3Client).should().deleteObject(any(DeleteObjectRequest.class));
 		}
 
 		@Test
