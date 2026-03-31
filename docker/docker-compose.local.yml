@@ -19,17 +19,3 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: local
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: goormgb-kafka-ui
-    ports:
-      - "8090:8080"
-    environment:
-      KAFKA_CLUSTERS_0_NAME: goormgb-local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-    depends_on:
-      kafka:
-        condition: service_healthy
-    networks:
-      - goormgb-network
-
