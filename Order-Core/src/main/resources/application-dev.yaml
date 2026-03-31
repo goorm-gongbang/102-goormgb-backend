@@ -49,6 +49,16 @@ spring:
       max-file-size: 5MB
       max-request-size: 5MB
 
+cloud:
+  aws:
+    s3:
+      bucket: ${S3_BUCKET}
+      region: ${S3_REGION}
+      prefix: ${S3_PREFIX:dev/}
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+
 management:
   endpoints:
     web:
