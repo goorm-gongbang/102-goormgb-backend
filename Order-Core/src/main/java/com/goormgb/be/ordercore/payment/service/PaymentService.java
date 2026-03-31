@@ -94,6 +94,17 @@ public class PaymentService {
 			Payment payment = buildPayment(order, request.paymentMethod());
 			paymentRepository.save(payment);
 
+			// 현금영수증 신청 정보가 있으면 함께 저장
+			if (request.hasCashReceipt()) {
+				CashReceipt cashReceipt = CashReceipt.builder()
+					.payment(payment)
+					.purpose(request.cashReceiptPurpose())
+					.number(request.cashReceiptNumber())
+					.build();
+				cashReceiptRepository.save(cashReceipt);
+				log.info("[PaymentService] 현금영수증 신청 완료 - orderId={}, purpose={}", orderId, request.cashReceiptPurpose());
+			}
+
 			// 결제 수단과 무관하게 좌석을 SOLD로 전환 (스케줄러가 풀지 못하도록)
 			markSeatsAsSold(orderId);
 
