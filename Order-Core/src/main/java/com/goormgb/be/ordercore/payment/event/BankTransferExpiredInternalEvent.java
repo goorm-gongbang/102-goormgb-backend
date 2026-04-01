@@ -1,5 +1,6 @@
 package com.goormgb.be.ordercore.payment.event;
 
+import java.time.Instant;
 import java.util.List;
 
 public record BankTransferExpiredInternalEvent(
@@ -7,5 +8,6 @@ public record BankTransferExpiredInternalEvent(
 		Long userId,
 		Long matchId,
 		Long paymentId,
-		List<Long> matchSeatIds) {
+		List<Long> matchSeatIds,
+		Instant occurredAt) {
 }

@@ -1,5 +1,6 @@
 package com.goormgb.be.ordercore.payment.event;
 
+import java.time.Instant;
 import java.util.List;
 
 public record PaymentCompletedInternalEvent(
@@ -8,5 +9,6 @@ public record PaymentCompletedInternalEvent(
 		Long matchId,
 		List<Long> matchSeatIds,
 		Integer totalAmount,
-		String paymentMethod) {
+		String paymentMethod,
+		Instant occurredAt) {
 }

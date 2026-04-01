@@ -1,5 +1,6 @@
 package com.goormgb.be.ordercore.order.event;
 
+import java.time.Instant;
 import java.util.List;
 
 public record OrderCancelledInternalEvent(
@@ -8,5 +9,6 @@ public record OrderCancelledInternalEvent(
 		Long matchId,
 		Integer cancellationFee,
 		Integer refundedAmount,
-		List<Long> matchSeatIds) {
+		List<Long> matchSeatIds,
+		Instant occurredAt) {
 }

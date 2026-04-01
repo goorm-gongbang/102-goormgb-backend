@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -32,7 +33,8 @@ public class OrderEventPublisher {
 				order.getMatch().getId(),
 				order.getCancellationFee(),
 				order.getRefundedAmount(),
-				matchSeatIds
+				matchSeatIds,
+				Instant.now()
 			)
 		);
 	}
@@ -46,14 +48,14 @@ public class OrderEventPublisher {
 			.matchSeatIds(internalEvent.matchSeatIds())
 			.cancellationFee(internalEvent.cancellationFee())
 			.refundedAmount(internalEvent.refundedAmount())
-			.occurredAt(Instant.now())
+			.occurredAt(internalEvent.occurredAt())
 			.build();
 
 		kafkaTemplate.send(
 			EventTopic.ORDER_CANCELLED,
 			String.valueOf(internalEvent.orderId()),
 			event
-		).whenComplete((result, ex) -> {
+		).whenComplete((SendResult<String, Object> result, Throwable ex) -> {
 			if (ex != null) {
 				log.error("[Kafka] 주문 취소 이벤트 발행 실패: orderId={}, error={}",
 					internalEvent.orderId(), ex.getMessage(), ex);
