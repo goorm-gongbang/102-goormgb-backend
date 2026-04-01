@@ -340,8 +340,8 @@ class PaymentServiceTest {
 		}
 
 		@Test
-		@DisplayName("현금영수증이 이미 신청된 경우 CASH_RECEIPT_ALREADY_EXISTS 예외가 발생한다")
-		void createCashReceipt_중복신청_예외() {
+		@DisplayName("현금영수증이 이미 존재하면 기존 정보를 수정한다")
+		void createCashReceipt_기존_정보_수정() {
 			Long userId = 1L;
 			Long orderId = 1L;
 			Order order = createOrderWithUser(orderId, userId);
@@ -352,12 +352,12 @@ class PaymentServiceTest {
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.of(payment));
 			given(cashReceiptRepository.findByPaymentId(payment.getId())).willReturn(Optional.of(existing));
 
-			assertThatThrownBy(
-					() -> paymentService.createCashReceipt(userId, orderId,
-							PaymentFixture.createPersonalDeductionRequest())
-			)
-					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.CASH_RECEIPT_ALREADY_EXISTS.getMessage());
+			CashReceiptCreateResponse response = paymentService.createCashReceipt(userId, orderId,
+					PaymentFixture.createBusinessExpenseRequest());
+
+			assertThat(response.orderId()).isEqualTo(orderId);
+			assertThat(response.purpose()).isEqualTo(CashReceiptPurpose.BUSINESS_EXPENSE);
+			assertThat(response.number()).isEqualTo("123-45-67890");
 		}
 
 		@Test
