@@ -26,6 +26,7 @@ public class InternalApiKeyFilter extends OncePerRequestFilter {
 
 	private static final String HEADER_NAME = "X-Internal-Api-Key";
 	private static final String INTERNAL_PATH_PREFIX = "/internal/";
+	private static final String LOADTEST_PATH_PREFIX = "/loadtest/";
 
 	private final InternalApiKeyProperties properties;
 	private final ObjectMapper objectMapper;
@@ -38,7 +39,8 @@ public class InternalApiKeyFilter extends OncePerRequestFilter {
 	) throws ServletException, IOException {
 		String servletPath = request.getServletPath();
 
-		if (!servletPath.startsWith(INTERNAL_PATH_PREFIX)) {
+		if (!servletPath.startsWith(INTERNAL_PATH_PREFIX)
+			&& !servletPath.startsWith(LOADTEST_PATH_PREFIX)) {
 			filterChain.doFilter(request, response);
 			return;
 		}

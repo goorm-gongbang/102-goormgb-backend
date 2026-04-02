@@ -21,7 +21,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-@Tag(name = "Load Test Auth", description = "부하테스트용 인증 API")
+@Tag(name = "Load Test Auth", description = "부하테스트용 인증 API (X-Internal-Api-Key 필수)")
 @Profile({"local", "dev", "test", "staging"})
 @RestController
 @RequestMapping("/loadtest")
