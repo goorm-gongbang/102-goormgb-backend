@@ -2,6 +2,7 @@ package com.goormgb.be.ordercore.email.event;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.kafka.EventTopic;
 import com.goormgb.be.kafka.event.OrderCancelledEvent;
@@ -21,9 +22,10 @@ public class EmailEventConsumer {
 	private final EmailService emailService;
 	private final OrderRepository orderRepository;
 
+	@Transactional(readOnly = true)
 	@KafkaListener(
 		topics = EventTopic.PAYMENT_COMPLETED,
-		groupId = "order-core-notification"
+		groupId = "${spring.kafka.consumer.group-id}"
 	)
 	public void handlePaymentCompleted(PaymentCompletedEvent event) {
 		Order order = orderRepository.findById(event.getOrderId()).orElse(null);
@@ -35,9 +37,10 @@ public class EmailEventConsumer {
 		emailService.sendPaymentConfirmation(order, event);
 	}
 
+	@Transactional(readOnly = true)
 	@KafkaListener(
 		topics = EventTopic.ORDER_CANCELLED,
-		groupId = "order-core-notification"
+		groupId = "${spring.kafka.consumer.group-id}"
 	)
 	public void handleOrderCancelled(OrderCancelledEvent event) {
 		Order order = orderRepository.findById(event.getOrderId()).orElse(null);
