@@ -56,7 +56,7 @@ class ClubControllerTest extends WebMvcTestSupport {
 		// when & then
 		mockMvc.perform(get("/clubs"))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("CLIENT_ERROR"))
+				.andExpect(jsonPath("$.code").value("CLUB_NOT_FOUND"))
 				.andExpect(jsonPath("$.message").value("구단을 찾을 수 없습니다."));
 	}
 
@@ -108,7 +108,7 @@ class ClubControllerTest extends WebMvcTestSupport {
 		// when & then
 		mockMvc.perform(get("/clubs/{clubId}", clubId))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("CLIENT_ERROR"))
+				.andExpect(jsonPath("$.code").value("CLUB_NOT_FOUND"))
 				.andExpect(jsonPath("$.message").value("구단을 찾을 수 없습니다."));
 	}
 
