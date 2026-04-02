@@ -22,7 +22,7 @@ public enum ErrorCode {
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
 	USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 사용자입니다."),
 	USER_DEACTIVATED(HttpStatus.FORBIDDEN, "비활성화된 사용자입니다."),
-	USER_ALREADY_BLOCKED(HttpStatus.CONFLICT, "이미 차단된 사용자입니다."),
+	USER_ALREADY_BLOCKED(HttpStatus.CONFLICT, "차단된 사용자입니다."),
 	USER_ALREADY_ACTIVE(HttpStatus.CONFLICT, "이미 활성 상태인 사용자입니다."),
 
 	// Onboarding
