@@ -25,20 +25,6 @@ spring:
         jdbc:
           time-zone: UTC
 
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
-    producer:
-      key-serializer: ${KAFKA_PRODUCER_KEY_SERIALIZER}
-      value-serializer: ${KAFKA_PRODUCER_VALUE_SERIALIZER}
-      acks: ${KAFKA_PRODUCER_ACKS}
-    consumer:
-      group-id: ${KAFKA_CONSUMER_GROUP_ID}
-      key-deserializer: ${KAFKA_CONSUMER_KEY_DESERIALIZER}
-      value-deserializer: ${KAFKA_CONSUMER_VALUE_DESERIALIZER}
-      auto-offset-reset: ${KAFKA_CONSUMER_AUTO_OFFSET_RESET}
-      properties:
-        spring.json.trusted.packages: ${KAFKA_CONSUMER_TRUSTED_PACKAGES}
-
   data:
     redis:
       host: ${REDIS_HOST}
@@ -48,16 +34,6 @@ spring:
     multipart:
       max-file-size: 5MB
       max-request-size: 5MB
-
-cloud:
-  aws:
-    s3:
-      bucket: ${S3_BUCKET}
-      region: ${S3_REGION}
-      prefix: ${S3_PREFIX:dev/}
-    credentials:
-      access-key: ${AWS_ACCESS_KEY}
-      secret-key: ${AWS_SECRET_KEY}
 
 management:
   endpoints:

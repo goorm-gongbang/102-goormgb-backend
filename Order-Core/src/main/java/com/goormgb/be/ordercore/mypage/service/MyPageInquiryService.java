@@ -4,6 +4,7 @@ import java.util.Locale;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
@@ -13,7 +14,7 @@ import com.goormgb.be.ordercore.inquiry.enums.InquiryCategory;
 import com.goormgb.be.ordercore.inquiry.repository.InquiryRepository;
 import com.goormgb.be.ordercore.mypage.dto.request.MyPageInquiryCreateRequest;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
-import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryDetailResponse;
+import com.goormgb.be.ordercore.mypage.service.support.MyPageInquiryFileValidator;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.repository.UserRepository;
 
@@ -26,11 +27,16 @@ public class MyPageInquiryService {
 
 	private final UserRepository userRepository;
 	private final InquiryRepository inquiryRepository;
-	private final InquiryFileService inquiryFileService;
+	private final MyPageInquiryFileValidator myPageInquiryFileValidator;
 
 	@Transactional
-	public MyPageInquiryCreateResponse createInquiry(Long userId, MyPageInquiryCreateRequest request) {
+	public MyPageInquiryCreateResponse createInquiry(Long userId, MyPageInquiryCreateRequest request,
+		MultipartFile file) {
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+
+		if (file != null && !file.isEmpty()) {
+			myPageInquiryFileValidator.validate(file);
+		}
 
 		Inquiry inquiry = Inquiry.create(
 			user,
@@ -42,18 +48,6 @@ public class MyPageInquiryService {
 
 		Inquiry saved = inquiryRepository.save(inquiry);
 		return MyPageInquiryCreateResponse.of(saved.getId());
-	}
-
-	public MyPageInquiryDetailResponse getInquiryDetail(Long userId, Long inquiryId) {
-		Inquiry inquiry = inquiryRepository.findById(inquiryId)
-			.orElseThrow(() -> new CustomException(ErrorCode.INQUIRY_NOT_FOUND));
-		Preconditions.validate(inquiry.getUser().getId().equals(userId), ErrorCode.INQUIRY_ACCESS_DENIED);
-
-		String downloadUrl = null;
-		if (inquiry.getFileKey() != null && !inquiry.getFileKey().isBlank()) {
-			downloadUrl = inquiryFileService.generateDownloadUrl(inquiry.getFileKey());
-		}
-		return MyPageInquiryDetailResponse.of(inquiry, downloadUrl);
 	}
 
 	private InquiryCategory parseCategory(String rawCategory) {

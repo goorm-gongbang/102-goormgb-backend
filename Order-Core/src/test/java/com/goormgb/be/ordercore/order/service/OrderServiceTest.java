@@ -205,9 +205,9 @@ class OrderServiceTest {
 		}
 
 		private void stubNoPendingOrders() {
-			given(orderRepository.findIdsByUserIdAndMatchIdAndStatus(anyLong(), anyLong(),
-				eq(OrderStatus.PAYMENT_PENDING)))
-				.willReturn(Collections.emptyList());
+			given(orderRepository.bulkUpdateStatus(anyLong(), anyLong(),
+				eq(OrderStatus.PAYMENT_PENDING), eq(OrderStatus.CANCELLED)))
+				.willReturn(0);
 		}
 
 		@Test
@@ -436,11 +436,6 @@ class OrderServiceTest {
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
-			List<Long> pendingOrderIds = List.of(10L, 11L);
-			given(orderRepository.findIdsByUserIdAndMatchIdAndStatus(userId, 1L,
-				OrderStatus.PAYMENT_PENDING))
-				.willReturn(pendingOrderIds);
-			given(orderSeatRepository.deleteByOrderIdIn(pendingOrderIds)).willReturn(2);
 			given(orderRepository.bulkUpdateStatus(userId, 1L,
 				OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED))
 				.willReturn(2);
@@ -478,8 +473,8 @@ class OrderServiceTest {
 			OrderCreateResponse response = orderService.createOrder(userId, request);
 
 			assertThat(response.status()).isEqualTo(OrderStatus.PAYMENT_PENDING);
-			then(orderRepository).should(never()).bulkUpdateStatus(anyLong(), anyLong(),
-				any(OrderStatus.class), any(OrderStatus.class));
+			then(orderRepository).should().bulkUpdateStatus(userId, 1L,
+				OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED);
 		}
 	}
 }

@@ -11,17 +11,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.order.OrderFixture;
 import com.goormgb.be.ordercore.inquiry.entity.Inquiry;
-import com.goormgb.be.ordercore.inquiry.enums.InquiryCategory;
 import com.goormgb.be.ordercore.inquiry.repository.InquiryRepository;
 import com.goormgb.be.ordercore.mypage.dto.request.MyPageInquiryCreateRequest;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
-import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryDetailResponse;
+import com.goormgb.be.ordercore.mypage.service.support.MyPageInquiryFileValidator;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.repository.UserRepository;
 
@@ -33,8 +33,6 @@ class MyPageInquiryServiceTest {
 	private UserRepository userRepository;
 	@Mock
 	private InquiryRepository inquiryRepository;
-	@Mock
-	private InquiryFileService inquiryFileService;
 
 	private MyPageInquiryService myPageInquiryService;
 
@@ -43,7 +41,7 @@ class MyPageInquiryServiceTest {
 		myPageInquiryService = new MyPageInquiryService(
 			userRepository,
 			inquiryRepository,
-			inquiryFileService
+			new MyPageInquiryFileValidator()
 		);
 	}
 
@@ -52,8 +50,8 @@ class MyPageInquiryServiceTest {
 	class CreateInquiry {
 
 		@Test
-		@DisplayName("문의를 등록할 수 있다")
-		void createInquiry_성공() {
+		@DisplayName("파일 없이 문의를 등록할 수 있다")
+		void createInquiry_파일없음_성공() {
 			User user = OrderFixture.createUser();
 			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(inquiryRepository.save(any(Inquiry.class))).willAnswer(invocation -> {
@@ -64,10 +62,38 @@ class MyPageInquiryServiceTest {
 
 			MyPageInquiryCreateResponse response = myPageInquiryService.createInquiry(
 				1L,
-				new MyPageInquiryCreateRequest("BOOKING", "제목", "내용", "010-1234-5678")
+				new MyPageInquiryCreateRequest("BOOKING", "제목", "내용", "010-1234-5678"),
+				null
 			);
 
 			assertThat(response.inquiryId()).isEqualTo(11L);
+		}
+
+		@Test
+		@DisplayName("유효한 파일이면 문의를 등록할 수 있다")
+		void createInquiry_유효파일_성공() {
+			User user = OrderFixture.createUser();
+			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+			given(inquiryRepository.save(any(Inquiry.class))).willAnswer(invocation -> {
+				Inquiry inquiry = invocation.getArgument(0);
+				ReflectionTestUtils.setField(inquiry, "id", 12L);
+				return inquiry;
+			});
+
+			MockMultipartFile file = new MockMultipartFile(
+				"file",
+				"inquiry.jpg",
+				"image/jpeg",
+				new byte[] {(byte)0xFF, (byte)0xD8, (byte)0xFF, 0x00}
+			);
+
+			MyPageInquiryCreateResponse response = myPageInquiryService.createInquiry(
+				1L,
+				new MyPageInquiryCreateRequest("BOOKING", "제목", "내용", null),
+				file
+			);
+
+			assertThat(response.inquiryId()).isEqualTo(12L);
 		}
 
 		@Test
@@ -78,85 +104,85 @@ class MyPageInquiryServiceTest {
 
 			assertThatThrownBy(() -> myPageInquiryService.createInquiry(
 				1L,
-				new MyPageInquiryCreateRequest("INVALID", "제목", "내용", null)
+				new MyPageInquiryCreateRequest("INVALID", "제목", "내용", null),
+				null
 			))
 				.isInstanceOf(CustomException.class)
 				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
 					.isEqualTo(ErrorCode.INVALID_INQUIRY_CATEGORY));
 		}
-	}
-
-	@Nested
-	@DisplayName("getInquiryDetail")
-	class GetInquiryDetail {
 
 		@Test
-		@DisplayName("첨부파일이 없으면 downloadUrl 없이 조회된다")
-		void getInquiryDetail_첨부없음_성공() {
-			User user = OrderFixture.createUserWithId(1L);
-			Inquiry inquiry = createInquiry(user, 11L, null);
-			given(inquiryRepository.findById(11L)).willReturn(java.util.Optional.of(inquiry));
+		@DisplayName("허용되지 않은 확장자면 예외가 발생한다")
+		void createInquiry_확장자오류_예외() {
+			User user = OrderFixture.createUser();
+			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 
-			MyPageInquiryDetailResponse response = myPageInquiryService.getInquiryDetail(1L, 11L);
-
-			assertThat(response.inquiryId()).isEqualTo(11L);
-			assertThat(response.fileAttached()).isFalse();
-			assertThat(response.downloadUrl()).isNull();
-		}
-
-		@Test
-		@DisplayName("첨부파일이 있으면 downloadUrl을 포함해 조회된다")
-		void getInquiryDetail_첨부있음_성공() {
-			User user = OrderFixture.createUserWithId(1L);
-			Inquiry inquiry = createInquiry(user, 12L, "dev/12/1/uuid.jpg");
-			given(inquiryRepository.findById(12L)).willReturn(java.util.Optional.of(inquiry));
-			given(inquiryFileService.generateDownloadUrl("dev/12/1/uuid.jpg"))
-				.willReturn("https://signed.example.com/file");
-
-			MyPageInquiryDetailResponse response = myPageInquiryService.getInquiryDetail(1L, 12L);
-
-			assertThat(response.inquiryId()).isEqualTo(12L);
-			assertThat(response.fileAttached()).isTrue();
-			assertThat(response.downloadUrl()).isEqualTo("https://signed.example.com/file");
-		}
-
-		@Test
-		@DisplayName("없는 문의면 예외가 발생한다")
-		void getInquiryDetail_문의없음_예외() {
-			given(inquiryRepository.findById(99L)).willReturn(java.util.Optional.empty());
-
-			assertThatThrownBy(() -> myPageInquiryService.getInquiryDetail(1L, 99L))
-				.isInstanceOf(CustomException.class)
-				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
-					.isEqualTo(ErrorCode.INQUIRY_NOT_FOUND));
-		}
-
-		@Test
-		@DisplayName("타인 문의면 예외가 발생한다")
-		void getInquiryDetail_권한없음_예외() {
-			User owner = OrderFixture.createUserWithId(2L);
-			Inquiry inquiry = createInquiry(owner, 13L, null);
-			given(inquiryRepository.findById(13L)).willReturn(java.util.Optional.of(inquiry));
-
-			assertThatThrownBy(() -> myPageInquiryService.getInquiryDetail(1L, 13L))
-				.isInstanceOf(CustomException.class)
-				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
-					.isEqualTo(ErrorCode.INQUIRY_ACCESS_DENIED));
-		}
-
-		private Inquiry createInquiry(User user, Long inquiryId, String fileKey) {
-			Inquiry inquiry = Inquiry.create(
-				user,
-				InquiryCategory.BOOKING,
-				"제목",
-				"내용",
-				"010-1234-5678"
+			MockMultipartFile file = new MockMultipartFile(
+				"file",
+				"inquiry.exe",
+				"application/octet-stream",
+				new byte[] {0x4D, 0x5A}
 			);
-			ReflectionTestUtils.setField(inquiry, "id", inquiryId);
-			if (fileKey != null) {
-				inquiry.updateFileKey(fileKey);
-			}
-			return inquiry;
+
+			assertThatThrownBy(() -> myPageInquiryService.createInquiry(
+				1L,
+				new MyPageInquiryCreateRequest("BOOKING", "제목", "내용", null),
+				file
+			))
+				.isInstanceOf(CustomException.class)
+				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
+					.isEqualTo(ErrorCode.INQUIRY_FILE_TYPE_NOT_ALLOWED));
+		}
+
+		@Test
+		@DisplayName("확장자와 시그니처가 다르면 예외가 발생한다")
+		void createInquiry_시그니처불일치_예외() {
+			User user = OrderFixture.createUser();
+			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+
+			MockMultipartFile file = new MockMultipartFile(
+				"file",
+				"inquiry.jpg",
+				"image/jpeg",
+				new byte[] {0x4D, 0x5A, 0x00, 0x00}
+			);
+
+			assertThatThrownBy(() -> myPageInquiryService.createInquiry(
+				1L,
+				new MyPageInquiryCreateRequest("BOOKING", "제목", "내용", null),
+				file
+			))
+				.isInstanceOf(CustomException.class)
+				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
+					.isEqualTo(ErrorCode.INQUIRY_FILE_SIGNATURE_MISMATCH));
+		}
+
+		@Test
+		@DisplayName("파일 크기 제한을 넘으면 예외가 발생한다")
+		void createInquiry_파일크기초과_예외() {
+			User user = OrderFixture.createUser();
+			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+
+			byte[] oversized = new byte[5 * 1024 * 1024 + 1];
+			oversized[0] = (byte)0xFF;
+			oversized[1] = (byte)0xD8;
+			oversized[2] = (byte)0xFF;
+			MockMultipartFile file = new MockMultipartFile(
+				"file",
+				"inquiry.jpg",
+				"image/jpeg",
+				oversized
+			);
+
+			assertThatThrownBy(() -> myPageInquiryService.createInquiry(
+				1L,
+				new MyPageInquiryCreateRequest("BOOKING", "제목", "내용", null),
+				file
+			))
+				.isInstanceOf(CustomException.class)
+				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
+					.isEqualTo(ErrorCode.INQUIRY_FILE_TOO_LARGE));
 		}
 	}
 }

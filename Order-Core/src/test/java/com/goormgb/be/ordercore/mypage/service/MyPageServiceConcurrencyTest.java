@@ -20,9 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -42,9 +40,6 @@ import jakarta.persistence.EntityManager;
 @ActiveProfiles("test")
 @DisplayName("MyPageTicketService 동시성 통합 테스트")
 class MyPageServiceConcurrencyTest {
-
-	@MockitoBean
-	private KafkaTemplate<String, Object> kafkaTemplate;
 
 	@Autowired
 	private MyPageTicketService myPageTicketService;
