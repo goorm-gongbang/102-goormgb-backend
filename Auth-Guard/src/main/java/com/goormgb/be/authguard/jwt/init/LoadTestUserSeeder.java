@@ -3,10 +3,13 @@ package com.goormgb.be.authguard.jwt.init;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.LongStream;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,13 +92,16 @@ public class LoadTestUserSeeder implements CommandLineRunner {
 	@Override
 	@Transactional
 	public void run(String... args) {
-		long existingCount = loadTestUserRepository.countByLoginIdStartingWith("");
-		if (existingCount >= TOTAL_USERS) {
-			log.info("[LoadTest] 부하테스트 계정 {}개 이미 존재 — 시딩 생략", existingCount);
+		List<String> targetLoginIds = LongStream.rangeClosed(1, TOTAL_USERS)
+				.mapToObj(String::valueOf)
+				.toList();
+		Set<String> existingLoginIds = loadTestUserRepository.findExistingLoginIds(targetLoginIds);
+		if (existingLoginIds.size() >= TOTAL_USERS) {
+			log.info("[LoadTest] 부하테스트 계정 1~{}번 모두 존재 — 시딩 생략", TOTAL_USERS);
 			return;
 		}
 
-		log.info("[LoadTest] 부하테스트 계정 시딩 시작 (목표: {}개, 기존: {}개)", TOTAL_USERS, existingCount);
+		log.info("[LoadTest] 부하테스트 계정 시딩 시작 (목표: {}개, 기존: {}개)", TOTAL_USERS, existingLoginIds.size());
 
 		List<Club> clubs = loadClubs();
 		if (clubs.isEmpty()) {
@@ -109,28 +115,32 @@ public class LoadTestUserSeeder implements CommandLineRunner {
 		for (int i = 1; i <= TOTAL_USERS; i++) {
 			String loginId = String.valueOf(i);
 
-			if (loadTestUserRepository.existsByLoginId(loginId)) {
+			if (existingLoginIds.contains(loginId)) {
 				continue;
 			}
 
-			User user = User.builder()
-					.email(loginId + "@loadtest.com")
-					.nickname("loadtest_" + loginId)
-					.build();
-			userRepository.save(user);
+			try {
+				User user = User.builder()
+						.email(loginId + "@loadtest.com")
+						.nickname("loadtest_" + loginId)
+						.build();
+				userRepository.save(user);
 
-			LoadTestUser loadTestUser = LoadTestUser.builder()
-					.loginId(loginId)
-					.passwordHash(encodedPassword)
-					.user(user)
-					.build();
-			loadTestUserRepository.save(loadTestUser);
+				LoadTestUser loadTestUser = LoadTestUser.builder()
+						.loginId(loginId)
+						.passwordHash(encodedPassword)
+						.user(user)
+						.build();
+				loadTestUserRepository.save(loadTestUser);
 
-			seedOnboarding(user, clubs, i);
-			user.completeOnboarding();
-			user.updateMarketingConsent(true);
+				seedOnboarding(user, clubs, i);
+				user.completeOnboarding();
+				user.updateMarketingConsent(true);
 
-			created++;
+				created++;
+			} catch (DataIntegrityViolationException e) {
+				log.warn("[LoadTest] 동시 부팅으로 인한 중복 충돌 — loginId: {} (스킵)", loginId);
+			}
 
 			if (created % FLUSH_INTERVAL == 0) {
 				entityManager.flush();
@@ -192,10 +202,8 @@ public class LoadTestUserSeeder implements CommandLineRunner {
 	}
 
 	private List<Club> loadClubs() {
-		List<Club> clubs = new ArrayList<>();
-		for (long i = 1; i <= CLUB_COUNT; i++) {
-			clubRepository.findById(i).ifPresent(clubs::add);
-		}
-		return clubs;
+		return LongStream.rangeClosed(1, CLUB_COUNT)
+				.mapToObj(clubRepository::getReferenceById)
+				.toList();
 	}
 }
