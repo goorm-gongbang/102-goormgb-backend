@@ -1,0 +1,45 @@
+name: Release Discord Notification
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set environment label
+        id: env
+        run: |
+          if [ "${{ github.event.release.prerelease }}" = "true" ]; then
+            echo "label=Staging" >> $GITHUB_OUTPUT
+          else
+            echo "label=Production" >> $GITHUB_OUTPUT
+          fi
+          echo "color=65280" >> $GITHUB_OUTPUT
+
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+        run: |
+          # 릴리즈 노트 본문 (2000자 제한, JSON escape)
+          BODY=$(echo '${{ github.event.release.body }}' | head -c 1800 | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')
+
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"${{ github.event.release.tag_name }}\",
+                \"description\": $BODY,
+                \"url\": \"${{ github.event.release.html_url }}\",
+                \"color\": ${{ steps.env.outputs.color }},
+                \"author\": {
+                  \"name\": \"${{ github.event.release.author.login }}\"
+                },
+                \"footer\": {
+                  \"text\": \"${{ steps.env.outputs.label }} Release\"
+                },
+                \"timestamp\": \"${{ github.event.release.published_at }}\"
+              }]
+            }" \
+            "$DISCORD_WEBHOOK"
