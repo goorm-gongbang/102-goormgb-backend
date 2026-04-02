@@ -16,6 +16,8 @@ import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.metrics.SeatMetricsService;
+import com.goormgb.be.seat.metrics.enums.FallbackType;
+import com.goormgb.be.seat.metrics.enums.RecommendDegradeType;
 import com.goormgb.be.seat.metrics.enums.SeatHoldFailReason;
 import com.goormgb.be.seat.metrics.enums.SeatHoldMode;
 import com.goormgb.be.seat.recommendation.dto.internal.SeatGroup;
@@ -93,6 +95,8 @@ public class SeatAssignmentTransactionalService {
 			var response = tryHoldSeats(userId, matchId, block, seatGroup.seats(), false);
 
 			if (response.isPresent()) {
+				// 추천 배정 degrade 건수 집계
+				seatMetricsService.increaseRecommendDegrade(RecommendDegradeType.INSUFFICIENT_CONTIGUOUS_SEATS);
 				return response.get();
 			}
 
@@ -121,8 +125,10 @@ public class SeatAssignmentTransactionalService {
 			}
 		}
 
-		// TODO: 실패 횟수 매트릭 추가
+		// 추천 배정 실패 건수 집계
 		seatMetricsService.increaseHoldFail(SeatHoldMode.RECOMMEND, SeatHoldFailReason.VALIDATION);
+		// 추천 실패 후 일반 좌석 fallback 건수 집계
+		seatMetricsService.increaseRecommendFallback(FallbackType.MAP_SEARCH);
 		throw new CustomException(ErrorCode.NO_CONSECUTIVE_SEAT_AVAILABLE);
 	}
 
