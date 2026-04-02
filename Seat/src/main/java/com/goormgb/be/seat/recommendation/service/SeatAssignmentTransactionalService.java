@@ -95,8 +95,6 @@ public class SeatAssignmentTransactionalService {
 			var response = tryHoldSeats(userId, matchId, block, seatGroup.seats(), false);
 
 			if (response.isPresent()) {
-				// 추천 배정 degrade 건수 집계
-				seatMetricsService.increaseRecommendDegrade(RecommendDegradeType.INSUFFICIENT_CONTIGUOUS_SEATS);
 				return response.get();
 			}
 
@@ -117,6 +115,8 @@ public class SeatAssignmentTransactionalService {
 				var response = tryHoldSeats(userId, matchId, block, semiGroup.allSeats(), true);
 
 				if (response.isPresent()) {
+					// 추천 배정 degrade 건수 집계
+					seatMetricsService.increaseRecommendDegrade(RecommendDegradeType.INSUFFICIENT_CONTIGUOUS_SEATS);
 					return response.get();
 				}
 
