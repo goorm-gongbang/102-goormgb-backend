@@ -72,15 +72,15 @@ public final class PaymentFixture {
 	}
 
 	public static PaymentProcessRequest createBankTransferRequest() {
-		return new PaymentProcessRequest(PaymentMethod.BANK_TRANSFER);
+		return new PaymentProcessRequest(PaymentMethod.BANK_TRANSFER, null, null);
 	}
 
 	public static PaymentProcessRequest createTossPayRequest() {
-		return new PaymentProcessRequest(PaymentMethod.TOSS_PAY);
+		return new PaymentProcessRequest(PaymentMethod.TOSS_PAY, null, null);
 	}
 
 	public static PaymentProcessRequest createKakaoPayRequest() {
-		return new PaymentProcessRequest(PaymentMethod.KAKAO_PAY);
+		return new PaymentProcessRequest(PaymentMethod.KAKAO_PAY, null, null);
 	}
 
 	public static CashReceiptCreateRequest createPersonalDeductionRequest() {
