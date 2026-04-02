@@ -79,6 +79,7 @@ public class LoadTestAuthService {
 
 		User user = loadTestUser.getUser();
 
+		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
 		Preconditions.validate(user.getStatus() != UserStatus.BLOCKED, ErrorCode.USER_ALREADY_BLOCKED);
 
 		user.updateLastLoginAt();
