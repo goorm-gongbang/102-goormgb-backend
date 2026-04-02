@@ -93,7 +93,7 @@ public class SeatRecommendationService {
 			// 추천 좌석 탐색 성공 횟수 증가
 			seatMetricsService.increaseRecommendSuccess();
 
-			return BlockRecommendationResponse.of(matchId, ticketCount, recommendations);
+			return BlockRecommendationResponse.of(matchId, ticketCount, recommendations, nearAdjacentToggle);
 		} catch (CustomException e) {
 			// 추천 좌석 탐색 실패 횟수 증가 (예외 발생, 조건 불일치 등 실패 케이스 추적)
 			seatMetricsService.increaseRecommendFail();

@@ -13,11 +13,12 @@ public record BlockRecommendationResponse(
 	public static BlockRecommendationResponse of(
 		Long matchId,
 		Integer ticketCount,
-		List<BlockRecommendation> recommendations
+		List<BlockRecommendation> recommendations,
+		boolean nearAdjacentToggle
 	) {
 		List<RecommendedBlock> blocks = new java.util.ArrayList<>();
 		for (int i = 0; i < recommendations.size(); i++) {
-			blocks.add(RecommendedBlock.from(recommendations.get(i), i + 1));
+			blocks.add(RecommendedBlock.from(recommendations.get(i), i + 1, nearAdjacentToggle));
 		}
 		return new BlockRecommendationResponse(matchId, ticketCount, blocks);
 	}
@@ -28,22 +29,25 @@ public record BlockRecommendationResponse(
 		String sectionName,
 		String areaName,
 		String viewpoint,
-		int realConsecutiveCount,
-		int semiConsecutiveCount,
+		int availableConsecutiveCount,
 		long remainingSeatCount,
 		int rank
 	) {
 
-		public static RecommendedBlock from(BlockRecommendation recommendation, int rank) {
+		public static RecommendedBlock from(
+			BlockRecommendation recommendation, int rank, boolean nearAdjacentToggle
+		) {
 			var block = recommendation.block();
+			int availableCount = nearAdjacentToggle
+				? recommendation.combinedCount()
+				: recommendation.realConsecutiveCount();
 			return new RecommendedBlock(
 				block.getBlockNum(),
 				block.getBlockCode(),
 				block.getSection().getName(),
 				block.getArea().getName(),
 				block.getViewpoint().name(),
-				recommendation.realConsecutiveCount(),
-				recommendation.semiConsecutiveCount(),
+				availableCount,
 				recommendation.remainingSeatCount(),
 				rank
 			);
