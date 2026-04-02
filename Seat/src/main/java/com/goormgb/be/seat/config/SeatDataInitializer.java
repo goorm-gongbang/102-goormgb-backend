@@ -104,76 +104,64 @@ public class SeatDataInitializer implements CommandLineRunner {
 				Viewpoint.INFIELD_3B, 80 + (i - 219), rank++);
 		}
 
-		// ─── 1루(홈) 퍼플석 (테이블석) 110~111 ───
-		for (int i = 110; i <= 111; i++) {
+		// ─── 1루(홈) 퍼플석 (테이블석) 110~113 ───
+		for (int i = 110; i <= 113; i++) {
 			saveBlock(home, homePurple, String.valueOf(i), (long) i,
 				Viewpoint.INFIELD_1B, 10 + (i - 110), 60 + (i - 110));
 		}
 
-		// ─── 3루(어웨이) 퍼플석 (테이블석) 112~113 ───
-		for (int i = 112; i <= 113; i++) {
+		// ─── 3루(어웨이) 퍼플석 (테이블석) 212~215 ───
+		for (int i = 212; i <= 215; i++) {
 			saveBlock(away, awayPurple, String.valueOf(i), (long) i,
-				Viewpoint.INFIELD_3B, 12 + (i - 112), 62 + (i - 112));
+				Viewpoint.INFIELD_3B, 60 + (i - 212), 10 + (i - 212));
 		}
 
-		// ─── 1루(홈) 퍼플석 (테이블석) 212~213 ───
-		for (int i = 212; i <= 213; i++) {
-			saveBlock(home, homePurple, String.valueOf(i), (long) i,
-				Viewpoint.INFIELD_1B, 60 + (i - 212), 10 + (i - 212));
-		}
-
-		// ─── 3루(어웨이) 퍼플석 (테이블석) 214~215 ───
-		for (int i = 214; i <= 215; i++) {
-			saveBlock(away, awayPurple, String.valueOf(i), (long) i,
-				Viewpoint.INFIELD_3B, 62 + (i - 214), 12 + (i - 214));
-		}
-
-		// ─── 1루(홈) 블루석 107~109 ───
-		for (int i = 107; i <= 109; i++) {
-			saveBlock(home, homeBlue, String.valueOf(i), (long) i,
-				Viewpoint.INFIELD_1B, 55 + (i - 107), 14 + (i - 107));
-		}
-
-		// ─── 1루(홈) 블루석 209~211 (2층) ───
-		for (int i = 209; i <= 211; i++) {
-			saveBlock(home, homeBlue, String.valueOf(i), (long) i,
-				Viewpoint.INFIELD_1B, 70 + (i - 209), 5 + (i - 209));
-		}
-
-		// ─── 3루(어웨이) 블루석 114~116 ───
+		// ─── 1루(홈) 블루석 114~116 ───
 		for (int i = 114; i <= 116; i++) {
-			saveBlock(away, awayBlue, String.valueOf(i), (long) i,
-				Viewpoint.INFIELD_3B, 14 + (i - 114), 55 + (i - 114));
+			saveBlock(home, homeBlue, String.valueOf(i), (long) i,
+				Viewpoint.INFIELD_1B, 14 + (i - 114), 55 + (i - 114));
 		}
 
-		// ─── 3루(어웨이) 블루석 216~218 (2층) ───
+		// ─── 1루(홈) 블루석 216~218 (2층) ───
 		for (int i = 216; i <= 218; i++) {
+			saveBlock(home, homeBlue, String.valueOf(i), (long) i,
+				Viewpoint.INFIELD_1B, 5 + (i - 216), 70 + (i - 216));
+		}
+
+		// ─── 3루(어웨이) 블루석 107~109 ───
+		for (int i = 107; i <= 109; i++) {
 			saveBlock(away, awayBlue, String.valueOf(i), (long) i,
-				Viewpoint.INFIELD_3B, 5 + (i - 216), 70 + (i - 216));
+				Viewpoint.INFIELD_3B, 55 + (i - 107), 14 + (i - 107));
 		}
 
-		// ─── 1루(홈) 레드석 101~106 ───
-		for (int i = 101; i <= 106; i++) {
-			saveBlock(home, homeRed, String.valueOf(i), (long) i,
-				Viewpoint.INFIELD_1B, 45 + (i - 101), 17 + (i - 101));
+		// ─── 3루(어웨이) 블루석 209~211 (2층) ───
+		for (int i = 209; i <= 211; i++) {
+			saveBlock(away, awayBlue, String.valueOf(i), (long) i,
+				Viewpoint.INFIELD_3B, 70 + (i - 209), 5 + (i - 209));
 		}
 
-		// ─── 1루(홈) 레드석 201~204 (2층) ───
-		for (int i = 201; i <= 204; i++) {
-			saveBlock(home, homeRed, String.valueOf(i), (long) i,
-				Viewpoint.INFIELD_1B, 65 + (i - 201), 8 + (i - 201));
-		}
-
-		// ─── 3루(어웨이) 레드석 117~122 ───
+		// ─── 1루(홈) 레드석 117~122 ───
 		for (int i = 117; i <= 122; i++) {
-			saveBlock(away, awayRed, String.valueOf(i), (long) i,
-				Viewpoint.INFIELD_3B, 17 + (i - 117), 45 + (i - 117));
+			saveBlock(home, homeRed, String.valueOf(i), (long) i,
+				Viewpoint.INFIELD_1B, 17 + (i - 117), 45 + (i - 117));
 		}
 
-		// ─── 3루(어웨이) 레드석 223~226 (2층) ───
+		// ─── 1루(홈) 레드석 223~226 (2층) ───
 		for (int i = 223; i <= 226; i++) {
+			saveBlock(home, homeRed, String.valueOf(i), (long) i,
+				Viewpoint.INFIELD_1B, 8 + (i - 223), 65 + (i - 223));
+		}
+
+		// ─── 3루(어웨이) 레드석 101~106 ───
+		for (int i = 101; i <= 106; i++) {
 			saveBlock(away, awayRed, String.valueOf(i), (long) i,
-				Viewpoint.INFIELD_3B, 8 + (i - 223), 65 + (i - 223));
+				Viewpoint.INFIELD_3B, 45 + (i - 101), 17 + (i - 101));
+		}
+
+		// ─── 3루(어웨이) 레드석 201~204 (2층) ───
+		for (int i = 201; i <= 204; i++) {
+			saveBlock(away, awayRed, String.valueOf(i), (long) i,
+				Viewpoint.INFIELD_3B, 65 + (i - 201), 8 + (i - 201));
 		}
 
 		// ─── 1루(홈) 네이비석 301~317 ───
