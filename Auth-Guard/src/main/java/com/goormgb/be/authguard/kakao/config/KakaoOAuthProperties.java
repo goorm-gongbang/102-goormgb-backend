@@ -1,5 +1,7 @@
 package com.goormgb.be.authguard.kakao.config;
 
+import java.util.List;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import lombok.Getter;
@@ -12,6 +14,7 @@ public class KakaoOAuthProperties {
 	private final String clientId;
 	private final String clientSecret;
 	private final String redirectUri;
+	private final List<String> allowedRedirectUris;
 
 	private final String authUrl;
 	private final String tokenUrl;

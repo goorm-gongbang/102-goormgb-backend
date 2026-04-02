@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
 @Component
 public class CorsGlobalFilter implements WebFilter, Ordered {
 
-	@Value("${ALLOWED_ORIGINS:*}")
+	@Value("${ALLOWED_ORIGINS}")
 	private String allowedOrigins;
 
 	@Override
@@ -27,7 +27,8 @@ public class CorsGlobalFilter implements WebFilter, Ordered {
 			headers.set("Access-Control-Allow-Origin", origin);
 			headers.set("Access-Control-Allow-Credentials", "true");
 			headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-			headers.set("Access-Control-Allow-Headers", "*");
+			headers.set("Access-Control-Allow-Headers",
+				"Authorization, Content-Type, X-Requested-With, Accept, Origin");
 			headers.set("Vary", "Origin");
 		}
 
@@ -40,9 +41,6 @@ public class CorsGlobalFilter implements WebFilter, Ordered {
 	}
 
 	private boolean isAllowed(String origin) {
-		if ("*".equals(allowedOrigins)) {
-			return true;
-		}
 		for (String allowed : allowedOrigins.split(",")) {
 			if (origin.equalsIgnoreCase(allowed.trim())) {
 				return true;

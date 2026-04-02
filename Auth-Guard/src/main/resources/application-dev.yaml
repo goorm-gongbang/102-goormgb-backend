@@ -41,9 +41,8 @@ jwt:
     audience: ${JWT_REFRESH_TOKEN_AUDIENCE}
     expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION}
   cookie:
-    # TODO: 프론트 배포 환경이 동일 도메인(goormgb.space)으로 확정되면
-    # SameSite=Lax, secure=false로 되돌릴 것.
     secure: true
+    same-site: None
 
 internal:
   api-key: ${INTERNAL_API_KEY}
@@ -52,6 +51,10 @@ kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret: ${KAKAO_CLIENT_SECRET}
   redirect-uri: ${KAKAO_REDIRECT_URI}
+  allowed-redirect-uris:
+    - http://localhost:3000
+    - https://playball.one
+    - https://staging.playball.one
 
   auth-url: https://kauth.kakao.com/oauth/authorize
   token-url: https://kauth.kakao.com/oauth/token
@@ -69,6 +72,12 @@ management:
     metrics:
       export:
         enabled: true
+
+springdoc:
+  swagger-ui:
+    enabled: true
+  api-docs:
+    enabled: true
 
 logging:
   level:

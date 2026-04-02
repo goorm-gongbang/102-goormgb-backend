@@ -44,16 +44,9 @@ jwt:
 
 springdoc:
   swagger-ui:
-    path: /swagger-ui.html
-    urls:
-      - name: Auth-Guard
-        url: /auth/v3/api-docs
-      - name: Queue
-        url: /queue/v3/api-docs
-      - name: Seat
-        url: /seat/v3/api-docs
-      - name: Order-Core
-        url: /order/v3/api-docs
+    enabled: false
+  api-docs:
+    enabled: false
 
 management:
   endpoints:

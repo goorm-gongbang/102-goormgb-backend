@@ -40,6 +40,8 @@ public class JwtTokenProvider {
 		try {
 			return Jwts.parser()
 					.verifyWith(publicKey)
+					.requireIssuer(jwtProperties.getIssuer())
+					.requireAudience(jwtProperties.getAccessToken().getAudience())
 					.build()
 					.parseSignedClaims(token)
 					.getPayload();
