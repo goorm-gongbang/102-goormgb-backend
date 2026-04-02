@@ -73,6 +73,10 @@ public class KakaoAuthService {
 				user.getStatus() != UserStatus.DEACTIVATE,
 				ErrorCode.USER_DEACTIVATED
 		);
+		Preconditions.validate(
+				user.getStatus() != UserStatus.BLOCKED,
+				ErrorCode.USER_ALREADY_BLOCKED
+		);
 
 		// 5. 로그인 처리
 		user.updateLastLoginAt();
