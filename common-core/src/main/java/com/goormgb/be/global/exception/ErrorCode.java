@@ -123,13 +123,9 @@ public enum ErrorCode {
 	ENTRY_QR_NOT_AVAILABLE_YET(HttpStatus.BAD_REQUEST, "아직 입장 가능 시간이 아닙니다."),
 	ENTRY_QR_MATCH_STARTED(HttpStatus.BAD_REQUEST, "경기 시작 이후에는 QR을 발급할 수 없습니다."),
 	INVALID_INQUIRY_CATEGORY(HttpStatus.BAD_REQUEST, "유효하지 않은 문의 카테고리입니다."),
-	INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의를 찾을 수 없습니다."),
-	INQUIRY_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 문의에 접근할 권한이 없습니다."),
 	INQUIRY_FILE_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "허용되지 않는 파일 형식입니다."),
 	INQUIRY_FILE_SIGNATURE_MISMATCH(HttpStatus.BAD_REQUEST, "파일 내용이 확장자와 일치하지 않습니다."),
 	INQUIRY_FILE_TOO_LARGE(HttpStatus.CONTENT_TOO_LARGE, "파일 크기 제한을 초과했습니다."),
-	INQUIRY_FILE_KEY_INVALID(HttpStatus.BAD_REQUEST, "파일 경로가 유효하지 않습니다."),
-	INQUIRY_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "업로드된 파일을 찾을 수 없습니다."),
 
 	;
 

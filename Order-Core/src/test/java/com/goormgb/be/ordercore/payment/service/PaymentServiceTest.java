@@ -27,9 +27,9 @@ import com.goormgb.be.ordercore.fixture.payment.PaymentFixture;
 import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
-import com.goormgb.be.ordercore.payment.event.PaymentEventPublisher;
 import com.goormgb.be.ordercore.payment.dto.request.CashReceiptCreateRequest;
 import com.goormgb.be.ordercore.payment.dto.request.PaymentProcessRequest;
 import com.goormgb.be.ordercore.payment.dto.response.CashReceiptCreateResponse;
@@ -58,7 +58,7 @@ class PaymentServiceTest {
 	@Mock
 	private OrderMetricsService orderMetricsService;
 	@Mock
-	private PaymentEventPublisher paymentEventPublisher;
+	private SeatInfoQueryService seatInfoQueryService;
 
 	private PaymentService paymentService;
 	private Clock clock;
@@ -68,7 +68,7 @@ class PaymentServiceTest {
 		// 경기(2026-03-11 09:30 UTC)보다 이전 시점으로 고정
 		clock = Clock.fixed(Instant.parse("2026-03-04T00:00:00Z"), ZoneId.of("Asia/Seoul"));
 		paymentService = new PaymentService(clock, orderMetricsService, orderRepository, orderSeatRepository,
-				paymentRepository, cashReceiptRepository, paymentEventPublisher);
+				paymentRepository, cashReceiptRepository, seatInfoQueryService);
 	}
 
 	private Order createOrderWithUser(Long orderId, Long userId) {
@@ -151,8 +151,8 @@ class PaymentServiceTest {
 		}
 
 		@Test
-		@DisplayName("간편결제 시 결제 완료 이벤트를 발행한다")
-		void processPayment_간편결제_이벤트발행() {
+		@DisplayName("결제 시 좌석을 BLOCKED에서 SOLD로 전환된다")
+		void processPayment_좌석_SOLD_전환() {
 			Long userId = 1L;
 			Long orderId = 1L;
 			Order order = createOrderWithUser(orderId, userId);
@@ -163,28 +163,11 @@ class PaymentServiceTest {
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(matchSeatIds);
+			given(seatInfoQueryService.markSoldIfBlocked(matchSeatIds)).willReturn(2);
 
 			paymentService.processPayment(userId, orderId, request);
 
-			then(paymentEventPublisher).should().publishPaymentCompleted(eq(order), eq(matchSeatIds), eq("TOSS_PAY"));
-		}
-
-		@Test
-		@DisplayName("무통장 입금 시에도 좌석 SOLD 전환 이벤트를 발행한다 (스케줄러가 BLOCKED를 풀지 못하도록)")
-		void processPayment_무통장입금_이벤트발행() {
-			Long userId = 1L;
-			Long orderId = 1L;
-			Order order = createOrderWithUser(orderId, userId);
-			PaymentProcessRequest request = PaymentFixture.createBankTransferRequest();
-
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
-			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
-			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
-			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(List.of(101L));
-
-			paymentService.processPayment(userId, orderId, request);
-
-			then(paymentEventPublisher).should().publishPaymentCompleted(eq(order), eq(List.of(101L)), eq("BANK_TRANSFER"));
+			then(seatInfoQueryService).should().markSoldIfBlocked(matchSeatIds);
 		}
 
 		@Test
@@ -198,7 +181,7 @@ class PaymentServiceTest {
 			Clock nearMatchClock = Clock.fixed(matchAt.minus(Duration.ofHours(2)), ZoneId.of("Asia/Seoul"));
 			PaymentService nearMatchPaymentService = new PaymentService(nearMatchClock, orderMetricsService,
 					orderRepository, orderSeatRepository, paymentRepository, cashReceiptRepository,
-					paymentEventPublisher);
+					seatInfoQueryService);
 
 			Order order = createOrderWithUser(orderId, userId);
 			PaymentProcessRequest request = PaymentFixture.createBankTransferRequest();
@@ -340,8 +323,8 @@ class PaymentServiceTest {
 		}
 
 		@Test
-		@DisplayName("현금영수증이 이미 존재하면 기존 정보를 수정한다")
-		void createCashReceipt_기존_정보_수정() {
+		@DisplayName("현금영수증이 이미 신청된 경우 CASH_RECEIPT_ALREADY_EXISTS 예외가 발생한다")
+		void createCashReceipt_중복신청_예외() {
 			Long userId = 1L;
 			Long orderId = 1L;
 			Order order = createOrderWithUser(orderId, userId);
@@ -352,12 +335,12 @@ class PaymentServiceTest {
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.of(payment));
 			given(cashReceiptRepository.findByPaymentId(payment.getId())).willReturn(Optional.of(existing));
 
-			CashReceiptCreateResponse response = paymentService.createCashReceipt(userId, orderId,
-					PaymentFixture.createBusinessExpenseRequest());
-
-			assertThat(response.orderId()).isEqualTo(orderId);
-			assertThat(response.purpose()).isEqualTo(CashReceiptPurpose.BUSINESS_EXPENSE);
-			assertThat(response.number()).isEqualTo("123-45-67890");
+			assertThatThrownBy(
+					() -> paymentService.createCashReceipt(userId, orderId,
+							PaymentFixture.createPersonalDeductionRequest())
+			)
+					.isInstanceOf(CustomException.class)
+					.hasMessage(ErrorCode.CASH_RECEIPT_ALREADY_EXISTS.getMessage());
 		}
 
 		@Test
