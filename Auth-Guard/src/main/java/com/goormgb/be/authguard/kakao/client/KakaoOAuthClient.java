@@ -1,5 +1,7 @@
 package com.goormgb.be.authguard.kakao.client;
 
+import java.net.URI;
+
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -97,12 +99,24 @@ public class KakaoOAuthClient {
 
 		if (properties.getAllowedRedirectUris() != null
 			&& properties.getAllowedRedirectUris().stream()
-				.anyMatch(allowed -> customRedirectUri.startsWith(allowed))) {
+				.anyMatch(allowed -> matchesOrigin(customRedirectUri, allowed))) {
 			return customRedirectUri;
 		}
 
 		log.warn("[OAuth] 허용되지 않은 redirectUri 요청: {}", customRedirectUri);
 		throw new CustomException(ErrorCode.OAUTH_REDIRECT_URI_MISMATCH);
+	}
+
+	private boolean matchesOrigin(String redirectUri, String allowedOrigin) {
+		try {
+			URI target = URI.create(redirectUri);
+			URI allowed = URI.create(allowedOrigin);
+			return target.getScheme().equals(allowed.getScheme())
+				&& target.getHost().equals(allowed.getHost())
+				&& target.getPort() == allowed.getPort();
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 	/**
