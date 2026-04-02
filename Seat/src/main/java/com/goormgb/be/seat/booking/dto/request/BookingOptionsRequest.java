@@ -5,8 +5,8 @@ import jakarta.validation.constraints.Min;
 
 public record BookingOptionsRequest(
 	boolean recommendationEnabled,
-	@Min(value = 1, message = "ticketCount: 1 이상이어야 합니다")
-	@Max(value = 8, message = "ticketCount: 8 이하여야 합니다")
+	@Min(value = 1, message = "1 이상이어야 합니다")
+	@Max(value = 8, message = "8 이하여야 합니다")
 	Integer ticketCount,
 	boolean nearAdjacentToggle
 ) {

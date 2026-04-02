@@ -1,7 +1,5 @@
 package com.goormgb.be.global.exception;
 
-import java.util.Arrays;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -41,8 +39,17 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ErrorResponse.ErrorData> handleValidationException(MethodArgumentNotValidException e) {
-		var details = Arrays.toString(e.getDetailMessageArguments());
-		var message = details.split(",", 2)[1].replace("]", "").trim();
+		String message = e.getBindingResult()
+			.getFieldErrors()
+			.stream()
+			.findFirst()
+			.map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
+			.orElseGet(() -> e.getBindingResult()
+				.getAllErrors()
+				.stream()
+				.findFirst()
+				.map(error -> error.getDefaultMessage())
+				.orElse("요청 값이 올바르지 않습니다."));
 		return ErrorResponse.error(HttpStatus.BAD_REQUEST, message);
 	}
 
