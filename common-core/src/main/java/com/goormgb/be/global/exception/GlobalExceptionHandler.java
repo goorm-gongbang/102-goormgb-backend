@@ -43,7 +43,7 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ErrorResponse.ErrorData> handleValidationException(MethodArgumentNotValidException e) {
 		var details = Arrays.toString(e.getDetailMessageArguments());
 		var message = details.split(",", 2)[1].replace("]", "").trim();
-		return ErrorResponse.error(HttpStatus.BAD_REQUEST, message, errorResponseStrategy);
+		return ErrorResponse.error(HttpStatus.BAD_REQUEST, message);
 	}
 
 	@ExceptionHandler(AuthorizationDeniedException.class)
