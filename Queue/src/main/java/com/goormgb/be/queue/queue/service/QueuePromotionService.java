@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.queue.config.QueueProperties;
+import com.goormgb.be.queue.metrics.QueueMetricsService;
 import com.goormgb.be.queue.queue.model.ReadyTokenPayload;
+import com.goormgb.be.queue.queue.model.WaitingQueueEntry;
 import com.goormgb.be.queue.queue.repository.QueueRedisRepository;
 import com.goormgb.be.queue.queue.security.AdmissionTokenProvider;
 
@@ -24,6 +26,7 @@ public class QueuePromotionService {
 	private final QueueRedisRepository queueRedisRepository;
 	private final QueueProperties queueProperties;
 	private final AdmissionTokenProvider admissionTokenProvider;
+	private final QueueMetricsService queueMetricsService;
 
 	public void promoteActiveMatches() {
 		for (Long matchId : queueRedisRepository.getActiveMatches()) {
@@ -44,8 +47,8 @@ public class QueuePromotionService {
 			return 0;
 		}
 
-		List<Long> promotedUserIds = queueRedisRepository.popWaitingUsers(matchId, permit);
-		if (promotedUserIds.isEmpty()) {
+		List<WaitingQueueEntry> promotedEntries = queueRedisRepository.popWaitingUsers(matchId, permit);
+		if (promotedEntries.isEmpty()) {
 			cleanupInactiveMatch(matchId, activeReadyCount);
 			return 0;
 		}
@@ -55,7 +58,8 @@ public class QueuePromotionService {
 		Duration readyTtl = Duration.ofSeconds(queueProperties.readyTtlSeconds());
 		Duration admissionTtl = Duration.ofSeconds(queueProperties.admissionTtlSeconds());
 
-		for (Long userId : promotedUserIds) {
+		for (WaitingQueueEntry entry : promotedEntries) {
+			Long userId = entry.userId();
 			String token = admissionTokenProvider.issue(userId, matchId, admissionTtl);
 			ReadyTokenPayload payload = new ReadyTokenPayload(
 				userId,
@@ -65,10 +69,14 @@ public class QueuePromotionService {
 				readyExpiresAt
 			);
 			queueRedisRepository.saveReadyToken(payload, readyTtl);
+
+			// WAITING -> READY 승격 시점의 대기 시간을 집계한다.
+			long waitMillis = Math.max(0L, issuedAt.toEpochMilli() - entry.enteredAtMillis());
+			queueMetricsService.recordWaitTime(Duration.ofMillis(waitMillis));
 		}
 
-		cleanupInactiveMatch(matchId, activeReadyCount + promotedUserIds.size());
-		return promotedUserIds.size();
+		cleanupInactiveMatch(matchId, activeReadyCount + promotedEntries.size());
+		return promotedEntries.size();
 	}
 
 	// READY 인덱스는 Redis TTL과 별도로 남을 수 있어, 스케줄러가 stale entry를 정리해준다.

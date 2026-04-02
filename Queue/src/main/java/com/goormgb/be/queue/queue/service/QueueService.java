@@ -3,7 +3,6 @@ package com.goormgb.be.queue.queue.service;
 import java.time.Duration;
 import java.time.Instant;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,13 +13,13 @@ import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.queue.config.QueueProperties;
+import com.goormgb.be.queue.metrics.QueueMetricsService;
 import com.goormgb.be.queue.queue.dto.response.QueueEnterResponse;
 import com.goormgb.be.queue.queue.dto.response.QueueStatusResponse;
 import com.goormgb.be.queue.queue.model.ReadyTokenPayload;
 import com.goormgb.be.queue.queue.policy.QueuePollingPolicy;
 import com.goormgb.be.queue.queue.repository.QueueRedisRepository;
 
-import io.micrometer.core.instrument.Counter;
 @Service
 public class QueueService {
 
@@ -28,20 +27,20 @@ public class QueueService {
 	private final QueueRedisRepository queueRedisRepository;
 	private final QueueProperties queueProperties;
 	private final QueuePollingPolicy queuePollingPolicy;
-	private final Counter queueEntriesCounter;
+	private final QueueMetricsService queueMetricsService;
 
 	public QueueService(
 		MatchRepository matchRepository,
 		QueueRedisRepository queueRedisRepository,
 		QueueProperties queueProperties,
 		QueuePollingPolicy queuePollingPolicy,
-		@Qualifier("queueEntriesCounter") Counter queueEntriesCounter
+		QueueMetricsService queueMetricsService
 	) {
 		this.matchRepository = matchRepository;
 		this.queueRedisRepository = queueRedisRepository;
 		this.queueProperties = queueProperties;
 		this.queuePollingPolicy = queuePollingPolicy;
-		this.queueEntriesCounter = queueEntriesCounter;
+		this.queueMetricsService = queueMetricsService;
 	}
 
 	@Transactional
@@ -54,7 +53,8 @@ public class QueueService {
 		long enteredAtMillis = Instant.now().toEpochMilli();
 		queueRedisRepository.reenterQueueAtomic(matchId, userId, enteredAtMillis);
 
-		queueEntriesCounter.increment();
+		// 대기열 진입 건수 집계
+		queueMetricsService.recordEntry();
 
 		return QueueEnterResponse.waiting(
 			queueRedisRepository.getWaitingRank(matchId, userId),
@@ -106,6 +106,8 @@ public class QueueService {
 		}*/
 		// 개별 호출 대신 원자적 스크립트 실행
 		queueRedisRepository.leaveQueueAtomic(matchId, userId);
+		// 대기열 이탈 건수 집계
+		queueMetricsService.recordAbandoned();
 	}
 
 	private void validateQueueOpen(Match match) {

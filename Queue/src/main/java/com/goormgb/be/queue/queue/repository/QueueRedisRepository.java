@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.goormgb.be.queue.config.QueueProperties;
 import com.goormgb.be.queue.queue.model.ReadyTokenPayload;
+import com.goormgb.be.queue.queue.model.WaitingQueueEntry;
 
 @Repository
 public class QueueRedisRepository {
@@ -52,7 +53,7 @@ public class QueueRedisRepository {
 		return count == null ? 0L : count;
 	}
 
-	public List<Long> popWaitingUsers(Long matchId, long count) {
+	public List<WaitingQueueEntry> popWaitingUsers(Long matchId, long count) {
 		Set<ZSetOperations.TypedTuple<String>> entries =
 			redisTemplate.opsForZSet().popMin(queueProperties.waitKey(matchId), count);
 
@@ -61,8 +62,11 @@ public class QueueRedisRepository {
 		}
 
 		return entries.stream()
-			.map(ZSetOperations.TypedTuple::getValue)
-			.map(Long::valueOf)
+			.filter(tuple -> tuple.getValue() != null && tuple.getScore() != null)
+			.map(tuple -> WaitingQueueEntry.of(
+				Long.valueOf(tuple.getValue()),
+				tuple.getScore().longValue()
+			))
 			.toList();
 	}
 
