@@ -15,8 +15,10 @@ import com.goormgb.be.authguard.jwt.provider.JwtTokenProvider;
 import com.goormgb.be.authguard.jwt.repository.RefreshTokenRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.user.entity.LoadTestUser;
 import com.goormgb.be.user.entity.User;
+import com.goormgb.be.user.enums.UserStatus;
 import com.goormgb.be.user.repository.LoadTestUserRepository;
 import com.goormgb.be.user.repository.UserRepository;
 
@@ -76,6 +78,10 @@ public class LoadTestAuthService {
 		}
 
 		User user = loadTestUser.getUser();
+
+		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
+		Preconditions.validate(user.getStatus() != UserStatus.BLOCKED, ErrorCode.USER_ALREADY_BLOCKED);
+
 		user.updateLastLoginAt();
 
 		String sid = UUID.randomUUID().toString();
