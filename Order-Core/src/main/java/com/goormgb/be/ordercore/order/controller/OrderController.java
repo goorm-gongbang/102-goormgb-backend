@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.goormgb.be.global.response.ApiResult;
+import com.goormgb.be.ordercore.metrics.enums.OrderDraftEntryPoint;
 import com.goormgb.be.ordercore.order.dto.request.OrderCreateRequest;
 import com.goormgb.be.ordercore.order.dto.response.OrderCreateResponse;
 import com.goormgb.be.ordercore.order.dto.response.OrderSheetGetResponse;
@@ -60,9 +61,11 @@ public class OrderController {
 		@Parameter(description = "경기 ID", required = true, example = "1")
 		@RequestParam Long matchId,
 		@Parameter(description = "match_seat ID 목록 (콤마 구분)", required = true)
-		@RequestParam List<Long> seatIds
+		@RequestParam List<Long> seatIds,
+		@Parameter(description = "주문서 진입 경로 (RECOMMEND, MAP)", example = "RECOMMEND")
+		@RequestParam(defaultValue = "RECOMMEND") OrderDraftEntryPoint entryPoint
 	) {
-		return ApiResult.ok(orderService.getOrderSheet(userId, matchId, seatIds));
+		return ApiResult.ok(orderService.getOrderSheet(userId, matchId, seatIds, entryPoint));
 	}
 
 	@Operation(
