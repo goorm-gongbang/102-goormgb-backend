@@ -37,6 +37,11 @@ public class DetailedErrorResponseStrategy implements ErrorResponseStrategy {
 	}
 
 	@Override
+	public String resolveCode(HttpStatus status) {
+		return status.name();
+	}
+
+	@Override
 	public String resolveMessage(String detailedMessage, HttpStatus status) {
 		return detailedMessage;
 	}

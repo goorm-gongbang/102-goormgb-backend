@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -49,6 +50,11 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(AuthorizationDeniedException.class)
 	public ResponseEntity<ErrorResponse.ErrorData> handleAuthorizationDenied(AuthorizationDeniedException e) {
 		return ErrorResponse.error(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.", errorResponseStrategy);
+	}
+
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<ErrorResponse.ErrorData> handleNoResourceFound(NoResourceFoundException e) {
+		return ErrorResponse.error(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다.", errorResponseStrategy);
 	}
 
 	@ExceptionHandler(HttpMessageNotReadableException.class)

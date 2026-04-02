@@ -76,6 +76,12 @@ management:
       percentiles-histogram:
         http.server.requests: true
 
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
 logging:
   config: classpath:logback-spring.xml
   level:
