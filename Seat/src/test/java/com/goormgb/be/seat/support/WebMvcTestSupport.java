@@ -21,4 +21,7 @@ public abstract class WebMvcTestSupport {
 
 	@MockitoBean
 	protected XUserIdAuthenticationFilter xUserIdAuthenticationFilter;
+
+	@MockitoBean
+	protected ErrorResponseStrategy errorResponseStrategy;
 }

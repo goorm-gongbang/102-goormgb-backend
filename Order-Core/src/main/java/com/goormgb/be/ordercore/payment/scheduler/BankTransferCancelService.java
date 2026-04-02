@@ -7,9 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
-import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
 import com.goormgb.be.ordercore.payment.entity.Payment;
+import com.goormgb.be.ordercore.payment.event.PaymentEventPublisher;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class BankTransferCancelService {
 
 	private final OrderSeatRepository orderSeatRepository;
-	private final SeatInfoQueryService seatInfoQueryService;
+	private final PaymentEventPublisher paymentEventPublisher;
 
 	/**
 	 * 단일 무통장 입금 결제를 취소하고 좌석을 복원한다.
@@ -43,8 +43,9 @@ public class BankTransferCancelService {
 		order.updateStatus(OrderStatus.CANCELLED);
 		payment.cancel();
 
+		// 무통장 입금 만료 이벤트 발행 → Seat 서비스에서 좌석 SOLD → AVAILABLE 복원
 		List<Long> matchSeatIds = orderSeatRepository.findMatchSeatIdsByOrderId(order.getId());
-		seatInfoQueryService.markAvailableIfSold(matchSeatIds);
+		paymentEventPublisher.publishBankTransferExpired(order, payment, matchSeatIds);
 
 		return true;
 	}

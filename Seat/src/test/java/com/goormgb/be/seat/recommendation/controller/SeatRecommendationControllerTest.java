@@ -20,6 +20,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.goormgb.be.seat.recommendation.dto.response.SeatEntryResponse;
+import com.goormgb.be.global.environment.ErrorResponseStrategy;
+import com.goormgb.be.global.security.filter.XUserIdAuthenticationFilter;
 import com.goormgb.be.seat.recommendation.service.SeatAssignmentService;
 import com.goormgb.be.seat.recommendation.service.SeatRecommendationService;
 import com.goormgb.be.seat.security.AdmissionTokenValidator;
@@ -39,6 +41,12 @@ class SeatRecommendationControllerTest {
 
 	@MockitoBean
 	private AdmissionTokenValidator admissionTokenValidator;
+
+	@MockitoBean
+	private ErrorResponseStrategy errorResponseStrategy;
+
+	@MockitoBean
+	private XUserIdAuthenticationFilter xUserIdAuthenticationFilter;
 
 	private void setAuthentication(Long userId) {
 		SecurityContextHolder.getContext().setAuthentication(

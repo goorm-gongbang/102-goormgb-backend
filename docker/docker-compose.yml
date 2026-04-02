@@ -48,6 +48,34 @@ services:
       timeout: 5s
       retries: 5
 
+  kafka:
+    image: apache/kafka:3.7.1
+    container_name: goormgb-kafka
+    ports:
+      - "9092:19092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_LOG_RETENTION_HOURS: 72
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    networks:
+      - goormgb-network
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
   api-gateway:
     build:
       context: ..
@@ -150,10 +178,18 @@ services:
       REDIS_PORT: 6379
       ADMISSION_PUBLIC_KEY: ${ADMISSION_PUBLIC_KEY}
       DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_CONSUMER_GROUP_ID: seat-service
+      KAFKA_CONSUMER_KEY_DESERIALIZER: ${KAFKA_CONSUMER_KEY_DESERIALIZER}
+      KAFKA_CONSUMER_VALUE_DESERIALIZER: ${KAFKA_CONSUMER_VALUE_DESERIALIZER}
+      KAFKA_CONSUMER_AUTO_OFFSET_RESET: ${KAFKA_CONSUMER_AUTO_OFFSET_RESET}
+      KAFKA_CONSUMER_TRUSTED_PACKAGES: ${KAFKA_CONSUMER_TRUSTED_PACKAGES}
     depends_on:
       local-postgres:
         condition: service_healthy
       local-redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     networks:
       - goormgb-network
@@ -173,16 +209,47 @@ services:
       REDIS_HOST: local-redis
       REDIS_PORT: 6379
       DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_PRODUCER_KEY_SERIALIZER: ${KAFKA_PRODUCER_KEY_SERIALIZER}
+      KAFKA_PRODUCER_VALUE_SERIALIZER: ${KAFKA_PRODUCER_VALUE_SERIALIZER}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
+      KAFKA_CONSUMER_GROUP_ID: order-core-notification
+      KAFKA_CONSUMER_KEY_DESERIALIZER: ${KAFKA_CONSUMER_KEY_DESERIALIZER}
+      KAFKA_CONSUMER_VALUE_DESERIALIZER: ${KAFKA_CONSUMER_VALUE_DESERIALIZER}
+      KAFKA_CONSUMER_AUTO_OFFSET_RESET: ${KAFKA_CONSUMER_AUTO_OFFSET_RESET}
+      KAFKA_CONSUMER_TRUSTED_PACKAGES: ${KAFKA_CONSUMER_TRUSTED_PACKAGES}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_REGION: ${S3_REGION}
+      S3_PREFIX: ${S3_PREFIX}
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
     depends_on:
       local-postgres:
         condition: service_healthy
       local-redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - goormgb-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: goormgb-kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: goormgb
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      kafka:
         condition: service_healthy
     networks:
       - goormgb-network
 
 volumes:
   postgres-data:
+  kafka-data:
 
 networks:
   goormgb-network:

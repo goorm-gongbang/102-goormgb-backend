@@ -41,7 +41,7 @@ import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
-import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
+import com.goormgb.be.ordercore.order.event.OrderEventPublisher;
 import com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
@@ -64,7 +64,7 @@ class MyPageTicketServiceTest {
 	@Mock
 	private QrTokenRepository qrTokenRepository;
 	@Mock
-	private SeatInfoQueryService seatInfoQueryService;
+	private OrderEventPublisher orderEventPublisher;
 
 	private MyPageTicketService myPageService;
 	private Clock clock;
@@ -78,7 +78,7 @@ class MyPageTicketServiceTest {
 				qrTokenRepository,
 				myPageQueryService,
 				cancellationFeePolicyRepository,
-				seatInfoQueryService,
+				orderEventPublisher,
 				clock
 		);
 	}
@@ -627,11 +627,10 @@ class MyPageTicketServiceTest {
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(matchSeatIds);
-			given(seatInfoQueryService.markAvailableIfSold(matchSeatIds)).willReturn(2);
 
 			myPageService.requestTicketCancel(userId, ticketId);
 
-			then(seatInfoQueryService).should().markAvailableIfSold(matchSeatIds);
+			then(orderEventPublisher).should().publishOrderCancelled(order, matchSeatIds);
 		}
 	}
 }

@@ -58,6 +58,9 @@ public class Inquiry extends BaseEntity {
 	@Column(name = "phone_number", length = 512)
 	private String phoneNumber;
 
+	@Column(name = "file_key", length = 500)
+	private String fileKey;
+
 	@Builder
 	public Inquiry(
 		User user,
@@ -92,5 +95,9 @@ public class Inquiry extends BaseEntity {
 
 	public void updateStatus(InquiryStatus status) {
 		this.status = status;
+	}
+
+	public void updateFileKey(String fileKey) {
+		this.fileKey = fileKey;
 	}
 }
