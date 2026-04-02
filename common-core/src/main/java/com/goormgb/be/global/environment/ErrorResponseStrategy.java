@@ -24,5 +24,9 @@ public interface ErrorResponseStrategy {
 
 	String resolveMessage(ErrorCode errorCode);
 
+	default String resolveCode(HttpStatus status) {
+		return status.series().name();
+	}
+
 	String resolveMessage(String detailedMessage, HttpStatus status);
 }

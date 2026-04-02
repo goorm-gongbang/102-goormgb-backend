@@ -53,6 +53,9 @@ kakao:
   client-id: ${KAKAO_CLIENT_ID}
   client-secret: ${KAKAO_CLIENT_SECRET}
   redirect-uri: ${KAKAO_REDIRECT_URI}
+  allowed-redirect-uris:
+    - https://playball.one
+    - https://staging.playball.one
 
   auth-url: https://kauth.kakao.com/oauth/authorize
   token-url: https://kauth.kakao.com/oauth/token
@@ -74,6 +77,12 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
 
 logging:
   config: classpath:logback-spring.xml

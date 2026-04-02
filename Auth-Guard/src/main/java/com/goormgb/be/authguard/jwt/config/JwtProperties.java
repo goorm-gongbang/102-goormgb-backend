@@ -37,5 +37,6 @@ public class JwtProperties {
 	@Setter
 	public static class Cookie {
 		private boolean secure = true;
+		private String sameSite = "Lax";
 	}
 }

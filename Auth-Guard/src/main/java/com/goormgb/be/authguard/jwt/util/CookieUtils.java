@@ -27,9 +27,9 @@ public class CookieUtils {
 		long maxAgeSeconds = TimeUnit.DAYS.toSeconds(jwtProperties.getRefreshToken().getExpirationDays());
 
 		return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
-				.httpOnly(true)
+				.httpOnly(true)     // XSS 방지
 				.secure(jwtProperties.getCookie().isSecure())
-				.sameSite("Lax")
+				.sameSite(jwtProperties.getCookie().getSameSite())
 				.path("/")
 				.maxAge(maxAgeSeconds)
 				.build();
@@ -42,9 +42,9 @@ public class CookieUtils {
 		return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, "")
 				.httpOnly(true)
 				.secure(jwtProperties.getCookie().isSecure())
-				.sameSite("Lax")
+				.sameSite(jwtProperties.getCookie().getSameSite())
 				.path("/")
-				.maxAge(0)
+				.maxAge(0)    // 즉시 만료 -> 브라우저에서 삭제
 				.build();
 	}
 

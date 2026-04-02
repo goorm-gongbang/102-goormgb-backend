@@ -1,5 +1,7 @@
 package com.goormgb.be.authguard.kakao.client;
 
+import java.net.URI;
+
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -40,9 +42,7 @@ public class KakaoOAuthClient {
 	 * 프론트에서 이 URL로 location.href 이동
 	 */
 	public String createLoginUrl(String customRedirectUri) {
-		String redirectUri = StringUtils.hasText(customRedirectUri)
-				? customRedirectUri
-				: properties.getRedirectUri();
+		String redirectUri = resolveAndValidateRedirectUri(customRedirectUri);
 
 		return UriComponentsBuilder.fromUriString(properties.getAuthUrl())
 				.queryParam("response_type", "code")
@@ -58,9 +58,7 @@ public class KakaoOAuthClient {
 	 * @return 카카오 Access Token
 	 */
 	public KakaoTokenResponse requestAccessToken(String authorizationCode, String redirectUri) {
-		String effectiveRedirectUri = StringUtils.hasText(redirectUri)
-				? redirectUri
-				: properties.getRedirectUri();
+		String effectiveRedirectUri = resolveAndValidateRedirectUri(redirectUri);
 
 		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
 
@@ -91,6 +89,33 @@ public class KakaoOAuthClient {
 				throw new CustomException(ErrorCode.OAUTH_REDIRECT_URI_MISMATCH, e);
 			}
 			throw new CustomException(ErrorCode.OAUTH_PROVIDER_ERROR, e);
+		}
+	}
+
+	private String resolveAndValidateRedirectUri(String customRedirectUri) {
+		if (!StringUtils.hasText(customRedirectUri)) {
+			return properties.getRedirectUri();
+		}
+
+		if (properties.getAllowedRedirectUris() != null
+			&& properties.getAllowedRedirectUris().stream()
+				.anyMatch(allowed -> matchesOrigin(customRedirectUri, allowed))) {
+			return customRedirectUri;
+		}
+
+		log.warn("[OAuth] 허용되지 않은 redirectUri 요청: {}", customRedirectUri);
+		throw new CustomException(ErrorCode.OAUTH_REDIRECT_URI_MISMATCH);
+	}
+
+	private boolean matchesOrigin(String redirectUri, String allowedOrigin) {
+		try {
+			URI target = URI.create(redirectUri);
+			URI allowed = URI.create(allowedOrigin);
+			return target.getScheme().equals(allowed.getScheme())
+				&& target.getHost().equals(allowed.getHost())
+				&& target.getPort() == allowed.getPort();
+		} catch (Exception e) {
+			return false;
 		}
 	}
 

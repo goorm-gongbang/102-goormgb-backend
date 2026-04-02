@@ -52,6 +52,12 @@ management:
       export:
         enabled: true
 
+springdoc:
+  swagger-ui:
+    enabled: true
+  api-docs:
+    enabled: true
+
 logging:
   level:
     root: INFO
