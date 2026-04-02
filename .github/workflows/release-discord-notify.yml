@@ -2,44 +2,66 @@ name: Release Discord Notification
 
 on:
   release:
-    types: [published]
+    types: [published, edited]
+  workflow_dispatch:
 
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Set environment label
-        id: env
+      - name: Get latest release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "${{ github.event.release.prerelease }}" = "true" ]; then
-            echo "label=Staging" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RELEASE_JSON=$(gh api repos/${{ github.repository }}/releases/latest)
           else
-            echo "label=Production" >> $GITHUB_OUTPUT
+            RELEASE_JSON='${{ toJson(github.event.release) }}'
           fi
-          echo "color=65280" >> $GITHUB_OUTPUT
+
+          echo "tag=$(echo "$RELEASE_JSON" | jq -r '.tag_name')" >> $GITHUB_OUTPUT
+          echo "name=$(echo "$RELEASE_JSON" | jq -r '.name')" >> $GITHUB_OUTPUT
+          echo "url=$(echo "$RELEASE_JSON" | jq -r '.html_url')" >> $GITHUB_OUTPUT
+          echo "author=$(echo "$RELEASE_JSON" | jq -r '.author.login')" >> $GITHUB_OUTPUT
+          echo "prerelease=$(echo "$RELEASE_JSON" | jq -r '.prerelease')" >> $GITHUB_OUTPUT
+          echo "published_at=$(echo "$RELEASE_JSON" | jq -r '.published_at')" >> $GITHUB_OUTPUT
+
+          BODY=$(echo "$RELEASE_JSON" | jq -r '.body' | head -c 1800)
+          echo "body<<BODY_EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "BODY_EOF" >> $GITHUB_OUTPUT
 
       - name: Send Discord notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+          TAG: ${{ steps.release.outputs.tag }}
+          NAME: ${{ steps.release.outputs.name }}
+          URL: ${{ steps.release.outputs.url }}
+          AUTHOR: ${{ steps.release.outputs.author }}
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+          PUBLISHED_AT: ${{ steps.release.outputs.published_at }}
+          BODY: ${{ steps.release.outputs.body }}
         run: |
-          # 릴리즈 노트 본문 (2000자 제한, JSON escape)
-          BODY=$(echo '${{ github.event.release.body }}' | head -c 1800 | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')
+          if [ "$PRERELEASE" = "true" ]; then
+            LABEL="Staging"
+          else
+            LABEL="Production"
+          fi
+
+          BODY_JSON=$(echo "$BODY" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')
 
           curl -s -o /dev/null -w "%{http_code}" \
             -H "Content-Type: application/json" \
             -d "{
               \"embeds\": [{
-                \"title\": \"${{ github.event.release.tag_name }}\",
-                \"description\": $BODY,
-                \"url\": \"${{ github.event.release.html_url }}\",
-                \"color\": ${{ steps.env.outputs.color }},
-                \"author\": {
-                  \"name\": \"${{ github.event.release.author.login }}\"
-                },
-                \"footer\": {
-                  \"text\": \"${{ steps.env.outputs.label }} Release\"
-                },
-                \"timestamp\": \"${{ github.event.release.published_at }}\"
+                \"title\": \"$TAG - $NAME\",
+                \"description\": $BODY_JSON,
+                \"url\": \"$URL\",
+                \"color\": 65280,
+                \"author\": {\"name\": \"$AUTHOR\"},
+                \"footer\": {\"text\": \"$LABEL Release\"},
+                \"timestamp\": \"$PUBLISHED_AT\"
               }]
             }" \
             "$DISCORD_WEBHOOK"
