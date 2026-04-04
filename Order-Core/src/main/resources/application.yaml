@@ -48,6 +48,13 @@ spring:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
 
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    check-template-location: true
+
   data:
     redis:
       host: ${REDIS_HOST}
@@ -57,6 +64,11 @@ spring:
     multipart:
       max-file-size: 5MB
       max-request-size: 5MB
+
+app:
+  mail:
+    from: ${MAIL_FROM:grgbdev@gmail.com}
+    from-name: ${MAIL_FROM_NAME:Playball}
 
 encryption:
   db-key: ${DB_ENCRYPTION_KEY}
