@@ -145,6 +145,7 @@ public class EmailDataQueryService {
 
 		Match match = order.getMatch();
 		List<OrderSeat> orderSeats = orderSeatRepository.findByOrderId(orderId);
+		Payment payment = paymentRepository.findByOrderId(orderId).orElse(null);
 		List<SeatDisplayInfo> seats = buildSeatDisplayInfos(orderSeats);
 
 		Map<String, Object> ctx = new HashMap<>();
@@ -159,9 +160,20 @@ public class EmailDataQueryService {
 
 		ctx.put("seats", seats);
 
+		String paidAt = (payment != null && payment.getPaidAt() != null)
+			? formatInstant(payment.getPaidAt())
+			: "";
+		ctx.put("paidAt", paidAt);
+		ctx.put("paymentMethod", payment != null
+			? PAYMENT_METHOD_NAMES.getOrDefault(payment.getPaymentMethod().name(), payment.getPaymentMethod().name())
+			: "");
+		ctx.put("cancelledAt", formatInstant(order.getCancelledAt()));
+
 		ctx.put("totalAmount", order.getTotalAmount());
+		ctx.put("bookingFee", order.getBookingFee() != null ? order.getBookingFee() : 0);
 		ctx.put("cancellationFee", event.getCancellationFee());
 		ctx.put("refundedAmount", event.getRefundedAmount());
+		ctx.put("cancelDeadline", formatInstant(match.getMatchAt()));
 
 		ctx.put("ticketUrl", TICKET_URL);
 		return Optional.of(ctx);
