@@ -44,6 +44,8 @@ public class EmailDataQueryService {
 	private final PaymentRepository paymentRepository;
 	private final NamedParameterJdbcTemplate jdbcTemplate;
 
+	private static final String TICKET_URL = "https://dev.goormgb.space/my/tickets";
+
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 	private static final DateTimeFormatter DATE_FORMATTER =
 		DateTimeFormatter.ofPattern("yyyy년 M월 d일 (E) HH:mm", Locale.KOREAN);
@@ -93,6 +95,7 @@ public class EmailDataQueryService {
 
 		ctx.put("cancelDeadline", formatInstant(match.getMatchAt()));
 
+		ctx.put("ticketUrl", TICKET_URL);
 		return Optional.of(ctx);
 	}
 
@@ -129,6 +132,7 @@ public class EmailDataQueryService {
 		ZonedDateTime deadline = ZonedDateTime.of(orderDate.plusDays(1), LocalTime.of(23, 59), KST);
 		ctx.put("paymentDeadline", deadline.format(DATE_FORMATTER));
 
+		ctx.put("ticketUrl", TICKET_URL);
 		return Optional.of(ctx);
 	}
 
@@ -159,6 +163,7 @@ public class EmailDataQueryService {
 		ctx.put("cancellationFee", event.getCancellationFee());
 		ctx.put("refundedAmount", event.getRefundedAmount());
 
+		ctx.put("ticketUrl", TICKET_URL);
 		return Optional.of(ctx);
 	}
 
@@ -259,6 +264,7 @@ public class EmailDataQueryService {
 		ctx.put("cancellationFee", cancellationFee);
 		ctx.put("refundedAmount", refundedAmount);
 		ctx.put("cancelDeadline", formatInstant(match.getMatchAt()));
+		ctx.put("ticketUrl", TICKET_URL);
 
 		return ctx;
 	}
