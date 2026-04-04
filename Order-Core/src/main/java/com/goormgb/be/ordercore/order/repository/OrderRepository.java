@@ -89,4 +89,32 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 		WHERE o.id = :orderId
 		""")
 	Optional<Order> findByIdForUpdate(@Param("orderId") Long orderId);
+
+	@Query("""
+		SELECT o
+		FROM Order o
+		JOIN FETCH o.match m
+		JOIN FETCH m.homeClub
+		JOIN FETCH m.awayClub
+		JOIN FETCH m.stadium
+		WHERE o.id = :orderId
+		""")
+	Optional<Order> findByIdWithMatchDetails(@Param("orderId") Long orderId);
+
+	@Query("""
+		SELECT o
+		FROM Order o
+		JOIN FETCH o.match m
+		JOIN FETCH m.homeClub
+		JOIN FETCH m.awayClub
+		JOIN FETCH m.stadium
+		WHERE o.user.id = :userId
+		  AND o.status IN :statuses
+		  AND m.matchAt > :now
+		""")
+	List<Order> findUpcomingOrdersByUserIdAndStatuses(
+		@Param("userId") Long userId,
+		@Param("statuses") List<OrderStatus> statuses,
+		@Param("now") Instant now
+	);
 }
