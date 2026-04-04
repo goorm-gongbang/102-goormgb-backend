@@ -1,14 +1,18 @@
 package com.goormgb.be.ordercore.email.service;
 
-import org.springframework.mail.SimpleMailMessage;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
-import com.goormgb.be.kafka.event.OrderCancelledEvent;
-import com.goormgb.be.kafka.event.PaymentCompletedEvent;
 import com.goormgb.be.ordercore.email.dto.EmailMessage;
-import com.goormgb.be.ordercore.order.entity.Order;
 
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,33 +22,70 @@ import lombok.extern.slf4j.Slf4j;
 public class EmailService {
 
 	private final JavaMailSender mailSender;
+	private final TemplateEngine templateEngine;
 
-	public void sendPaymentConfirmation(Order order, PaymentCompletedEvent event) {
-		EmailMessage message = new EmailMessage(
-				order.getOrdererEmail(),
-				"[Playball] 결제 완료 안내",
-				buildPaymentConfirmationBody(order, event)
-		);
-		send(message);
+	@Value("${app.mail.from:no-reply@playball.one}")
+	private String mailFrom;
+
+	@Value("${app.mail.from-name:Playball}")
+	private String mailFromName;
+
+	private static final ClassPathResource LOGO_RESOURCE =
+			new ClassPathResource("static/images/playball-logo.png");
+
+	public void sendPaymentConfirmation(Map<String, Object> emailContext) {
+		String to = extractEmail(emailContext);
+		Context context = buildContext(emailContext);
+		String htmlBody = templateEngine.process("email/payment-confirmation", context);
+		send(new EmailMessage(to, "[Playball] 결제 완료 안내", htmlBody));
 	}
 
-	public void sendCancellationConfirmation(Order order, OrderCancelledEvent event) {
-		EmailMessage message = new EmailMessage(
-				order.getOrdererEmail(),
-				"[Playball] 예매 취소 안내",
-				buildCancellationBody(order, event)
-		);
-		send(message);
+	public void sendBookingConfirmation(Map<String, Object> emailContext) {
+		String to = extractEmail(emailContext);
+		Context context = buildContext(emailContext);
+		String htmlBody = templateEngine.process("email/booking-confirmation", context);
+		send(new EmailMessage(to, "[Playball] 티켓 예매 완료 안내", htmlBody));
+	}
+
+	public void sendCancellationConfirmation(Map<String, Object> emailContext) {
+		String to = extractEmail(emailContext);
+		Context context = buildContext(emailContext);
+		String htmlBody = templateEngine.process("email/cancellation-confirmation", context);
+		send(new EmailMessage(to, "[Playball] 티켓 예매 취소 안내", htmlBody));
+	}
+
+	public void sendForcedCancellation(Map<String, Object> emailContext) {
+		String to = extractEmail(emailContext);
+		Context context = buildContext(emailContext);
+		String htmlBody = templateEngine.process("email/forced-cancellation", context);
+		send(new EmailMessage(to, "[Playball] 악성 유저 의심으로 인한 티켓 예매 보류 안내", htmlBody));
+	}
+
+	private Context buildContext(Map<String, Object> emailContext) {
+		Context context = new Context();
+		emailContext.forEach(context::setVariable);
+		return context;
+	}
+
+	private String extractEmail(Map<String, Object> emailContext) {
+		String to = (String)emailContext.get("ordererEmail");
+		return to != null ? to : "";
 	}
 
 	private void send(EmailMessage message) {
 		try {
-			SimpleMailMessage mail = new SimpleMailMessage();
-			mail.setTo(message.to());
-			mail.setSubject(message.subject());
-			mail.setText(message.body());
-			mail.setFrom("grgbdev@gmail.com");
-			mailSender.send(mail);
+			MimeMessage mimeMessage = mailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+			helper.setTo(message.to());
+			helper.setSubject(message.subject());
+			helper.setText(message.body(), true);
+			helper.setFrom(mailFrom, mailFromName);
+
+			if (LOGO_RESOURCE.exists()) {
+				helper.addInline("playball-logo", LOGO_RESOURCE, "image/png");
+			}
+
+			mailSender.send(mimeMessage);
 			log.info("[Email] 발송 성공: to={}, subject={}", maskEmail(message.to()), message.subject());
 		} catch (Exception e) {
 			log.error("[Email] 발송 실패: to={}, subject={}, error={}",
@@ -52,47 +93,10 @@ public class EmailService {
 		}
 	}
 
-	private String buildPaymentConfirmationBody(Order order, PaymentCompletedEvent event) {
-		return String.format("""
-						안녕하세요, Playball입니다.
-						
-						결제가 완료되었습니다.
-						
-						주문번호: %d
-						결제 금액: %,d원
-						결제 방법: %s
-						좌석 수: %d석
-						
-						즐거운 관람 되세요!
-						""",
-				order.getId(),
-				event.getTotalAmount(),
-				event.getPaymentMethod(),
-				event.getMatchSeatIds().size()
-		);
-	}
-
-	private String buildCancellationBody(Order order, OrderCancelledEvent event) {
-		return String.format("""
-						안녕하세요, Playball입니다.
-						
-						예매가 취소되었습니다.
-						
-						주문번호: %d
-						취소 수수료: %,d원
-						환불 금액: %,d원
-						
-						감사합니다.
-						""",
-				order.getId(),
-				event.getCancellationFee(),
-				event.getRefundedAmount()
-		);
-	}
-
 	private String maskEmail(String email) {
-		if (email == null || !email.contains("@"))
+		if (email == null || !email.contains("@")) {
 			return "***";
+		}
 		String[] parts = email.split("@");
 		String local = parts[0];
 		String masked = local.length() <= 2
