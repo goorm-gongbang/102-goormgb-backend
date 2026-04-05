@@ -39,11 +39,12 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class LoadTestUserSeeder implements CommandLineRunner {
 
-	private static final int TOTAL_USERS = 5000;
+	private static final int TOTAL_USERS = 7000;
 	private static final String PASSWORD = "1234";
 	private static final int BATCH_LOG_INTERVAL = 100;
 	private static final int FLUSH_INTERVAL = 100;
 	private static final int CLUB_COUNT = 10;
+	private static final int PREFERRED_BLOCK_COUNT = 10;
 
 	/**
 	 * 시드 데이터 기준 유효 블록 번호 (blockNum)
@@ -189,7 +190,7 @@ public class LoadTestUserSeeder implements CommandLineRunner {
 
 		// 5. 선호 블록: 랜덤 1~10개, 중복 없이 셔플
 		ThreadLocalRandom random = ThreadLocalRandom.current();
-		int blockCount = random.nextInt(1, 11);
+		int blockCount = PREFERRED_BLOCK_COUNT;
 		List<Long> shuffledBlocks = new ArrayList<>(VALID_BLOCK_NUMS);
 		Collections.shuffle(shuffledBlocks, random);
 		for (int b = 0; b < blockCount; b++) {
