@@ -15,6 +15,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -26,8 +27,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "user_sns", uniqueConstraints = {
 		@UniqueConstraint(columnNames = {"provider", "provider_user_id_hash"})
 }, indexes = {
-		@Index(name = "idx_user_sns_user_id", columnList = "user_id"),
-		@Index(name = "idx_user_sns_provider_hash", columnList = "provider, provider_user_id_hash")
+		@Index(name = "idx_user_sns_user_id", columnList = "user_id")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -57,6 +57,7 @@ public class UserSns extends BaseEntity {
 	}
 
 	@PrePersist
+	@PreUpdate
 	private void ensureHash() {
 		if (this.providerUserIdHash == null && this.providerUserId != null) {
 			this.providerUserIdHash = HashUtil.sha256(this.providerUserId);
