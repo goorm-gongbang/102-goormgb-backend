@@ -1,9 +1,12 @@
 package com.goormgb.be.user.entity;
 
 import com.goormgb.be.global.entity.BaseEntity;
+import com.goormgb.be.global.encryption.EncryptionConverter;
+import com.goormgb.be.global.encryption.HashUtil;
 import com.goormgb.be.user.enums.SocialProvider;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -11,6 +14,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -20,9 +24,10 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "user_sns", uniqueConstraints = {
-		@UniqueConstraint(columnNames = {"provider", "provider_user_id"})
+		@UniqueConstraint(columnNames = {"provider", "provider_user_id_hash"})
 }, indexes = {
-		@Index(name = "idx_user_sns_user_id", columnList = "user_id")
+		@Index(name = "idx_user_sns_user_id", columnList = "user_id"),
+		@Index(name = "idx_user_sns_provider_hash", columnList = "provider, provider_user_id_hash")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -36,14 +41,26 @@ public class UserSns extends BaseEntity {
 	@Column(name = "provider", nullable = false, length = 20)
 	private SocialProvider provider;
 
-	@Column(name = "provider_user_id", nullable = false, length = 128)
+	@Convert(converter = EncryptionConverter.class)
+	@Column(name = "provider_user_id", nullable = false, length = 512)
 	private String providerUserId;
+
+	@Column(name = "provider_user_id_hash", nullable = false, length = 64)
+	private String providerUserIdHash;
 
 	@Builder
 	public UserSns(User user, SocialProvider provider, String providerUserId) {
 		this.user = user;
 		this.provider = provider != null ? provider : SocialProvider.KAKAO;
 		this.providerUserId = providerUserId;
+		this.providerUserIdHash = HashUtil.sha256(providerUserId);
+	}
+
+	@PrePersist
+	private void ensureHash() {
+		if (this.providerUserIdHash == null && this.providerUserId != null) {
+			this.providerUserIdHash = HashUtil.sha256(this.providerUserId);
+		}
 	}
 
 	public static UserSns create(User user, SocialProvider provider, String providerUserId) {
