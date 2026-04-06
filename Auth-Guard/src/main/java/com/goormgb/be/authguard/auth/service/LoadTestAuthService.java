@@ -82,7 +82,7 @@ public class LoadTestAuthService {
 		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
 		Preconditions.validate(user.getStatus() != UserStatus.BLOCKED, ErrorCode.USER_ALREADY_BLOCKED);
 
-		user.updateLastLoginAt();
+		// 부하테스트 로그인에서는 lastLoginAt 업데이트 생략 (동시 UPDATE 병목 방지)
 
 		String sid = UUID.randomUUID().toString();
 		String accessToken = jwtTokenProvider.createAccessToken(user.getId(), DEFAULT_AUTHORITY, sid);
