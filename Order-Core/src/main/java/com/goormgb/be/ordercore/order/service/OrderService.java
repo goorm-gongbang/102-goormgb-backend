@@ -41,6 +41,9 @@ public class OrderService {
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 	private static final int BOOKING_FEE = 2000;
 	private static final int MAX_TICKETS_PER_MATCH = 8;
+	private static final List<OrderStatus> COUNTABLE_ORDER_STATUSES = List.of(
+			OrderStatus.PAYMENT_PENDING, OrderStatus.PAID, OrderStatus.UNDER_REVIEW
+	);
 
 	private final MatchRepository matchRepository;
 	private final UserRepository userRepository;
@@ -89,8 +92,8 @@ public class OrderService {
 	public OrderCreateResponse createOrder(Long userId, OrderCreateRequest request) {
 		Preconditions.validate(!request.matchSeatIds().isEmpty(), ErrorCode.ORDER_SEAT_EMPTY);
 
-		validateMaxTicketsPerMatch(userId, request.matchId(), request.matchSeatIds().size());
 		cancelExistingPendingOrders(userId, request.matchId());
+		validateMaxTicketsPerMatch(userId, request.matchId(), request.matchSeatIds().size());
 
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		Match match = matchRepository.findDetailByIdOrThrow(request.matchId());
@@ -173,11 +176,8 @@ public class OrderService {
 	 * 유효 주문(PAYMENT_PENDING, PAID, UNDER_REVIEW) 좌석 수 + 신규 좌석 수가 8을 초과하면 예외를 발생시킨다.
 	 */
 	private void validateMaxTicketsPerMatch(Long userId, Long matchId, int newSeatCount) {
-		List<OrderStatus> countableStatuses = List.of(
-				OrderStatus.PAYMENT_PENDING, OrderStatus.PAID, OrderStatus.UNDER_REVIEW);
-
 		long existingSeatCount = orderSeatRepository.countByUserIdAndMatchIdAndStatuses(
-				userId, matchId, countableStatuses);
+				userId, matchId, COUNTABLE_ORDER_STATUSES);
 
 		Preconditions.validate(
 				existingSeatCount + newSeatCount <= MAX_TICKETS_PER_MATCH,
