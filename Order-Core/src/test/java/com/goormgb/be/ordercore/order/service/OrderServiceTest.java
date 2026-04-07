@@ -264,7 +264,7 @@ class OrderServiceTest {
 			OrderCreateRequest request = new OrderCreateRequest(
 				1L,
 				List.of(101L, 102L),
-				31000,
+				46000,
 				"홍길동", "hong@test.com", "010-1234-5678", "990831"
 			);
 
@@ -281,7 +281,7 @@ class OrderServiceTest {
 			OrderCreateResponse response = orderService.createOrder(userId, request);
 
 			assertThat(response.seatCount()).isEqualTo(2);
-			assertThat(response.totalAmount()).isEqualTo(22000 + 7000 + 2000);
+			assertThat(response.totalAmount()).isEqualTo(22000 + 22000 + 2000);
 		}
 
 		@Test
@@ -331,6 +331,35 @@ class OrderServiceTest {
 			orderService.createOrder(userId, request);
 
 			then(orderSeatRepository).should().saveAll(any());
+		}
+
+		@Test
+		@DisplayName("요청 totalPrice가 서버 계산값과 다르면 ORDER_TOTAL_PRICE_MISMATCH 예외가 발생한다")
+		void createOrder_totalPrice_불일치_예외() {
+			Long userId = 1L;
+			User user = OrderFixture.createUser();
+			Match match = OrderFixture.createWeekdayMatch();
+			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
+			OrderCreateRequest request = new OrderCreateRequest(
+				1L,
+				List.of(101L),
+				0,
+				"홍길동", "hong@test.com", "010-1234-5678", "990831"
+			);
+
+			stubNoPendingOrders();
+			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
+			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
+			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
+
+			assertThatThrownBy(() -> orderService.createOrder(userId, request))
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.ORDER_TOTAL_PRICE_MISMATCH.getMessage());
+
+			then(orderRepository).should(never()).save(any(Order.class));
+			then(orderSeatRepository).should(never()).saveAll(any());
 		}
 
 		@Test

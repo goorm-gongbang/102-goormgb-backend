@@ -308,6 +308,21 @@ class OrderControllerTest extends WebMvcTestSupport {
 		}
 
 		@Test
+		@DisplayName("요청 totalPrice가 서버 계산값과 다르면 400을 반환한다")
+		void createOrder_totalPrice_불일치_400() throws Exception {
+			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
+
+			given(orderService.createOrder(any(), any()))
+				.willThrow(new CustomException(ErrorCode.ORDER_TOTAL_PRICE_MISMATCH));
+
+			mockMvc.perform(post("/mypage/orders")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("주문 금액이 유효하지 않습니다. 다시 시도해주세요."));
+		}
+
+		@Test
 		@DisplayName("matchId가 없으면 400을 반환한다")
 		void createOrder_matchId_누락_400() throws Exception {
 			String invalidJson = """
