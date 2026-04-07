@@ -77,6 +77,22 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 		@Param("newStatus") OrderStatus newStatus
 	);
 
+	/**
+	 * 특정 유저의 주문 중 지정된 상태에 해당하는 주문을 UNDER_REVIEW로 일괄 변경한다.
+	 */
+	@Modifying(clearAutomatically = true)
+	@Query("""
+		UPDATE Order o
+		SET o.status = :newStatus
+		WHERE o.user.id = :userId
+		  AND o.status IN :statuses
+		""")
+	int bulkUpdateStatusByUserIdAndStatuses(
+		@Param("userId") Long userId,
+		@Param("statuses") List<OrderStatus> statuses,
+		@Param("newStatus") OrderStatus newStatus
+	);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""
 		SELECT o

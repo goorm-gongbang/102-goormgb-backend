@@ -7,8 +7,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import com.goormgb.be.authguard.auth.dto.RefreshTokenInfo;
@@ -22,6 +25,8 @@ import com.goormgb.be.authguard.jwt.repository.RefreshTokenRepository;
 import com.goormgb.be.authguard.metrics.AuthMetricsService;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
+import com.goormgb.be.kafka.EventTopic;
+import com.goormgb.be.kafka.event.UserBlockedEvent;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.entity.WithdrawalRequest;
 import com.goormgb.be.user.enums.UserStatus;
@@ -47,6 +52,7 @@ public class AuthService {
 	private final UserRepository userRepository;
 	private final WithdrawalRequestRepository withdrawalRequestRepository;
 	private final AuthMetricsService authMetricsService;
+	private final KafkaTemplate<String, Object> kafkaTemplate;
 
 	/**
 	 * Refresh Token으로 새로운 Access Token과 Refresh Token을 발급한다. (RTR)
@@ -70,7 +76,7 @@ public class AuthService {
 
 		// 3. Redis에서 저장된 토큰 조회 & 일치 확인
 		RefreshTokenInfo storedTokenInfo = refreshTokenRepository.findByJtiOrThrow(jti,
-			ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+				ErrorCode.REFRESH_TOKEN_NOT_FOUND);
 
 		Preconditions.validate(refreshToken.equals(storedTokenInfo.getToken()), ErrorCode.REFRESH_TOKEN_MISMATCH);
 
@@ -80,8 +86,8 @@ public class AuthService {
 
 		// 5. 기존 sid 추출 (하위 호환: sid 없는 기존 토큰은 새로 생성)
 		String sid = Optional.ofNullable(jwtTokenProvider.getSid(claims))
-			.or(() -> Optional.ofNullable(storedTokenInfo.getSid()))
-			.orElseGet(() -> UUID.randomUUID().toString());
+				.or(() -> Optional.ofNullable(storedTokenInfo.getSid()))
+				.orElseGet(() -> UUID.randomUUID().toString());
 
 		// 7. 새 토큰 발급 (동일 sid 유지)
 		String newAccessToken = jwtTokenProvider.createAccessToken(userId, DEFAULT_AUTHORITY, sid);
@@ -95,15 +101,15 @@ public class AuthService {
 		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
 
 		RefreshTokenInfo newTokenInfo = RefreshTokenInfo.builder()
-			.userId(userId)
-			.token(newRefreshToken)
-			.jti(newJti)
-			.sid(sid)
-			.issuedAt(now)
-			.expiresAt(now.plus(Duration.ofDays(expirationDays)))
-			.userAgent(request.getHeader("User-Agent"))
-			.ipAddress(getClientIp(request))
-			.build();
+				.userId(userId)
+				.token(newRefreshToken)
+				.jti(newJti)
+				.sid(sid)
+				.issuedAt(now)
+				.expiresAt(now.plus(Duration.ofDays(expirationDays)))
+				.userAgent(request.getHeader("User-Agent"))
+				.ipAddress(getClientIp(request))
+				.build();
 
 		refreshTokenRepository.save(newTokenInfo);
 
@@ -122,8 +128,8 @@ public class AuthService {
 		// 1. Access Token 추출 및 블랙리스트 등록
 		String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
 		Preconditions.validate(
-			StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer "),
-			ErrorCode.INVALID_TOKEN
+				StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer "),
+				ErrorCode.INVALID_TOKEN
 		);
 		String accessToken = bearerToken.substring(7);
 
@@ -177,6 +183,14 @@ public class AuthService {
 		authMetricsService.increaseUserBlocked();
 		log.info("[User Block] userId={}, status={} -> {}", targetUserId, beforeStatus, user.getStatus());
 
+		// 트랜잭션 커밋 성공 후 차단 유저의 주문 상태 변경 이벤트 발행
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				publishUserBlockedEvent(targetUserId);
+			}
+		});
+
 		return UserStatusChangeResponse.from(user);
 	}
 
@@ -213,11 +227,27 @@ public class AuthService {
 
 		// 4. 탈퇴 요청 데이터 생성 및 저장
 		WithdrawalRequest withdrawalRequest = WithdrawalRequest.builder()
-			.user(user)
-			.build();
+				.user(user)
+				.build();
 		withdrawalRequestRepository.save(withdrawalRequest);
 
 		return WithdrawalResponse.from(withdrawalRequest);
 
+	}
+
+	private void publishUserBlockedEvent(Long userId) {
+		UserBlockedEvent event = UserBlockedEvent.builder()
+				.userId(userId)
+				.occurredAt(Instant.now())
+				.build();
+
+		kafkaTemplate.send(EventTopic.USER_BLOCKED, String.valueOf(userId), event)
+				.whenComplete((result, ex) -> {
+					if (ex != null) {
+						log.error("[Kafka] 유저 차단 이벤트 발행 실패 - userId={}", userId, ex);
+					} else {
+						log.warn("[Kafka] 유저 차단 이벤트 발행 성공 - userId={}", userId);
+					}
+				});
 	}
 }

@@ -33,4 +33,12 @@ public class KafkaTopicConfig {
 				.replicas(1)
 				.build();
 	}
+
+	@Bean
+	public NewTopic userBlockedTopic() {
+		return TopicBuilder.name(EventTopic.USER_BLOCKED)
+				.partitions(3)
+				.replicas(1)
+				.build();
+	}
 }

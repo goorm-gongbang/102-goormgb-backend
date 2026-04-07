@@ -131,7 +131,7 @@ public class MyPageTicketService {
 		Preconditions.validate(page >= 0 && size > 0 && size <= MAX_PAGE_SIZE, ErrorCode.INVALID_PAGE_SIZE);
 
 		Instant now = Instant.now(clock);
-		LocalDate today = LocalDate.now(KST);
+		LocalDate today = now.atZone(KST).toLocalDate();
 
 		long totalElements = myPageQueryService.countUpcomingTickets(userId, UPCOMING_TICKET_STATUSES, now);
 		List<UpcomingTicketRow> rows = myPageQueryService.findUpcomingTickets(
