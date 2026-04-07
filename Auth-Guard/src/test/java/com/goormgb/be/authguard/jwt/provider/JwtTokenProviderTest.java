@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.*;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.util.Base64;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +40,7 @@ class JwtTokenProviderTest {
 
 	private static final Long USER_ID = 42L;
 	private static final String ROLE = "ROLE_USER";
+	private static final String SID = "test-session-id";
 
 	private JwtTokenProvider jwtTokenProvider;
 
@@ -58,7 +58,7 @@ class JwtTokenProviderTest {
 
 		JwtProperties.RefreshToken refreshToken = new JwtProperties.RefreshToken();
 		refreshToken.setAudience("test-refresh-audience");
-		refreshToken.setExpirationDays(7);
+		refreshToken.setExpirationHours(3);
 		properties.setRefreshToken(refreshToken);
 
 		jwtTokenProvider = new JwtTokenProvider(properties);
@@ -72,7 +72,7 @@ class JwtTokenProviderTest {
 		@Test
 		@DisplayName("ACCESS 토큰을 생성하면 서명이 유효하다")
 		void createsValidToken() {
-			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE);
+			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE, SID);
 
 			assertThat(token).isNotBlank();
 			assertThat(jwtTokenProvider.validateToken(token)).isTrue();
@@ -81,7 +81,7 @@ class JwtTokenProviderTest {
 		@Test
 		@DisplayName("ACCESS 토큰의 userId를 정확히 담는다")
 		void containsCorrectUserId() {
-			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE);
+			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE, SID);
 
 			assertThat(jwtTokenProvider.getUserIdFromToken(token)).isEqualTo(USER_ID);
 		}
@@ -89,7 +89,7 @@ class JwtTokenProviderTest {
 		@Test
 		@DisplayName("ACCESS 토큰의 authority를 정확히 담는다")
 		void containsCorrectAuthority() {
-			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE);
+			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE, SID);
 
 			assertThat(jwtTokenProvider.getAuthorityFromToken(token)).isEqualTo(ROLE);
 		}
@@ -97,7 +97,7 @@ class JwtTokenProviderTest {
 		@Test
 		@DisplayName("ACCESS 토큰의 tokenType이 ACCESS다")
 		void tokenTypeIsAccess() {
-			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE);
+			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE, SID);
 
 			assertThat(jwtTokenProvider.getTokenTypeFromToken(token)).isEqualTo(TokenType.ACCESS);
 		}
@@ -105,7 +105,7 @@ class JwtTokenProviderTest {
 		@Test
 		@DisplayName("ACCESS 토큰은 JTI를 포함한다")
 		void containsJti() {
-			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE);
+			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE, SID);
 
 			assertThat(jwtTokenProvider.getJtiFromToken(token)).isNotBlank();
 		}
@@ -113,10 +113,10 @@ class JwtTokenProviderTest {
 		@Test
 		@DisplayName("ACCESS 토큰의 만료 시각은 현재보다 미래다")
 		void expirationIsInFuture() {
-			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE);
+			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE, SID);
 
 			assertThat(jwtTokenProvider.getExpirationFromToken(token))
-				.isAfter(new java.util.Date());
+					.isAfter(new java.util.Date());
 		}
 	}
 
@@ -127,7 +127,7 @@ class JwtTokenProviderTest {
 		@Test
 		@DisplayName("REFRESH 토큰을 생성하면 서명이 유효하다")
 		void createsValidToken() {
-			String token = jwtTokenProvider.createRefreshToken(USER_ID);
+			String token = jwtTokenProvider.createRefreshToken(USER_ID, SID);
 
 			assertThat(token).isNotBlank();
 			assertThat(jwtTokenProvider.validateToken(token)).isTrue();
@@ -136,7 +136,7 @@ class JwtTokenProviderTest {
 		@Test
 		@DisplayName("REFRESH 토큰의 tokenType이 REFRESH다")
 		void tokenTypeIsRefresh() {
-			String token = jwtTokenProvider.createRefreshToken(USER_ID);
+			String token = jwtTokenProvider.createRefreshToken(USER_ID, SID);
 
 			assertThat(jwtTokenProvider.getTokenTypeFromToken(token)).isEqualTo(TokenType.REFRESH);
 		}
@@ -144,7 +144,7 @@ class JwtTokenProviderTest {
 		@Test
 		@DisplayName("REFRESH 토큰은 userId를 포함한다")
 		void containsUserId() {
-			String token = jwtTokenProvider.createRefreshToken(USER_ID);
+			String token = jwtTokenProvider.createRefreshToken(USER_ID, SID);
 
 			assertThat(jwtTokenProvider.getUserIdFromToken(token)).isEqualTo(USER_ID);
 		}
@@ -160,9 +160,9 @@ class JwtTokenProviderTest {
 			String expiredToken = buildExpiredToken();
 
 			assertThatThrownBy(() -> jwtTokenProvider.validateToken(expiredToken))
-				.isInstanceOf(CustomException.class)
-				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
-					.isEqualTo(ErrorCode.EXPIRED_TOKEN));
+					.isInstanceOf(CustomException.class)
+					.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
+							.isEqualTo(ErrorCode.EXPIRED_TOKEN));
 		}
 
 		@Test
@@ -171,18 +171,18 @@ class JwtTokenProviderTest {
 			String wrongToken = buildWrongSignatureToken();
 
 			assertThatThrownBy(() -> jwtTokenProvider.validateToken(wrongToken))
-				.isInstanceOf(CustomException.class)
-				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
-					.isEqualTo(ErrorCode.INVALID_TOKEN));
+					.isInstanceOf(CustomException.class)
+					.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
+							.isEqualTo(ErrorCode.INVALID_TOKEN));
 		}
 
 		@Test
 		@DisplayName("형식이 잘못된 토큰이면 INVALID_TOKEN 예외를 던진다")
 		void malformedToken_throwsInvalidTokenException() {
 			assertThatThrownBy(() -> jwtTokenProvider.validateToken("not.a.jwt"))
-				.isInstanceOf(CustomException.class)
-				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
-					.isEqualTo(ErrorCode.INVALID_TOKEN));
+					.isInstanceOf(CustomException.class)
+					.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
+							.isEqualTo(ErrorCode.INVALID_TOKEN));
 		}
 	}
 
@@ -204,7 +204,7 @@ class JwtTokenProviderTest {
 		@Test
 		@DisplayName("유효한 토큰이면 정상적으로 Claims를 반환한다")
 		void validToken_returnsClaims() {
-			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE);
+			String token = jwtTokenProvider.createAccessToken(USER_ID, ROLE, SID);
 
 			Claims claims = jwtTokenProvider.parseClaimsAllowExpired(token);
 
@@ -217,9 +217,9 @@ class JwtTokenProviderTest {
 			String wrongToken = buildWrongSignatureToken();
 
 			assertThatThrownBy(() -> jwtTokenProvider.parseClaimsAllowExpired(wrongToken))
-				.isInstanceOf(CustomException.class)
-				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
-					.isEqualTo(ErrorCode.INVALID_TOKEN));
+					.isInstanceOf(CustomException.class)
+					.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
+							.isEqualTo(ErrorCode.INVALID_TOKEN));
 		}
 	}
 
@@ -227,13 +227,13 @@ class JwtTokenProviderTest {
 
 	private String buildExpiredToken() {
 		return Jwts.builder()
-			.subject(String.valueOf(USER_ID))
-			.claim("tokenType", TokenType.ACCESS.getValue())
-			.claim("auth", ROLE)
-			.issuedAt(new java.util.Date(System.currentTimeMillis() - 7200_000))
-			.expiration(new java.util.Date(System.currentTimeMillis() - 3600_000))
-			.signWith((RSAPrivateKey)KEY_PAIR.getPrivate(), Jwts.SIG.RS256)
-			.compact();
+				.subject(String.valueOf(USER_ID))
+				.claim("tokenType", TokenType.ACCESS.getValue())
+				.claim("auth", ROLE)
+				.issuedAt(new java.util.Date(System.currentTimeMillis() - 7200_000))
+				.expiration(new java.util.Date(System.currentTimeMillis() - 3600_000))
+				.signWith((RSAPrivateKey)KEY_PAIR.getPrivate(), Jwts.SIG.RS256)
+				.compact();
 	}
 
 	private String buildWrongSignatureToken() {
@@ -242,13 +242,13 @@ class JwtTokenProviderTest {
 			kpg.initialize(2048);
 			KeyPair wrongPair = kpg.generateKeyPair();
 			return Jwts.builder()
-				.subject(String.valueOf(USER_ID))
-				.claim("tokenType", TokenType.ACCESS.getValue())
-				.claim("auth", ROLE)
-				.issuedAt(new java.util.Date())
-				.expiration(new java.util.Date(System.currentTimeMillis() + 3600_000))
-				.signWith((RSAPrivateKey)wrongPair.getPrivate(), Jwts.SIG.RS256)
-				.compact();
+					.subject(String.valueOf(USER_ID))
+					.claim("tokenType", TokenType.ACCESS.getValue())
+					.claim("auth", ROLE)
+					.issuedAt(new java.util.Date())
+					.expiration(new java.util.Date(System.currentTimeMillis() + 3600_000))
+					.signWith((RSAPrivateKey)wrongPair.getPrivate(), Jwts.SIG.RS256)
+					.compact();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

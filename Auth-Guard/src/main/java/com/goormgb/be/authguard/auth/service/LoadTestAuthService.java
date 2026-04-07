@@ -85,12 +85,14 @@ public class LoadTestAuthService {
 		// 부하테스트 로그인에서는 lastLoginAt 업데이트 생략 (동시 UPDATE 병목 방지)
 
 		String sid = UUID.randomUUID().toString();
-		String accessToken = jwtTokenProvider.createAccessToken(user.getId(), DEFAULT_AUTHORITY, sid);
-		String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), sid);
+		int loadTestMinutes = jwtProperties.getLoadTest().getTokenExpirationMinutes();
+
+		String accessToken = jwtTokenProvider.createAccessToken(user.getId(), DEFAULT_AUTHORITY, sid, loadTestMinutes);
+		String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), sid, loadTestMinutes);
 		String jti = jwtTokenProvider.getJtiFromToken(refreshToken);
 
 		Instant now = Instant.now();
-		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
+		Duration loadTestTtl = Duration.ofMinutes(loadTestMinutes);
 
 		RefreshTokenInfo tokenInfo = RefreshTokenInfo.builder()
 				.userId(user.getId())
@@ -98,12 +100,12 @@ public class LoadTestAuthService {
 				.jti(jti)
 				.sid(sid)
 				.issuedAt(now)
-				.expiresAt(now.plus(Duration.ofDays(expirationDays)))
+				.expiresAt(now.plus(loadTestTtl))
 				.userAgent(request.getHeader("User-Agent"))
 				.ipAddress(getClientIp(request))
 				.build();
 
-		refreshTokenRepository.save(tokenInfo);
+		refreshTokenRepository.save(tokenInfo, loadTestTtl);
 
 		return new LoadTestLoginResult(accessToken, refreshToken);
 	}

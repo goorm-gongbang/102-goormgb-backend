@@ -98,7 +98,7 @@ public class AuthService {
 		refreshTokenRepository.deleteByJti(jti);
 
 		Instant now = Instant.now();
-		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
+		int expirationHours = jwtProperties.getRefreshToken().getExpirationHours();
 
 		RefreshTokenInfo newTokenInfo = RefreshTokenInfo.builder()
 				.userId(userId)
@@ -106,7 +106,7 @@ public class AuthService {
 				.jti(newJti)
 				.sid(sid)
 				.issuedAt(now)
-				.expiresAt(now.plus(Duration.ofDays(expirationDays)))
+				.expiresAt(now.plus(Duration.ofHours(expirationHours)))
 				.userAgent(request.getHeader("User-Agent"))
 				.ipAddress(getClientIp(request))
 				.build();

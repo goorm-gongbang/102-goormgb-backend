@@ -96,7 +96,7 @@ public class KakaoAuthService {
 		// 7. refreshToken redis 에 저장
 		Instant now = Instant.now();
 
-		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
+		int expirationHours = jwtProperties.getRefreshToken().getExpirationHours();
 
 		RefreshTokenInfo tokenInfo = RefreshTokenInfo.builder()
 				.userId(user.getId())
@@ -104,7 +104,7 @@ public class KakaoAuthService {
 				.jti(jti)
 				.sid(sid)
 				.issuedAt(now)
-				.expiresAt(now.plus(Duration.ofDays(expirationDays)))
+				.expiresAt(now.plus(Duration.ofHours(expirationHours)))
 				.userAgent(request.getHeader("User-Agent"))
 				.ipAddress(getClientIp(request))
 				.build();

@@ -24,7 +24,7 @@ public class CookieUtils {
 	 * Refresh Token용 HttpOnly Cookie 생성 (로그인/토큰 재발급 시)
 	 * */
 	public ResponseCookie createRefreshTokenCookie(String refreshToken) {
-		long maxAgeSeconds = TimeUnit.DAYS.toSeconds(jwtProperties.getRefreshToken().getExpirationDays());
+		long maxAgeSeconds = TimeUnit.HOURS.toSeconds(jwtProperties.getRefreshToken().getExpirationHours());
 
 		return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
 				.httpOnly(true)
