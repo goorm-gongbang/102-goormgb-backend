@@ -73,7 +73,7 @@ public class OrderController {
 		description = """
 			예매자 정보, 좌석 ID 목록, 총 결제 금액을 받아 주문을 생성합니다.
 			- matchSeatIds: 주문서 조회에서 받은 매치 좌석 ID 목록
-			- totalPrice: 프론트에서 할인 적용 후 계산한 총 결제 금액 (수수료 2,000원 포함)
+			- totalPrice: 프론트에서 계산한 총 결제 금액 (서버에서 좌석 가격 기준으로 검증, 수수료 2,000원 포함)
 			- 결제는 목업(무조건 성공)으로 처리됩니다.
 			""",
 		security = @SecurityRequirement(name = "BearerAuth")
