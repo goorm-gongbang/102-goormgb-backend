@@ -143,6 +143,24 @@ public class OrderService {
 	 * 같은 유저 + 같은 경기의 미결제 주문(PAYMENT_PENDING)을 자동 취소한다.
 	 * 이전 주문의 order_seats를 삭제하여 동일 좌석 재주문 시 unique constraint 위반을 방지한다.
 	 */
+	/**
+	 * 차단된 유저의 결제 완료(PAID) 및 입금 대기(PAYMENT_PENDING) 주문을 정밀 확인 중(UNDER_REVIEW)으로 일괄 변경한다.
+	 *
+	 * @param userId 차단 대상 유저 ID
+	 * @return 상태가 변경된 주문 건수
+	 */
+	public int markOrdersUnderReviewByBlockedUser(Long userId) {
+		List<OrderStatus> targetStatuses = List.of(OrderStatus.PAID, OrderStatus.PAYMENT_PENDING);
+
+		int updatedCount = orderRepository.bulkUpdateStatusByUserIdAndStatuses(
+			userId, targetStatuses, OrderStatus.UNDER_REVIEW);
+
+		log.info("[OrderService] 차단 유저 주문 상태 UNDER_REVIEW 전환 - userId={}, updatedCount={}",
+			userId, updatedCount);
+
+		return updatedCount;
+	}
+
 	private void cancelExistingPendingOrders(Long userId, Long matchId) {
 		List<Long> pendingOrderIds = orderRepository.findIdsByUserIdAndMatchIdAndStatus(
 			userId, matchId, OrderStatus.PAYMENT_PENDING);
