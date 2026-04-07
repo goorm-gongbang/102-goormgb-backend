@@ -86,6 +86,7 @@ public enum ErrorCode {
 	ORDER_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 주문에 접근할 권한이 없습니다."),
 	INVALID_ORDER_STATUS(HttpStatus.BAD_REQUEST, "주문 상태가 올바르지 않습니다."),
 	ORDER_SEAT_EMPTY(HttpStatus.BAD_REQUEST, "주문 좌석 정보가 없습니다."),
+	ORDER_TOTAL_PRICE_MISMATCH(HttpStatus.BAD_REQUEST, "주문 금액이 유효하지 않습니다. 다시 시도해주세요."),
 
 	// Section
 	SECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "섹션을 찾을 수 없습니다."),
