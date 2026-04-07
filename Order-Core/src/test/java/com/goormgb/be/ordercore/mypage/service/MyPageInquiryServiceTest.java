@@ -38,8 +38,6 @@ class MyPageInquiryServiceTest {
 	private UserRepository userRepository;
 	@Mock
 	private InquiryRepository inquiryRepository;
-	@Mock
-	private InquiryFileService inquiryFileService;
 
 	private MyPageInquiryService myPageInquiryService;
 
@@ -47,8 +45,7 @@ class MyPageInquiryServiceTest {
 	void setUp() {
 		myPageInquiryService = new MyPageInquiryService(
 			userRepository,
-			inquiryRepository,
-			inquiryFileService
+			inquiryRepository
 		);
 	}
 
@@ -175,19 +172,16 @@ class MyPageInquiryServiceTest {
 		}
 
 		@Test
-		@DisplayName("첨부파일이 있으면 downloadUrl을 포함해 조회된다")
-		void getInquiryDetail_첨부있음_성공() {
+		@DisplayName("첨부파일이 있어도 downloadUrl은 null로 반환된다 (파일 업로드 비활성화)")
+		void getInquiryDetail_첨부있음_downloadUrl_null() {
 			User user = OrderFixture.createUserWithId(1L);
 			Inquiry inquiry = createInquiry(user, 12L, "dev/12/1/uuid.jpg");
 			given(inquiryRepository.findById(12L)).willReturn(java.util.Optional.of(inquiry));
-			given(inquiryFileService.generateDownloadUrl("dev/12/1/uuid.jpg"))
-				.willReturn("https://signed.example.com/file");
 
 			MyPageInquiryDetailResponse response = myPageInquiryService.getInquiryDetail(1L, 12L);
 
 			assertThat(response.inquiryId()).isEqualTo(12L);
-			assertThat(response.fileAttached()).isTrue();
-			assertThat(response.downloadUrl()).isEqualTo("https://signed.example.com/file");
+			assertThat(response.downloadUrl()).isNull();
 		}
 
 		@Test

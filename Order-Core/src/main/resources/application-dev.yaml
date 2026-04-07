@@ -70,16 +70,6 @@ app:
     from: ${MAIL_FROM:grgbdev@gmail.com}
     from-name: ${MAIL_FROM_NAME:Playball}
 
-cloud:
-  aws:
-    s3:
-      bucket: ${S3_BUCKET}
-      region: ${S3_REGION}
-      prefix: ${S3_PREFIX:dev/}
-    credentials:
-      access-key: ${AWS_ACCESS_KEY}
-      secret-key: ${AWS_SECRET_KEY}
-
 management:
   endpoints:
     web:

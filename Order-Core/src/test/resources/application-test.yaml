@@ -46,13 +46,3 @@ spring:
 
 encryption:
   db-key: test-encryption-key-1234567890
-
-cloud:
-  aws:
-    s3:
-      bucket: test-bucket
-      region: ap-northeast-2
-      prefix: test
-    credentials:
-      access-key: test-access-key
-      secret-key: test-secret-key

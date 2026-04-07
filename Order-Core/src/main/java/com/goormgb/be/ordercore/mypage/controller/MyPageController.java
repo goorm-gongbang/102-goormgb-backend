@@ -14,11 +14,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.goormgb.be.global.response.ApiResult;
-import com.goormgb.be.ordercore.mypage.dto.request.InquiryFileConfirmRequest;
-import com.goormgb.be.ordercore.mypage.dto.request.InquiryFilePresignedRequest;
 import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
 import com.goormgb.be.ordercore.mypage.dto.request.MyPageInquiryCreateRequest;
-import com.goormgb.be.ordercore.mypage.dto.response.InquiryFilePresignedResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryDetailResponse;
@@ -29,7 +26,6 @@ import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.UpcomingTicketListResponse;
-import com.goormgb.be.ordercore.mypage.service.InquiryFileService;
 import com.goormgb.be.ordercore.mypage.service.MyPageInquiryService;
 import com.goormgb.be.ordercore.mypage.service.MyPageProfileService;
 import com.goormgb.be.ordercore.mypage.service.MyPageTicketService;
@@ -53,7 +49,6 @@ public class MyPageController {
 	private final MyPageProfileService myPageProfileService;
 	private final MyPageTicketService myPageTicketService;
 	private final MyPageInquiryService myPageInquiryService;
-	private final InquiryFileService inquiryFileService;
 
 	@Operation(
 			summary = "개인정보 조회",
@@ -280,54 +275,6 @@ public class MyPageController {
 			@AuthenticationPrincipal Long userId
 	) {
 		return ApiResult.ok("조회 성공", myPageInquiryService.getInquiries(userId));
-	}
-
-	@Operation(
-			summary = "문의 첨부파일 Presigned URL 발급",
-			description = "문의 첨부파일 업로드를 위한 S3 Presigned URL을 발급합니다.",
-			security = @SecurityRequirement(name = "BearerAuth")
-	)
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "Presigned URL 발급 성공"),
-			@ApiResponse(responseCode = "400", description = "파일 형식 오류", content = @Content),
-			@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
-			@ApiResponse(responseCode = "403", description = "본인 문의 아님", content = @Content),
-			@ApiResponse(responseCode = "404", description = "문의 없음", content = @Content)
-	})
-	@PostMapping("/inquiries/{inquiryId}/presigned-url")
-	@ResponseStatus(HttpStatus.OK)
-	public ApiResult<InquiryFilePresignedResponse> getInquiryFilePresignedUrl(
-			@AuthenticationPrincipal Long userId,
-			@PathVariable Long inquiryId,
-			@Valid @RequestBody InquiryFilePresignedRequest request
-	) {
-		InquiryFilePresignedResponse response =
-				inquiryFileService.generatePresignedUrl(userId, inquiryId, request.fileName());
-		return ApiResult.ok("Presigned URL 발급 성공", response);
-	}
-
-	@Operation(
-			summary = "문의 첨부파일 확정",
-			description = "S3 업로드된 첨부파일을 검증 후 문의에 확정 저장합니다.",
-			security = @SecurityRequirement(name = "BearerAuth")
-	)
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "파일 등록 완료"),
-			@ApiResponse(responseCode = "400", description = "파일 검증 실패", content = @Content),
-			@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
-			@ApiResponse(responseCode = "403", description = "본인 문의 아님", content = @Content),
-			@ApiResponse(responseCode = "404", description = "문의 또는 파일 없음", content = @Content),
-			@ApiResponse(responseCode = "413", description = "파일 크기 제한 초과", content = @Content)
-	})
-	@PatchMapping("/inquiries/{inquiryId}/file")
-	@ResponseStatus(HttpStatus.OK)
-	public ApiResult<Void> confirmInquiryFile(
-			@AuthenticationPrincipal Long userId,
-			@PathVariable Long inquiryId,
-			@Valid @RequestBody InquiryFileConfirmRequest request
-	) {
-		inquiryFileService.confirmFile(userId, inquiryId, request.fileKey());
-		return ApiResult.ok("파일 등록 완료", null);
 	}
 
 	@Operation(
