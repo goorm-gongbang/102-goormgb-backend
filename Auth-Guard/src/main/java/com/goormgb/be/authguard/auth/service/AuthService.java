@@ -10,6 +10,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import com.goormgb.be.authguard.auth.dto.RefreshTokenInfo;
@@ -181,8 +183,13 @@ public class AuthService {
 		authMetricsService.increaseUserBlocked();
 		log.info("[User Block] userId={}, status={} -> {}", targetUserId, beforeStatus, user.getStatus());
 
-		// 차단 유저의 주문 상태 변경을 위한 이벤트 발행
-		publishUserBlockedEvent(targetUserId);
+		// 트랜잭션 커밋 성공 후 차단 유저의 주문 상태 변경 이벤트 발행
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				publishUserBlockedEvent(targetUserId);
+			}
+		});
 
 		return UserStatusChangeResponse.from(user);
 	}
