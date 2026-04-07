@@ -52,10 +52,10 @@ public class OrderService {
 	 */
 	@Transactional(readOnly = true)
 	public OrderSheetGetResponse getOrderSheet(
-		Long userId,
-		Long matchId,
-		List<Long> matchSeatIds,
-		OrderDraftEntryPoint entryPoint
+			Long userId,
+			Long matchId,
+			List<Long> matchSeatIds,
+			OrderDraftEntryPoint entryPoint
 	) {
 		// 주문서 진입 경로 집계
 		orderMetricsService.increaseOrderDraftEnter(entryPoint);
@@ -70,13 +70,13 @@ public class OrderService {
 
 		Instant now = Instant.now();
 		List<OrderSheetGetResponse.SeatInfo> seatInfos = holdInfos.stream()
-			.map(hold -> {
-				Preconditions.validate(!hold.isExpired(now), ErrorCode.SEAT_HOLD_EXPIRED);
-				Integer adultPrice = seatInfoQueryService.findPrice(hold.sectionId(), dayType, "ADULT");
-				Preconditions.validate(adultPrice != null, ErrorCode.PRICE_POLICY_NOT_FOUND);
-				return OrderSheetGetResponse.SeatInfo.of(hold, adultPrice);
-			})
-			.toList();
+				.map(hold -> {
+					Preconditions.validate(!hold.isExpired(now), ErrorCode.SEAT_HOLD_EXPIRED);
+					Integer adultPrice = seatInfoQueryService.findPrice(hold.sectionId(), dayType, "ADULT");
+					Preconditions.validate(adultPrice != null, ErrorCode.PRICE_POLICY_NOT_FOUND);
+					return OrderSheetGetResponse.SeatInfo.of(hold, adultPrice);
+				})
+				.toList();
 
 		return OrderSheetGetResponse.of(match, seatInfos);
 	}
@@ -103,38 +103,38 @@ public class OrderService {
 		for (SeatHoldInfo hold : holdInfos) {
 			Preconditions.validate(!hold.isExpired(now), ErrorCode.SEAT_HOLD_EXPIRED);
 			Preconditions.validate(!seatInfoQueryService.isAlreadyOrdered(hold.matchSeatId()),
-				ErrorCode.INVALID_ORDER_STATUS);
+					ErrorCode.INVALID_ORDER_STATUS);
 
 			Integer adultPrice = seatInfoQueryService.findPrice(hold.sectionId(), dayType, "ADULT");
 			Preconditions.validate(adultPrice != null, ErrorCode.PRICE_POLICY_NOT_FOUND);
 
 			orderSeats.add(OrderSeat.builder()
-				.matchSeatId(hold.matchSeatId())
-				.blockId(hold.blockId())
-				.sectionId(hold.sectionId())
-				.rowNo(hold.rowNo())
-				.seatNo(hold.seatNo())
-				.price(adultPrice)
-				.ticketType(TicketType.ADULT)
-				.build());
+					.matchSeatId(hold.matchSeatId())
+					.blockId(hold.blockId())
+					.sectionId(hold.sectionId())
+					.rowNo(hold.rowNo())
+					.seatNo(hold.seatNo())
+					.price(adultPrice)
+					.ticketType(TicketType.ADULT)
+					.build());
 		}
 
 		Order order = Order.builder()
-			.user(user)
-			.match(match)
-			.totalAmount(request.totalPrice())
-			.ordererName(request.ordererName())
-			.ordererEmail(request.ordererEmail())
-			.ordererPhone(request.ordererPhone())
-			.ordererBirthDate(request.ordererBirthDate())
-			.build();
+				.user(user)
+				.match(match)
+				.totalAmount(request.totalPrice())
+				.ordererName(request.ordererName())
+				.ordererEmail(request.ordererEmail())
+				.ordererPhone(request.ordererPhone())
+				.ordererBirthDate(request.ordererBirthDate())
+				.build();
 
 		orderRepository.save(order);
 		orderSeats.forEach(seat -> seat.assignOrder(order));
 		orderSeatRepository.saveAll(orderSeats);
 
 		log.info("[OrderService] 주문 생성 완료 - orderId={}, userId={}, seatCount={}, totalAmount={}",
-			order.getId(), userId, orderSeats.size(), request.totalPrice());
+				order.getId(), userId, orderSeats.size(), request.totalPrice());
 
 		return OrderCreateResponse.of(order, orderSeats.size());
 	}
@@ -153,17 +153,17 @@ public class OrderService {
 		List<OrderStatus> targetStatuses = List.of(OrderStatus.PAID, OrderStatus.PAYMENT_PENDING);
 
 		int updatedCount = orderRepository.bulkUpdateStatusByUserIdAndStatuses(
-			userId, targetStatuses, OrderStatus.UNDER_REVIEW);
+				userId, targetStatuses, OrderStatus.UNDER_REVIEW);
 
 		log.info("[OrderService] 차단 유저 주문 상태 UNDER_REVIEW 전환 - userId={}, updatedCount={}",
-			userId, updatedCount);
+				userId, updatedCount);
 
 		return updatedCount;
 	}
 
 	private void cancelExistingPendingOrders(Long userId, Long matchId) {
 		List<Long> pendingOrderIds = orderRepository.findIdsByUserIdAndMatchIdAndStatus(
-			userId, matchId, OrderStatus.PAYMENT_PENDING);
+				userId, matchId, OrderStatus.PAYMENT_PENDING);
 
 		if (pendingOrderIds.isEmpty()) {
 			return;
@@ -171,15 +171,15 @@ public class OrderService {
 
 		int deletedSeats = orderSeatRepository.deleteByOrderIdIn(pendingOrderIds);
 		int cancelledCount = orderRepository.bulkUpdateStatus(
-			userId, matchId, OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED);
+				userId, matchId, OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED);
 
 		log.info("[OrderService] 미결제 주문 {}건 자동 취소 (좌석 {}건 삭제) - userId={}, matchId={}",
-			cancelledCount, deletedSeats, userId, matchId);
+				cancelledCount, deletedSeats, userId, matchId);
 	}
 
 	private String determineDayType(Instant matchAt) {
 		DayOfWeek dow = matchAt.atZone(KST).getDayOfWeek();
 		return (dow == DayOfWeek.FRIDAY || dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY)
-			? "WEEKEND" : "WEEKDAY";
+				? "WEEKEND" : "WEEKDAY";
 	}
 }
