@@ -43,48 +43,11 @@ public class JwtTokenProvider {
 	}
 
 	public String createAccessToken(Long userId, String authority, String sid) {
-		Instant now = Instant.now();
-		Instant expiration = now.plus(jwtProperties.getAccessToken().getExpirationMinutes(), ChronoUnit.MINUTES);
-
-		return Jwts.builder()
-				.header()
-				.type("JWT")
-				.and()
-				.issuer(jwtProperties.getIssuer())
-				.subject(String.valueOf(userId))
-				.audience()
-				.add(jwtProperties.getAccessToken().getAudience())
-				.and()
-				.issuedAt(Date.from(now))
-				.expiration(Date.from(expiration))
-				.id(UUID.randomUUID().toString())
-				.claim(CLAIM_TOKEN_TYPE, TokenType.ACCESS.getValue())
-				.claim(CLAIM_AUTH, authority)
-				.claim(CLAIM_SID, sid)
-				.signWith(privateKey, Jwts.SIG.RS256)
-				.compact();
+		return createAccessToken(userId, authority, sid, jwtProperties.getAccessToken().getExpirationMinutes());
 	}
 
 	public String createRefreshToken(Long userId, String sid) {
-		Instant now = Instant.now();
-		Instant expiration = now.plus(jwtProperties.getRefreshToken().getExpirationHours(), ChronoUnit.HOURS);
-
-		return Jwts.builder()
-				.header()
-				.type("JWT")
-				.and()
-				.issuer(jwtProperties.getIssuer())
-				.subject(String.valueOf(userId))
-				.audience()
-				.add(jwtProperties.getRefreshToken().getAudience())
-				.and()
-				.issuedAt(Date.from(now))
-				.expiration(Date.from(expiration))
-				.id(UUID.randomUUID().toString())
-				.claim(CLAIM_TOKEN_TYPE, TokenType.REFRESH.getValue())
-				.claim(CLAIM_SID, sid)
-				.signWith(privateKey, Jwts.SIG.RS256)
-				.compact();
+		return createRefreshToken(userId, sid, jwtProperties.getRefreshToken().getExpirationHours() * 60);
 	}
 
 	/**

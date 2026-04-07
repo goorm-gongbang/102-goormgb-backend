@@ -46,15 +46,7 @@ public class RefreshTokenRepository {
 	 * @param tokenInfo 저장할 토큰 정보 (jti 필수)
 	 */
 	public void save(RefreshTokenInfo tokenInfo) {
-		String key = generateKey(tokenInfo.getJti());
-		try {
-			String json = objectMapper.writeValueAsString(tokenInfo);
-			redisTemplate.opsForValue().set(key, json, Duration.ofHours(ttlHours));
-			log.debug("Refresh token saved - jti: {}, userId: {}", tokenInfo.getJti(), tokenInfo.getUserId());
-		} catch (JsonProcessingException e) {
-			log.error("Failed to serialize RefreshTokenInfo - jti: {}", tokenInfo.getJti(), e);
-			throw new RuntimeException("Failed to save refresh token", e);
-		}
+		save(tokenInfo, Duration.ofHours(ttlHours));
 	}
 
 	/**
