@@ -22,6 +22,7 @@ import com.goormgb.be.ordercore.mypage.dto.response.InquiryFilePresignedResponse
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryDetailResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
@@ -261,6 +262,24 @@ public class MyPageController {
 			@Valid @RequestBody MyPageInquiryCreateRequest request
 	) {
 		return ApiResult.created("문의가 등록되었습니다.", myPageInquiryService.createInquiry(userId, request));
+	}
+
+	@Operation(
+			summary = "1:1 문의 목록 조회",
+			description = "사용자가 작성한 1:1 문의 목록을 최신순으로 조회합니다.",
+			security = @SecurityRequirement(name = "BearerAuth")
+	)
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "조회 성공"),
+			@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+			@ApiResponse(responseCode = "404", description = "사용자 없음", content = @Content)
+	})
+	@GetMapping("/inquiries")
+	@ResponseStatus(HttpStatus.OK)
+	public ApiResult<MyPageInquiryListResponse> getInquiries(
+			@AuthenticationPrincipal Long userId
+	) {
+		return ApiResult.ok("조회 성공", myPageInquiryService.getInquiries(userId));
 	}
 
 	@Operation(

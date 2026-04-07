@@ -1,6 +1,7 @@
 package com.goormgb.be.ordercore.mypage.service;
 
 import java.util.Locale;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import com.goormgb.be.ordercore.inquiry.repository.InquiryRepository;
 import com.goormgb.be.ordercore.mypage.dto.request.MyPageInquiryCreateRequest;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryDetailResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryListResponse;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.repository.UserRepository;
 
@@ -42,6 +44,12 @@ public class MyPageInquiryService {
 
 		Inquiry saved = inquiryRepository.save(inquiry);
 		return MyPageInquiryCreateResponse.of(saved.getId());
+	}
+
+	public MyPageInquiryListResponse getInquiries(Long userId) {
+		userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
+		List<Inquiry> inquiries = inquiryRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+		return MyPageInquiryListResponse.of(inquiries);
 	}
 
 	public MyPageInquiryDetailResponse getInquiryDetail(Long userId, Long inquiryId) {
