@@ -510,6 +510,17 @@ class MyPageControllerTest extends WebMvcTestSupport {
 				.andExpect(jsonPath("$.data.inquiries").isArray())
 				.andExpect(jsonPath("$.data.inquiries.length()").value(0));
 		}
+
+		@Test
+		@DisplayName("사용자가 없으면 404를 반환한다")
+		void getInquiries_사용자없음_404() throws Exception {
+			given(myPageInquiryService.getInquiries(1L))
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+
+			mockMvc.perform(get("/mypage/inquiries"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+		}
 	}
 
 	@Nested

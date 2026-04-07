@@ -271,7 +271,8 @@ public class MyPageController {
 	)
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "조회 성공"),
-			@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content)
+			@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
+			@ApiResponse(responseCode = "404", description = "사용자 없음", content = @Content)
 	})
 	@GetMapping("/inquiries")
 	@ResponseStatus(HttpStatus.OK)

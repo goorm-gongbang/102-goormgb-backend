@@ -99,6 +99,7 @@ class MyPageInquiryServiceTest {
 		@DisplayName("문의 목록을 최신순으로 매핑해서 반환한다")
 		void getInquiries_성공() {
 			User user = OrderFixture.createUserWithId(1L);
+			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			Inquiry first = createInquiry(user, 20L, "가장 최근 문의");
 			first.updateStatus(InquiryStatus.ANSWERED);
 			ReflectionTestUtils.setField(first, "createdAt", Instant.parse("2026-04-07T01:00:00Z"));
@@ -120,12 +121,26 @@ class MyPageInquiryServiceTest {
 		@Test
 		@DisplayName("문의가 없으면 빈 목록을 반환한다")
 		void getInquiries_빈목록() {
+			User user = OrderFixture.createUserWithId(1L);
+			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(inquiryRepository.findAllByUserIdOrderByCreatedAtDesc(1L))
 				.willReturn(List.of());
 
 			MyPageInquiryListResponse response = myPageInquiryService.getInquiries(1L);
 
 			assertThat(response.inquiries()).isEmpty();
+		}
+
+		@Test
+		@DisplayName("사용자가 없으면 예외가 발생한다")
+		void getInquiries_사용자없음_예외() {
+			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND))
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+
+			assertThatThrownBy(() -> myPageInquiryService.getInquiries(1L))
+				.isInstanceOf(CustomException.class)
+				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
+					.isEqualTo(ErrorCode.USER_NOT_FOUND));
 		}
 
 		private Inquiry createInquiry(User user, Long inquiryId, String title) {

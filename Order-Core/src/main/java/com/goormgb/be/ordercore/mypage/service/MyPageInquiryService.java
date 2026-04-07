@@ -47,6 +47,7 @@ public class MyPageInquiryService {
 	}
 
 	public MyPageInquiryListResponse getInquiries(Long userId) {
+		userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		List<Inquiry> inquiries = inquiryRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
 		return MyPageInquiryListResponse.of(inquiries);
 	}
