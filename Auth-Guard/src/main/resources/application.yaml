@@ -48,6 +48,9 @@ internal:
 
 encryption:
   db-key: ${DB_ENCRYPTION_KEY}
+  old-db-key: ${OLD_DB_ENCRYPTION_KEY}
+  migration:
+    enabled: true
 
 kakao:
   client-id: ${KAKAO_CLIENT_ID}

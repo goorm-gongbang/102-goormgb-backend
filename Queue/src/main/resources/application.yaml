@@ -58,6 +58,9 @@ queue:
 
 encryption:
   db-key: ${DB_ENCRYPTION_KEY}
+  old-db-key: ${OLD_DB_ENCRYPTION_KEY}
+  migration:
+    enabled: true
 
 management:
   endpoints:
