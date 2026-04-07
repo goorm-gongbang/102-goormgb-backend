@@ -1,4 +1,3 @@
-# Order-Core Application Configuration
 server:
   port: 8083
   servlet:
@@ -68,12 +67,12 @@ spring:
 
 app:
   mail:
-    from: ${MAIL_FROM:grgbdev@gmail.com}
-    from-name: ${MAIL_FROM_NAME:Playball}
+    from: ${MAIL_FROM}
+    from-name: ${MAIL_FROM_NAME}
 
 encryption:
   db-key: ${DB_ENCRYPTION_KEY}
-  old-db-key: ${OLD_DB_ENCRYPTION_KEY}
+  old-db-key: SD3L9QoOsW085NoC04MlOcfcBRM3mLG8KyatdQeez/M=
   migration:
     enabled: true
 
