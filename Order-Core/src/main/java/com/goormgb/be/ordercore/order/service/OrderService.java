@@ -39,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 public class OrderService {
 
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+	private static final int BOOKING_FEE = 2000;
 
 	private final MatchRepository matchRepository;
 	private final UserRepository userRepository;
@@ -100,6 +101,7 @@ public class OrderService {
 
 		// 유효성 검증 + 좌석별 성인 기본가 조회 (order_seats 저장용)
 		List<OrderSeat> orderSeats = new ArrayList<>();
+		int totalSeatPrice = 0;
 		for (SeatHoldInfo hold : holdInfos) {
 			Preconditions.validate(!hold.isExpired(now), ErrorCode.SEAT_HOLD_EXPIRED);
 			Preconditions.validate(!seatInfoQueryService.isAlreadyOrdered(hold.matchSeatId()),
@@ -107,6 +109,7 @@ public class OrderService {
 
 			Integer adultPrice = seatInfoQueryService.findPrice(hold.sectionId(), dayType, "ADULT");
 			Preconditions.validate(adultPrice != null, ErrorCode.PRICE_POLICY_NOT_FOUND);
+			totalSeatPrice += adultPrice;
 
 			orderSeats.add(OrderSeat.builder()
 				.matchSeatId(hold.matchSeatId())
@@ -118,11 +121,13 @@ public class OrderService {
 				.ticketType(TicketType.ADULT)
 				.build());
 		}
+		int serverCalculatedTotal = totalSeatPrice + BOOKING_FEE;
+		Preconditions.validate(serverCalculatedTotal == request.totalPrice(), ErrorCode.ORDER_TOTAL_PRICE_MISMATCH);
 
 		Order order = Order.builder()
 			.user(user)
 			.match(match)
-			.totalAmount(request.totalPrice())
+			.totalAmount(serverCalculatedTotal)
 			.ordererName(request.ordererName())
 			.ordererEmail(request.ordererEmail())
 			.ordererPhone(request.ordererPhone())
