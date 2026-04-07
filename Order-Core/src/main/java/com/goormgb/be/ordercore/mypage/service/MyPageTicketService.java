@@ -128,7 +128,7 @@ public class MyPageTicketService {
 	 * 경기 예정 티켓 목록을 조회한다. (오늘 이후 경기 + 유효 상태만)
 	 */
 	public UpcomingTicketListResponse getUpcomingTickets(Long userId, int page, int size) {
-		Preconditions.validate(size <= MAX_PAGE_SIZE, ErrorCode.INVALID_PAGE_SIZE);
+		Preconditions.validate(page >= 0 && size > 0 && size <= MAX_PAGE_SIZE, ErrorCode.INVALID_PAGE_SIZE);
 
 		Instant now = Instant.now(clock);
 		LocalDate today = LocalDate.now(KST);
@@ -168,7 +168,7 @@ public class MyPageTicketService {
 										new UpcomingTicketListResponse.ClubInfo(row.awayClubId(), row.awayClubName()),
 										new UpcomingTicketListResponse.StadiumInfo(row.stadiumId(), row.stadiumName())),
 								seatMap.getOrDefault(row.orderId(), List.of()),
-								UpcomingTicketListResponse.TicketActions.of(row.status(), row.matchAt()));
+								UpcomingTicketListResponse.TicketActions.of(row.status(), row.matchAt(), now));
 					})
 					.toList();
 		}

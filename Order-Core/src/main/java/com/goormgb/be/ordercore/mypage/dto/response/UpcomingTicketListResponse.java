@@ -121,8 +121,8 @@ public record UpcomingTicketListResponse(
 			@Schema(description = "취소하기 버튼 표시 여부 (결제 완료 상태일 때 true)", example = "true")
 			boolean canCancel
 	) {
-		public static TicketActions of(OrderStatus status, Instant matchAt) {
-			boolean isUpcoming = matchAt.isAfter(Instant.now());
+		public static TicketActions of(OrderStatus status, Instant matchAt, Instant now) {
+			boolean isUpcoming = matchAt.isAfter(now);
 			return new TicketActions(
 					status == OrderStatus.PAYMENT_PENDING && isUpcoming,
 					status == OrderStatus.PAID && isUpcoming
