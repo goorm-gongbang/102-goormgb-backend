@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
+import java.time.Instant;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,10 +21,12 @@ import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.order.OrderFixture;
 import com.goormgb.be.ordercore.inquiry.entity.Inquiry;
 import com.goormgb.be.ordercore.inquiry.enums.InquiryCategory;
+import com.goormgb.be.ordercore.inquiry.enums.InquiryStatus;
 import com.goormgb.be.ordercore.inquiry.repository.InquiryRepository;
 import com.goormgb.be.ordercore.mypage.dto.request.MyPageInquiryCreateRequest;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryDetailResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryListResponse;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.repository.UserRepository;
 
@@ -83,6 +88,56 @@ class MyPageInquiryServiceTest {
 				.isInstanceOf(CustomException.class)
 				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
 					.isEqualTo(ErrorCode.INVALID_INQUIRY_CATEGORY));
+		}
+	}
+
+	@Nested
+	@DisplayName("getInquiries")
+	class GetInquiries {
+
+		@Test
+		@DisplayName("문의 목록을 최신순으로 매핑해서 반환한다")
+		void getInquiries_성공() {
+			User user = OrderFixture.createUserWithId(1L);
+			Inquiry first = createInquiry(user, 20L, "가장 최근 문의");
+			first.updateStatus(InquiryStatus.ANSWERED);
+			ReflectionTestUtils.setField(first, "createdAt", Instant.parse("2026-04-07T01:00:00Z"));
+
+			Inquiry second = createInquiry(user, 10L, "이전 문의");
+			ReflectionTestUtils.setField(second, "createdAt", Instant.parse("2026-04-06T01:00:00Z"));
+
+			given(inquiryRepository.findAllByUserIdOrderByCreatedAtDesc(1L))
+				.willReturn(List.of(first, second));
+
+			MyPageInquiryListResponse response = myPageInquiryService.getInquiries(1L);
+
+			assertThat(response.inquiries()).hasSize(2);
+			assertThat(response.inquiries().get(0).inquiryId()).isEqualTo(20L);
+			assertThat(response.inquiries().get(0).status()).isEqualTo("ANSWERED");
+			assertThat(response.inquiries().get(1).inquiryId()).isEqualTo(10L);
+		}
+
+		@Test
+		@DisplayName("문의가 없으면 빈 목록을 반환한다")
+		void getInquiries_빈목록() {
+			given(inquiryRepository.findAllByUserIdOrderByCreatedAtDesc(1L))
+				.willReturn(List.of());
+
+			MyPageInquiryListResponse response = myPageInquiryService.getInquiries(1L);
+
+			assertThat(response.inquiries()).isEmpty();
+		}
+
+		private Inquiry createInquiry(User user, Long inquiryId, String title) {
+			Inquiry inquiry = Inquiry.create(
+				user,
+				InquiryCategory.BOOKING,
+				title,
+				"내용",
+				"010-1234-5678"
+			);
+			ReflectionTestUtils.setField(inquiry, "id", inquiryId);
+			return inquiry;
 		}
 	}
 

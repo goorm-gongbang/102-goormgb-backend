@@ -27,6 +27,7 @@ import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.InquiryFilePresignedResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryDetailResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
@@ -458,6 +459,56 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			mockMvc.perform(post("/mypage/tickets/101/cancel"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message").value("취소 가능한 기간이 아닙니다."));
+		}
+	}
+
+	@Nested
+	@DisplayName("GET /mypage/inquiries — 1:1 문의 목록 조회")
+	class GetInquiries {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 문의 목록을 반환한다")
+		void getInquiries_성공() throws Exception {
+			given(myPageInquiryService.getInquiries(1L))
+				.willReturn(new MyPageInquiryListResponse(
+					List.of(
+						new MyPageInquiryListResponse.InquiryItem(
+							11L,
+							"BOOKING",
+							"문의 제목",
+							"REGISTERED",
+							Instant.parse("2026-03-31T08:00:00Z")
+						)
+					)
+				));
+
+			mockMvc.perform(get("/mypage/inquiries"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("조회 성공"))
+				.andExpect(jsonPath("$.data.inquiries").isArray())
+				.andExpect(jsonPath("$.data.inquiries.length()").value(1))
+				.andExpect(jsonPath("$.data.inquiries[0].inquiryId").value(11))
+				.andExpect(jsonPath("$.data.inquiries[0].category").value("BOOKING"))
+				.andExpect(jsonPath("$.data.inquiries[0].title").value("문의 제목"))
+				.andExpect(jsonPath("$.data.inquiries[0].status").value("REGISTERED"));
+		}
+
+		@Test
+		@DisplayName("문의가 없으면 빈 배열을 반환한다")
+		void getInquiries_빈목록_반환() throws Exception {
+			given(myPageInquiryService.getInquiries(1L))
+				.willReturn(new MyPageInquiryListResponse(List.of()));
+
+			mockMvc.perform(get("/mypage/inquiries"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.inquiries").isArray())
+				.andExpect(jsonPath("$.data.inquiries.length()").value(0));
 		}
 	}
 
