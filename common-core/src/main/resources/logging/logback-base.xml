@@ -76,8 +76,8 @@
         <logger name="org.springframework.web" level="DEBUG"/>
     </springProfile>
 
-    <springProfile name="staging">
-        <appender name="FILE_STAGING_ORIGIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <springProfile name="staging | prod">
+        <appender name="FILE_RUNTIME_ORIGIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
             <file>/var/log/backend/application.log</file>
             <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
                 <fileNamePattern>/var/log/backend/app-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
@@ -88,28 +88,15 @@
             <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
         </appender>
 
-        <appender name="ASYNC_FILE_STAGING" class="ch.qos.logback.classic.AsyncAppender">
-            <appender-ref ref="FILE_STAGING_ORIGIN"/>
+        <appender name="ASYNC_FILE_RUNTIME" class="ch.qos.logback.classic.AsyncAppender">
+            <appender-ref ref="FILE_RUNTIME_ORIGIN"/>
             <queueSize>1024</queueSize>
             <discardingThreshold>0</discardingThreshold>
         </appender>
 
         <root level="INFO">
             <appender-ref ref="STDOUT_JSON"/>
-            <appender-ref ref="ASYNC_FILE_STAGING"/>
-        </root>
-        <logger name="com.goormgb.be" level="INFO"/>
-        <logger name="org.springframework" level="WARN"/>
-        <logger name="org.hibernate" level="WARN"/>
-        <logger name="io.opentelemetry" level="WARN"/>
-        <logger name="org.springframework.security" level="INFO"/>
-    </springProfile>
-
-
-    <!--    임시 prod 추가-->
-    <springProfile name="prod">
-        <root level="INFO">
-            <appender-ref ref="STDOUT_JSON"/>
+            <appender-ref ref="ASYNC_FILE_RUNTIME"/>
         </root>
         <logger name="com.goormgb.be" level="INFO"/>
         <logger name="org.springframework" level="WARN"/>
