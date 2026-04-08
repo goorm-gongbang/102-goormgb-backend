@@ -51,19 +51,19 @@ public class MatchStatusScheduler {
 	}
 
 	/**
-	 * 매 정시: 경기 시작 시간이 지난 ON_SALE / SOLD_OUT 경기를 CLOSED(판매종료)로 전환한다.
+	 * 매 정시: 경기 시작 시간이 지난 ON_SALE / SOLD_OUT 경기를 ENDED(예매 마감)로 전환한다.
 	 * 경기 시작 이후에는 티켓 판매가 불가능해야 한다.
 	 */
 	@Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
 	@Transactional
 	public void closeSales() {
 		Instant now = Instant.now();
-		int count = matchRepository.bulkUpdateSaleClosed(
-			now, SaleStatus.CLOSED, SaleStatus.ON_SALE, SaleStatus.SOLD_OUT
+		int count = matchRepository.bulkUpdateSaleEnded(
+			now, SaleStatus.ENDED, SaleStatus.ON_SALE, SaleStatus.SOLD_OUT
 		);
 
 		if (count > 0) {
-			log.info("[MatchStatusScheduler] ON_SALE/SOLD_OUT → CLOSED 전환 완료: {}건", count);
+			log.info("[MatchStatusScheduler] ON_SALE/SOLD_OUT → ENDED 전환 완료: {}건", count);
 		}
 	}
 

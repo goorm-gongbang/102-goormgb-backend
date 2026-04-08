@@ -70,7 +70,7 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 	);
 
 	/**
-	 * 경기 시작 시간이 지난 ON_SALE / SOLD_OUT 경기를 CLOSED(판매종료)로 일괄 전환한다.
+	 * 경기 시작 시간이 지난 ON_SALE / SOLD_OUT 경기를 ENDED(예매 마감)로 일괄 전환한다.
 	 */
 	@Modifying
 	@Query("""
@@ -79,7 +79,7 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 		WHERE m.matchAt <= :now
 		  AND m.saleStatus IN (:onSale, :soldOut)
 		""")
-	int bulkUpdateSaleClosed(
+	int bulkUpdateSaleEnded(
 		@Param("now") Instant now,
 		@Param("newStatus") SaleStatus newStatus,
 		@Param("onSale") SaleStatus onSale,
