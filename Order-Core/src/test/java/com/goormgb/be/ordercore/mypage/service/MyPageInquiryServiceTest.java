@@ -172,7 +172,7 @@ class MyPageInquiryServiceTest {
 		}
 
 		@Test
-		@DisplayName("첨부파일이 있어도 downloadUrl은 null로 반환된다 (파일 업로드 비활성화)")
+		@DisplayName("첨부파일이 있어도 fileAttached=false, downloadUrl=null로 반환된다 (파일 업로드 비활성화)")
 		void getInquiryDetail_첨부있음_downloadUrl_null() {
 			User user = OrderFixture.createUserWithId(1L);
 			Inquiry inquiry = createInquiry(user, 12L, "dev/12/1/uuid.jpg");
@@ -181,6 +181,7 @@ class MyPageInquiryServiceTest {
 			MyPageInquiryDetailResponse response = myPageInquiryService.getInquiryDetail(1L, 12L);
 
 			assertThat(response.inquiryId()).isEqualTo(12L);
+			assertThat(response.fileAttached()).isFalse();
 			assertThat(response.downloadUrl()).isNull();
 		}
 

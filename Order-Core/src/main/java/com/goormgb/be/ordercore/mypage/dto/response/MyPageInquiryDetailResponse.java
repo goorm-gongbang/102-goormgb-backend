@@ -26,7 +26,7 @@ public record MyPageInquiryDetailResponse(
 			inquiry.getContent(),
 			inquiry.getPhoneNumber(),
 			inquiry.getStatus().name(),
-			inquiry.getFileKey() != null,
+			inquiry.getFileKey() != null && downloadUrl != null,
 			downloadUrl,
 			inquiry.getCreatedAt()
 		);
