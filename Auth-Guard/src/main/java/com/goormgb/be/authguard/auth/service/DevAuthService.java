@@ -85,7 +85,7 @@ public class DevAuthService {
 		String jti = jwtTokenProvider.getJtiFromToken(refreshToken);
 
 		Instant now = Instant.now();
-		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
+		int expirationHours = jwtProperties.getRefreshToken().getExpirationHours();
 
 		RefreshTokenInfo tokenInfo = RefreshTokenInfo.builder()
 				.userId(user.getId())
@@ -93,7 +93,7 @@ public class DevAuthService {
 				.jti(jti)
 				.sid(sid)
 				.issuedAt(now)
-				.expiresAt(now.plus(Duration.ofDays(expirationDays)))
+				.expiresAt(now.plus(Duration.ofHours(expirationHours)))
 				.userAgent(request.getHeader("User-Agent"))
 				.ipAddress(getClientIp(request))
 				.build();
