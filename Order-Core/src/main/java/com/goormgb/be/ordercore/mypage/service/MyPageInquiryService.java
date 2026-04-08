@@ -28,7 +28,6 @@ public class MyPageInquiryService {
 
 	private final UserRepository userRepository;
 	private final InquiryRepository inquiryRepository;
-	private final InquiryFileService inquiryFileService;
 
 	@Transactional
 	public MyPageInquiryCreateResponse createInquiry(Long userId, MyPageInquiryCreateRequest request) {
@@ -57,11 +56,7 @@ public class MyPageInquiryService {
 			.orElseThrow(() -> new CustomException(ErrorCode.INQUIRY_NOT_FOUND));
 		Preconditions.validate(inquiry.getUser().getId().equals(userId), ErrorCode.INQUIRY_ACCESS_DENIED);
 
-		String downloadUrl = null;
-		if (inquiry.getFileKey() != null && !inquiry.getFileKey().isBlank()) {
-			downloadUrl = inquiryFileService.generateDownloadUrl(inquiry.getFileKey());
-		}
-		return MyPageInquiryDetailResponse.of(inquiry, downloadUrl);
+		return MyPageInquiryDetailResponse.of(inquiry, null);
 	}
 
 	private InquiryCategory parseCategory(String rawCategory) {
