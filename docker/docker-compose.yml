@@ -117,6 +117,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: local-redis
       REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_PRODUCER_KEY_SERIALIZER: ${KAFKA_PRODUCER_KEY_SERIALIZER}
+      KAFKA_PRODUCER_VALUE_SERIALIZER: ${KAFKA_PRODUCER_VALUE_SERIALIZER}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       JWT_ISSUER: ${JWT_ISSUER}
@@ -133,6 +137,8 @@ services:
       local-postgres:
         condition: service_healthy
       local-redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     networks:
       - goormgb-network
