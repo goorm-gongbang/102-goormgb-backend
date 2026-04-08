@@ -27,19 +27,6 @@ public class AuthGuardSecurityConfig {
 	private final InternalApiKeyProperties internalApiKeyProperties;
 	private final ObjectMapper objectMapper;
 
-	/**
-	 * Actuator 엔드포인트용 SecurityFilterChain (management 포트 분리 시 필요)
-	 * 메인 SecurityFilterChain의 커스텀 필터들이 actuator 경로에 적용되지 않도록 분리
-	 */
-	@Bean
-	@Order(0)
-	public SecurityFilterChain actuatorSecurityFilterChain(HttpSecurity http) throws Exception {
-		http.securityMatcher("/actuator/**")
-			.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-			.csrf(AbstractHttpConfigurer::disable);
-		return http.build();
-	}
-
 	@Bean
 	@Order(1)
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -47,11 +34,12 @@ public class AuthGuardSecurityConfig {
 				.csrf(AbstractHttpConfigurer::disable)
 				.logout(AbstractHttpConfigurer::disable)
 				.headers(headers -> headers
-					.contentTypeOptions(ctOptions -> {})
-					.frameOptions(frame -> frame.deny())
-					.httpStrictTransportSecurity(hsts -> hsts
-						.includeSubDomains(true)
-						.maxAgeInSeconds(31536000))
+						.contentTypeOptions(ctOptions -> {
+						})
+						.frameOptions(frame -> frame.deny())
+						.httpStrictTransportSecurity(hsts -> hsts
+								.includeSubDomains(true)
+								.maxAgeInSeconds(31536000))
 				)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
