@@ -103,3 +103,4 @@ logging:
   level:
     root: INFO
     com.goormgb.be: DEBUG
+    org.springframework.web: DEBUG
