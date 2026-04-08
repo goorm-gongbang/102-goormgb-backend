@@ -47,7 +47,7 @@ booking:
 admission:
   jwt:
     public-key: ${ADMISSION_PUBLIC_KEY}
-    issuer: ${ADMISSION_JWT_ISSUER}
+    issuer: ${ADMISSION_TOKEN_ISSUER}
 
 encryption:
   db-key: ${DB_ENCRYPTION_KEY}
