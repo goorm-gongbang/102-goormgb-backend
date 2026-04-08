@@ -138,6 +138,8 @@ services:
         condition: service_healthy
       local-redis:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - goormgb-network
 
