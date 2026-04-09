@@ -14,7 +14,7 @@ services:
     networks:
       - goormgb-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME:-playball} -d goormgb" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d goormgb" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -227,11 +227,7 @@ services:
       KAFKA_CONSUMER_VALUE_DESERIALIZER: ${KAFKA_CONSUMER_VALUE_DESERIALIZER}
       KAFKA_CONSUMER_AUTO_OFFSET_RESET: ${KAFKA_CONSUMER_AUTO_OFFSET_RESET}
       KAFKA_CONSUMER_TRUSTED_PACKAGES: ${KAFKA_CONSUMER_TRUSTED_PACKAGES}
-      S3_BUCKET: ${S3_BUCKET}
-      S3_REGION: ${S3_REGION}
-      S3_PREFIX: ${S3_PREFIX}
-      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
-      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
+
       MAIL_HOST: ${MAIL_HOST}
       MAIL_PORT: ${MAIL_PORT}
       MAIL_USERNAME: ${MAIL_USERNAME}
