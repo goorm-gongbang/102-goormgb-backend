@@ -27,31 +27,36 @@ public class OrderCancelledEventConsumer {
 	public void handleOrderCancelled(OrderCancelledEvent event) {
 		List<Long> requestedIds = event.getMatchSeatIds();
 		List<MatchSeat> seats = matchSeatRepository.findAllById(requestedIds);
+		int missingSeatCount = requestedIds.size() - seats.size();
+		int updatedCount = 0;
+		int alreadyTargetStateCount = 0;
+		int unexpectedStateCount = 0;
 
-		if (seats.size() != requestedIds.size()) {
-			log.warn("[Kafka] 좌석 조회 수 불일치: orderId={}, 요청={}건, 조회={}건",
-				event.getOrderId(), requestedIds.size(), seats.size());
-		}
-
-		int restoredCount = 0;
 		for (MatchSeat seat : seats) {
 			if (seat.getSaleStatus() == MatchSeatSaleStatus.SOLD) {
 				seat.markAvailable();
-				restoredCount++;
+				updatedCount++;
+					log.debug("[Kafka] 주문취소 좌석복원 - orderId={}, matchSeatId={}, currentStatus={}, action=update, targetStatus=AVAILABLE",
+						event.getOrderId(), seat.getId(), MatchSeatSaleStatus.SOLD);
 			} else if (seat.getSaleStatus() == MatchSeatSaleStatus.AVAILABLE) {
-				log.debug("[Kafka] 이미 AVAILABLE 상태, 스킵: matchSeatId={}", seat.getId());
+				alreadyTargetStateCount++;
+					log.debug("[Kafka] 주문취소 처리스킵 - orderId={}, matchSeatId={}, currentStatus={}, action=skip, reason=already_available",
+						event.getOrderId(), seat.getId(), seat.getSaleStatus());
 			} else {
-				log.warn("[Kafka] 예상하지 못한 좌석 상태: matchSeatId={}, status={}, orderId={}",
-					seat.getId(), seat.getSaleStatus(), event.getOrderId());
+				unexpectedStateCount++;
+					log.warn("[Kafka] 주문취소 비정상상태 - orderId={}, matchSeatId={}, currentStatus={}, action=skip, reason=unexpected_state",
+						event.getOrderId(), seat.getId(), seat.getSaleStatus());
 			}
 		}
 
-		if (restoredCount > 0) {
-			log.info("[Kafka] 주문 취소 이벤트 처리 완료: orderId={}, 좌석 AVAILABLE 복원={}건",
-				event.getOrderId(), restoredCount);
-		} else {
-			log.info("[Kafka] 주문 취소 이벤트 수신: orderId={}, AVAILABLE 복원 대상 없음",
-				event.getOrderId());
-		}
+		log.info(
+			"[Kafka] 주문 취소 이벤트 처리 요약: orderId={}, requestedCount={}, updatedCount={}, alreadyTargetStateCount={}, unexpectedStateCount={}, missingSeatCount={}",
+			event.getOrderId(),
+			requestedIds.size(),
+			updatedCount,
+			alreadyTargetStateCount,
+			unexpectedStateCount,
+			missingSeatCount
+		);
 	}
 }

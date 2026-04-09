@@ -27,31 +27,37 @@ public class BankTransferExpiredEventConsumer {
 	public void handleBankTransferExpired(BankTransferExpiredEvent event) {
 		List<Long> requestedIds = event.getMatchSeatIds();
 		List<MatchSeat> seats = matchSeatRepository.findAllById(requestedIds);
+		int missingSeatCount = requestedIds.size() - seats.size();
+		int updatedCount = 0;
+		int alreadyTargetStateCount = 0;
+		int unexpectedStateCount = 0;
 
-		if (seats.size() != requestedIds.size()) {
-			log.warn("[Kafka] 좌석 조회 수 불일치: orderId={}, 요청={}건, 조회={}건",
-				event.getOrderId(), requestedIds.size(), seats.size());
-		}
-
-		int restoredCount = 0;
 		for (MatchSeat seat : seats) {
 			if (seat.getSaleStatus() == MatchSeatSaleStatus.SOLD) {
 				seat.markAvailable();
-				restoredCount++;
+				updatedCount++;
+					log.debug("[Kafka] 무통장만료 좌석복원 - orderId={}, paymentId={}, matchSeatId={}, currentStatus={}, action=update, targetStatus=AVAILABLE",
+						event.getOrderId(), event.getPaymentId(), seat.getId(), MatchSeatSaleStatus.SOLD);
 			} else if (seat.getSaleStatus() == MatchSeatSaleStatus.AVAILABLE) {
-				log.debug("[Kafka] 이미 AVAILABLE 상태, 스킵: matchSeatId={}", seat.getId());
+				alreadyTargetStateCount++;
+					log.debug("[Kafka] 무통장만료 처리스킵 - orderId={}, paymentId={}, matchSeatId={}, currentStatus={}, action=skip, reason=already_available",
+						event.getOrderId(), event.getPaymentId(), seat.getId(), seat.getSaleStatus());
 			} else {
-				log.warn("[Kafka] 예상하지 못한 좌석 상태: matchSeatId={}, status={}, orderId={}",
-					seat.getId(), seat.getSaleStatus(), event.getOrderId());
+				unexpectedStateCount++;
+					log.warn("[Kafka] 무통장만료 비정상상태 - orderId={}, paymentId={}, matchSeatId={}, currentStatus={}, action=skip, reason=unexpected_state",
+						event.getOrderId(), event.getPaymentId(), seat.getId(), seat.getSaleStatus());
 			}
 		}
 
-		if (restoredCount > 0) {
-			log.info("[Kafka] 무통장 만료 이벤트 처리 완료: orderId={}, paymentId={}, 좌석 AVAILABLE 복원={}건",
-				event.getOrderId(), event.getPaymentId(), restoredCount);
-		} else {
-			log.info("[Kafka] 무통장 만료 이벤트 수신: orderId={}, AVAILABLE 복원 대상 없음",
-				event.getOrderId());
-		}
+		log.info(
+			"[Kafka] 무통장 만료 이벤트 처리 요약: orderId={}, paymentId={}, requestedCount={}, updatedCount={}, alreadyTargetStateCount={}, unexpectedStateCount={}, missingSeatCount={}",
+			event.getOrderId(),
+			event.getPaymentId(),
+			requestedIds.size(),
+			updatedCount,
+			alreadyTargetStateCount,
+			unexpectedStateCount,
+			missingSeatCount
+		);
 	}
 }
