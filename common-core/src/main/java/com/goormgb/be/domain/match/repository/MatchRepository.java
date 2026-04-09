@@ -68,4 +68,21 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 		Instant start,
 		Instant end
 	);
+
+	/**
+	 * 경기 시작 시간이 지난 ON_SALE / SOLD_OUT 경기를 ENDED(예매 마감)로 일괄 전환한다.
+	 */
+	@Modifying
+	@Query("""
+		UPDATE Match m
+		SET m.saleStatus = :newStatus
+		WHERE m.matchAt <= :now
+		  AND m.saleStatus IN (:onSale, :soldOut)
+		""")
+	int bulkUpdateSaleEnded(
+		@Param("now") Instant now,
+		@Param("newStatus") SaleStatus newStatus,
+		@Param("onSale") SaleStatus onSale,
+		@Param("soldOut") SaleStatus soldOut
+	);
 }

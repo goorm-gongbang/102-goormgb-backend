@@ -30,14 +30,14 @@ public class RefreshTokenRepository {
 
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
-	private final long ttlDays;
+	private final long ttlHours;
 
 	public RefreshTokenRepository(StringRedisTemplate redisTemplate,
 			ObjectMapper redisObjectMapper,
 			JwtProperties jwtProperties) {
 		this.redisTemplate = redisTemplate;
 		this.objectMapper = redisObjectMapper;
-		this.ttlDays = jwtProperties.getRefreshToken().getExpirationDays();
+		this.ttlHours = jwtProperties.getRefreshToken().getExpirationHours();
 	}
 
 	/**
@@ -46,11 +46,22 @@ public class RefreshTokenRepository {
 	 * @param tokenInfo 저장할 토큰 정보 (jti 필수)
 	 */
 	public void save(RefreshTokenInfo tokenInfo) {
+		save(tokenInfo, Duration.ofHours(ttlHours));
+	}
+
+	/**
+	 * Refresh Token 정보를 Redis에 저장한다. (커스텀 TTL 지정)
+	 *
+	 * @param tokenInfo 저장할 토큰 정보 (jti 필수)
+	 * @param customTtl Redis TTL (부하테스트 등 기본 TTL과 다른 경우 사용)
+	 */
+	public void save(RefreshTokenInfo tokenInfo, Duration customTtl) {
 		String key = generateKey(tokenInfo.getJti());
 		try {
 			String json = objectMapper.writeValueAsString(tokenInfo);
-			redisTemplate.opsForValue().set(key, json, Duration.ofDays(ttlDays));
-			log.debug("Refresh token saved - jti: {}, userId: {}", tokenInfo.getJti(), tokenInfo.getUserId());
+			redisTemplate.opsForValue().set(key, json, customTtl);
+			log.debug("Refresh token saved with custom TTL - jti: {}, userId: {}, ttl: {}",
+					tokenInfo.getJti(), tokenInfo.getUserId(), customTtl);
 		} catch (JsonProcessingException e) {
 			log.error("Failed to serialize RefreshTokenInfo - jti: {}", tokenInfo.getJti(), e);
 			throw new RuntimeException("Failed to save refresh token", e);

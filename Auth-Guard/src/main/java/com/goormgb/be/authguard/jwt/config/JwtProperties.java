@@ -18,6 +18,7 @@ public class JwtProperties {
 	private AccessToken accessToken = new AccessToken();
 	private RefreshToken refreshToken = new RefreshToken();
 	private Cookie cookie = new Cookie();
+	private LoadTest loadTest = new LoadTest();
 
 	@Getter
 	@Setter
@@ -30,7 +31,13 @@ public class JwtProperties {
 	@Setter
 	public static class RefreshToken {
 		private String audience;
-		private int expirationDays;
+		private int expirationHours;
+	}
+
+	@Getter
+	@Setter
+	public static class LoadTest {
+		private int tokenExpirationMinutes = 15;
 	}
 
 	@Getter

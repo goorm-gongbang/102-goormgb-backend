@@ -7,8 +7,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import com.goormgb.be.authguard.auth.dto.RefreshTokenInfo;
@@ -19,8 +22,11 @@ import com.goormgb.be.authguard.jwt.enums.TokenType;
 import com.goormgb.be.authguard.jwt.provider.JwtTokenProvider;
 import com.goormgb.be.authguard.jwt.repository.AccessTokenBlacklistRepository;
 import com.goormgb.be.authguard.jwt.repository.RefreshTokenRepository;
+import com.goormgb.be.authguard.metrics.AuthMetricsService;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
+import com.goormgb.be.kafka.EventTopic;
+import com.goormgb.be.kafka.event.UserBlockedEvent;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.entity.WithdrawalRequest;
 import com.goormgb.be.user.enums.UserStatus;
@@ -45,6 +51,8 @@ public class AuthService {
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final UserRepository userRepository;
 	private final WithdrawalRequestRepository withdrawalRequestRepository;
+	private final AuthMetricsService authMetricsService;
+	private final KafkaTemplate<String, Object> kafkaTemplate;
 
 	/**
 	 * Refresh Token으로 새로운 Access Token과 Refresh Token을 발급한다. (RTR)
@@ -90,7 +98,7 @@ public class AuthService {
 		refreshTokenRepository.deleteByJti(jti);
 
 		Instant now = Instant.now();
-		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
+		int expirationHours = jwtProperties.getRefreshToken().getExpirationHours();
 
 		RefreshTokenInfo newTokenInfo = RefreshTokenInfo.builder()
 				.userId(userId)
@@ -98,7 +106,7 @@ public class AuthService {
 				.jti(newJti)
 				.sid(sid)
 				.issuedAt(now)
-				.expiresAt(now.plus(Duration.ofDays(expirationDays)))
+				.expiresAt(now.plus(Duration.ofHours(expirationHours)))
 				.userAgent(request.getHeader("User-Agent"))
 				.ipAddress(getClientIp(request))
 				.build();
@@ -169,7 +177,19 @@ public class AuthService {
 		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
 		Preconditions.validate(user.getStatus() != UserStatus.BLOCKED, ErrorCode.USER_ALREADY_BLOCKED);
 
+		UserStatus beforeStatus = user.getStatus();
 		user.block();
+		// 사용자 차단 건수 집계
+		authMetricsService.increaseUserBlocked();
+		log.info("[User Block] userId={}, status={} -> {}", targetUserId, beforeStatus, user.getStatus());
+
+		// 트랜잭션 커밋 성공 후 차단 유저의 주문 상태 변경 이벤트 발행
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				publishUserBlockedEvent(targetUserId);
+			}
+		});
 
 		return UserStatusChangeResponse.from(user);
 	}
@@ -181,7 +201,11 @@ public class AuthService {
 		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
 		Preconditions.validate(user.getStatus() != UserStatus.ACTIVATE, ErrorCode.USER_ALREADY_ACTIVE);
 
+		UserStatus beforeStatus = user.getStatus();
 		user.unblock();
+		// 사용자 차단 해제 건수 집계
+		authMetricsService.increaseUserUnblocked();
+		log.info("[User Unblock] userId={}, status={} -> {}", targetUserId, beforeStatus, user.getStatus());
 
 		return UserStatusChangeResponse.from(user);
 	}
@@ -209,5 +233,21 @@ public class AuthService {
 
 		return WithdrawalResponse.from(withdrawalRequest);
 
+	}
+
+	private void publishUserBlockedEvent(Long userId) {
+		UserBlockedEvent event = UserBlockedEvent.builder()
+				.userId(userId)
+				.occurredAt(Instant.now())
+				.build();
+
+		kafkaTemplate.send(EventTopic.USER_BLOCKED, String.valueOf(userId), event)
+				.whenComplete((result, ex) -> {
+					if (ex != null) {
+						log.error("[Kafka] 유저 차단 이벤트 발행 실패 - userId={}", userId, ex);
+					} else {
+						log.warn("[Kafka] 유저 차단 이벤트 발행 성공 - userId={}", userId);
+					}
+				});
 	}
 }

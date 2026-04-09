@@ -36,7 +36,8 @@ public class User extends BaseEntity {
 	@Column(name = "nickname", length = 512)
 	private String nickname;
 
-	@Column(name = "profile_image_url")
+	@Convert(converter = EncryptionConverter.class)
+	@Column(name = "profile_image_url", length = 1024)
 	private String profileImageUrl;
 
 	@Column(name = "onboarding_completed", nullable = false)

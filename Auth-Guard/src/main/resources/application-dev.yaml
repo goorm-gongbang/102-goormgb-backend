@@ -25,6 +25,13 @@ spring:
         jdbc:
           time-zone: UTC
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: ${KAFKA_PRODUCER_KEY_SERIALIZER}
+      value-serializer: ${KAFKA_PRODUCER_VALUE_SERIALIZER}
+      acks: ${KAFKA_PRODUCER_ACKS}
+
   data:
     redis:
       host: ${REDIS_HOST}
@@ -39,7 +46,9 @@ jwt:
     expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION}
   refresh-token:
     audience: ${JWT_REFRESH_TOKEN_AUDIENCE}
-    expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION}
+    expiration-hours: ${JWT_REFRESH_TOKEN_EXPIRATION}
+  load-test:
+    token-expiration-minutes: ${JWT_LOADTEST_TOKEN_EXPIRATION:15}
   cookie:
     secure: true
     same-site: None
@@ -83,3 +92,4 @@ logging:
   level:
     root: INFO
     com.goormgb.be: DEBUG
+    org.springframework.web: DEBUG

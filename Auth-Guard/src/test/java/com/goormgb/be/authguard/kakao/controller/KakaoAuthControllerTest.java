@@ -19,6 +19,7 @@ import com.goormgb.be.authguard.kakao.client.KakaoOAuthClient;
 import com.goormgb.be.authguard.kakao.dto.KakaoLoginRequest;
 import com.goormgb.be.authguard.kakao.dto.KakaoLoginResponse;
 import com.goormgb.be.authguard.kakao.service.KakaoAuthService;
+import com.goormgb.be.authguard.metrics.AuthMetricsService;
 import com.goormgb.be.authguard.support.WebMvcTestSupport;
 import com.goormgb.be.user.enums.UserStatus;
 
@@ -33,6 +34,9 @@ class KakaoAuthControllerTest extends WebMvcTestSupport {
 
 	@MockitoBean
 	private KakaoOAuthClient kakaoOAuthClient;
+
+	@MockitoBean
+	private AuthMetricsService authMetricsService;
 
 	@Test
 	@DisplayName("GET /auth/kakao/login-url - 카카오 로그인 URL 조회 성공")

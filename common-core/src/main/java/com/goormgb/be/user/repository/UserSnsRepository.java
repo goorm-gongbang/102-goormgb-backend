@@ -8,9 +8,9 @@ import com.goormgb.be.user.entity.UserSns;
 import com.goormgb.be.user.enums.SocialProvider;
 
 public interface UserSnsRepository extends JpaRepository<UserSns, Long> {
-	Optional<UserSns> findByProviderAndProviderUserId(
+	Optional<UserSns> findByProviderAndProviderUserIdHash(
 			SocialProvider provider,
-			String providerUserId
+			String providerUserIdHash
 	);
 
 	Optional<UserSns> findByUserId(Long userId);

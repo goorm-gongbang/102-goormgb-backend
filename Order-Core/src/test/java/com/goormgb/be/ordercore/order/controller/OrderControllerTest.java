@@ -27,6 +27,7 @@ import com.goormgb.be.ordercore.order.dto.request.OrderCreateRequest;
 import com.goormgb.be.ordercore.order.dto.response.OrderCreateResponse;
 import com.goormgb.be.ordercore.order.dto.response.OrderSheetGetResponse;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
+import com.goormgb.be.ordercore.metrics.enums.OrderDraftEntryPoint;
 import com.goormgb.be.ordercore.order.service.OrderService;
 import com.goormgb.be.ordercore.support.WebMvcTestSupport;
 
@@ -80,7 +81,7 @@ class OrderControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("유효한 요청이면 200과 주문서 정보를 반환한다")
 		void getOrderSheet_성공() throws Exception {
-			given(orderService.getOrderSheet(eq(1L), eq(1L), eq(List.of(101L))))
+			given(orderService.getOrderSheet(eq(1L), eq(1L), eq(List.of(101L)), eq(OrderDraftEntryPoint.RECOMMEND)))
 				.willReturn(createMockOrderSheetResponse());
 
 			mockMvc.perform(get("/mypage/orders/sheet")
@@ -117,7 +118,7 @@ class OrderControllerTest extends WebMvcTestSupport {
 				matchInfo, seats, new OrderSheetGetResponse.Summary(2, 2000)
 			);
 
-			given(orderService.getOrderSheet(eq(1L), eq(1L), eq(List.of(101L, 102L))))
+			given(orderService.getOrderSheet(eq(1L), eq(1L), eq(List.of(101L, 102L)), eq(OrderDraftEntryPoint.RECOMMEND)))
 				.willReturn(response);
 
 			mockMvc.perform(get("/mypage/orders/sheet")
@@ -131,7 +132,7 @@ class OrderControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("선점 만료 시 400을 반환한다")
 		void getOrderSheet_선점_만료_400() throws Exception {
-			given(orderService.getOrderSheet(any(), any(), any()))
+			given(orderService.getOrderSheet(any(), any(), any(), any()))
 				.willThrow(new CustomException(ErrorCode.SEAT_HOLD_EXPIRED));
 
 			mockMvc.perform(get("/mypage/orders/sheet")
@@ -144,7 +145,7 @@ class OrderControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("선점 정보가 없으면 404를 반환한다")
 		void getOrderSheet_선점_미발견_404() throws Exception {
-			given(orderService.getOrderSheet(any(), any(), any()))
+			given(orderService.getOrderSheet(any(), any(), any(), any()))
 				.willThrow(new CustomException(ErrorCode.SEAT_HOLD_NOT_FOUND));
 
 			mockMvc.perform(get("/mypage/orders/sheet")
@@ -157,7 +158,7 @@ class OrderControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("가격 정책이 없으면 404를 반환한다")
 		void getOrderSheet_가격정책_미발견_404() throws Exception {
-			given(orderService.getOrderSheet(any(), any(), any()))
+			given(orderService.getOrderSheet(any(), any(), any(), any()))
 				.willThrow(new CustomException(ErrorCode.PRICE_POLICY_NOT_FOUND));
 
 			mockMvc.perform(get("/mypage/orders/sheet")
@@ -304,6 +305,21 @@ class OrderControllerTest extends WebMvcTestSupport {
 					.content(objectMapper.writeValueAsString(request)))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.message").value("좌석 선점 정보를 찾을 수 없습니다."));
+		}
+
+		@Test
+		@DisplayName("요청 totalPrice가 서버 계산값과 다르면 400을 반환한다")
+		void createOrder_totalPrice_불일치_400() throws Exception {
+			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
+
+			given(orderService.createOrder(any(), any()))
+				.willThrow(new CustomException(ErrorCode.ORDER_TOTAL_PRICE_MISMATCH));
+
+			mockMvc.perform(post("/mypage/orders")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(request)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("주문 금액이 유효하지 않습니다. 다시 시도해주세요."));
 		}
 
 		@Test

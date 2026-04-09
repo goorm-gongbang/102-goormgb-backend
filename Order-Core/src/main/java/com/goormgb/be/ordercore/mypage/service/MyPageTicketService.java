@@ -2,8 +2,12 @@ package com.goormgb.be.ordercore.mypage.service;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +23,12 @@ import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketQrResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.UpcomingTicketListResponse;
 import com.goormgb.be.ordercore.mypage.enums.TicketTab;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.OrderSeatRow;
 import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.TicketRow;
+import com.goormgb.be.ordercore.mypage.query.MyPageQueryService.UpcomingTicketRow;
 import com.goormgb.be.ordercore.mypage.service.support.MyPageTicketCancellationCalculator;
 import com.goormgb.be.ordercore.mypage.service.support.MyPageTicketDetailAssembler;
 import com.goormgb.be.ordercore.mypage.service.support.MyPageTicketListAssembler;
@@ -47,9 +53,17 @@ public class MyPageTicketService {
 
 	private static final int MAX_PAGE_SIZE = 10;
 
+	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
 	private static final List<OrderStatus> UPCOMING_STATUSES = List.of(
 			OrderStatus.PAYMENT_PENDING,
 			OrderStatus.PAID
+	);
+
+	private static final List<String> UPCOMING_TICKET_STATUSES = List.of(
+			OrderStatus.PAYMENT_PENDING.name(),
+			OrderStatus.PAID.name(),
+			OrderStatus.UNDER_REVIEW.name()
 	);
 
 	private static final List<OrderStatus> CANCEL_PROCESSING_STATUSES = List.of(
@@ -108,6 +122,64 @@ public class MyPageTicketService {
 				totalCount, upcomingCount, cancelProcessingCount, completedCount,
 				ticketTab.name(), page, size, totalElements, totalPages, hasNext, tickets
 		);
+	}
+
+	/**
+	 * 경기 예정 티켓 목록을 조회한다. (오늘 이후 경기 + 유효 상태만)
+	 */
+	public UpcomingTicketListResponse getUpcomingTickets(Long userId, int page, int size) {
+		Preconditions.validate(page >= 0 && size > 0 && size <= MAX_PAGE_SIZE, ErrorCode.INVALID_PAGE_SIZE);
+
+		Instant now = Instant.now(clock);
+		LocalDate today = now.atZone(KST).toLocalDate();
+
+		long totalElements = myPageQueryService.countUpcomingTickets(userId, UPCOMING_TICKET_STATUSES, now);
+		List<UpcomingTicketRow> rows = myPageQueryService.findUpcomingTickets(
+				userId, UPCOMING_TICKET_STATUSES, now, page, size);
+
+		List<UpcomingTicketListResponse.UpcomingTicketItem> tickets;
+		if (rows.isEmpty()) {
+			tickets = List.of();
+		} else {
+			List<Long> orderIds = rows.stream().map(UpcomingTicketRow::orderId).toList();
+			List<OrderSeatRow> seatRows = myPageQueryService.findOrderSeatRowsByOrderIds(orderIds);
+			Map<Long, List<UpcomingTicketListResponse.SeatInfo>> seatMap = seatRows.stream()
+					.collect(Collectors.groupingBy(
+							OrderSeatRow::orderId,
+							Collectors.mapping(
+									row -> new UpcomingTicketListResponse.SeatInfo(
+											row.sectionName(), row.blockCode(), row.rowNo(), row.seatNo()),
+									Collectors.toList())));
+
+			tickets = rows.stream()
+					.map(row -> {
+						long dDay = ChronoUnit.DAYS.between(today,
+								row.matchAt().atZone(KST).toLocalDate());
+						return new UpcomingTicketListResponse.UpcomingTicketItem(
+								row.orderId(),
+								dDay,
+								row.status(),
+								row.status().getDescription(),
+								row.seatCount(),
+								new UpcomingTicketListResponse.MatchInfo(
+										row.matchId(),
+										row.matchAt(),
+										new UpcomingTicketListResponse.ClubInfo(row.homeClubId(), row.homeClubName()),
+										new UpcomingTicketListResponse.ClubInfo(row.awayClubId(), row.awayClubName()),
+										new UpcomingTicketListResponse.StadiumInfo(row.stadiumId(), row.stadiumName())),
+								seatMap.getOrDefault(row.orderId(), List.of()),
+								UpcomingTicketListResponse.TicketActions.of(row.status(), row.matchAt(), now));
+					})
+					.toList();
+		}
+
+		int totalPages = totalElements == 0 ? 0 : (int)Math.ceil((double)totalElements / size);
+		boolean hasNext = (long)(page + 1) * size < totalElements;
+
+		return new UpcomingTicketListResponse(
+				(int)totalElements,
+				new UpcomingTicketListResponse.PaginationInfo(page, size, totalElements, totalPages, hasNext),
+				tickets);
 	}
 
 	public MyPageTicketDetailResponse getTicketDetail(Long userId, Long ticketId) {

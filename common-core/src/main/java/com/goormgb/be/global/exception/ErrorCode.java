@@ -22,7 +22,7 @@ public enum ErrorCode {
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
 	USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 사용자입니다."),
 	USER_DEACTIVATED(HttpStatus.FORBIDDEN, "비활성화된 사용자입니다."),
-	USER_ALREADY_BLOCKED(HttpStatus.CONFLICT, "차단된 사용자입니다."),
+	USER_ALREADY_BLOCKED(HttpStatus.FORBIDDEN, "차단된 사용자입니다."),
 	USER_ALREADY_ACTIVE(HttpStatus.CONFLICT, "이미 활성 상태인 사용자입니다."),
 
 	// Onboarding
@@ -86,6 +86,8 @@ public enum ErrorCode {
 	ORDER_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 주문에 접근할 권한이 없습니다."),
 	INVALID_ORDER_STATUS(HttpStatus.BAD_REQUEST, "주문 상태가 올바르지 않습니다."),
 	ORDER_SEAT_EMPTY(HttpStatus.BAD_REQUEST, "주문 좌석 정보가 없습니다."),
+	ORDER_TOTAL_PRICE_MISMATCH(HttpStatus.BAD_REQUEST, "주문 금액이 유효하지 않습니다. 다시 시도해주세요."),
+	EXCEEDED_MAX_TICKETS_PER_MATCH(HttpStatus.CONFLICT, "경기당 최대 8매까지만 예매 가능합니다."),
 
 	// Section
 	SECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "섹션을 찾을 수 없습니다."),
