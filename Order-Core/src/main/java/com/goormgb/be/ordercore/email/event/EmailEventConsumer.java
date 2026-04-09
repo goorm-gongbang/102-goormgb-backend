@@ -27,11 +27,30 @@ public class EmailEventConsumer {
 		groupId = "${spring.kafka.consumer.group-id}"
 	)
 	public void handlePaymentCompleted(PaymentCompletedEvent event) {
-		Map<String, Object> context = emailDataQueryService
+		if (emailDataQueryService.isOrderPaid(event.getOrderId())) {
+			Map<String, Object> bookingContext = emailDataQueryService
+				.buildBookingEmailContext(event.getOrderId())
+				.orElse(null);
+
+			if (bookingContext == null) {
+				log.warn(
+					"[Kafka-Email] 예매확정 이메일스킵 - orderId={}, eventTopic={}, action=skip, reason=order_not_found",
+					event.getOrderId(), EventTopic.PAYMENT_COMPLETED);
+			} else {
+				log.info("[Kafka-Email] 예매확정 이메일발송 - orderId={}, eventTopic={}, action=send", event.getOrderId(),
+					EventTopic.PAYMENT_COMPLETED);
+				emailService.sendBookingConfirmation(bookingContext);
+			}
+		} else {
+			log.info("[Kafka-Email] 예매확정 이메일스킵 - orderId={}, eventTopic={}, action=skip, reason=order_not_paid",
+				event.getOrderId(), EventTopic.PAYMENT_COMPLETED);
+		}
+
+		Map<String, Object> paymentContext = emailDataQueryService
 			.buildPaymentEmailContext(event.getOrderId(), event)
 			.orElse(null);
 
-		if (context == null) {
+		if (paymentContext == null) {
 			log.warn("[Kafka-Email] 주문없음 이메일스킵 - orderId={}, eventTopic={}, action=skip, reason=order_not_found",
 				event.getOrderId(), EventTopic.PAYMENT_COMPLETED);
 			return;
@@ -39,7 +58,7 @@ public class EmailEventConsumer {
 
 		log.info("[Kafka-Email] 결제완료 이메일발송 - orderId={}, eventTopic={}, action=send", event.getOrderId(),
 			EventTopic.PAYMENT_COMPLETED);
-		emailService.sendPaymentConfirmation(context);
+		emailService.sendPaymentConfirmation(paymentContext);
 	}
 
 	@KafkaListener(
