@@ -36,16 +36,19 @@ public class BankTransferExpiredEventConsumer {
 			if (seat.getSaleStatus() == MatchSeatSaleStatus.SOLD) {
 				seat.markAvailable();
 				updatedCount++;
-					log.debug("[Kafka] 무통장만료 좌석복원 - orderId={}, paymentId={}, matchSeatId={}, currentStatus={}, action=update, targetStatus=AVAILABLE",
-						event.getOrderId(), event.getPaymentId(), seat.getId(), MatchSeatSaleStatus.SOLD);
+				log.debug(
+					"[Kafka] 무통장만료 좌석복원 - orderId={}, paymentId={}, matchSeatId={}, currentStatus={}, action=update, targetStatus=AVAILABLE",
+					event.getOrderId(), event.getPaymentId(), seat.getId(), MatchSeatSaleStatus.SOLD);
 			} else if (seat.getSaleStatus() == MatchSeatSaleStatus.AVAILABLE) {
 				alreadyTargetStateCount++;
-					log.debug("[Kafka] 무통장만료 처리스킵 - orderId={}, paymentId={}, matchSeatId={}, currentStatus={}, action=skip, reason=already_available",
-						event.getOrderId(), event.getPaymentId(), seat.getId(), seat.getSaleStatus());
+				log.debug(
+					"[Kafka] 무통장만료 처리스킵 - orderId={}, paymentId={}, matchSeatId={}, currentStatus={}, action=skip, reason=already_available",
+					event.getOrderId(), event.getPaymentId(), seat.getId(), seat.getSaleStatus());
 			} else {
 				unexpectedStateCount++;
-					log.warn("[Kafka] 무통장만료 비정상상태 - orderId={}, paymentId={}, matchSeatId={}, currentStatus={}, action=skip, reason=unexpected_state",
-						event.getOrderId(), event.getPaymentId(), seat.getId(), seat.getSaleStatus());
+				log.warn(
+					"[Kafka] 무통장만료 비정상상태 - orderId={}, paymentId={}, matchSeatId={}, currentStatus={}, action=skip, reason=unexpected_state",
+					event.getOrderId(), event.getPaymentId(), seat.getId(), seat.getSaleStatus());
 			}
 		}
 
