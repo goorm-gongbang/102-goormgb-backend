@@ -19,6 +19,14 @@ public class KafkaTopicConfig {
 	}
 
 	@Bean
+	public NewTopic paymentCompletedDltTopic() {
+		return TopicBuilder.name(EventTopic.PAYMENT_COMPLETED + ".DLT")
+				.partitions(3)
+				.replicas(1)
+				.build();
+	}
+
+	@Bean
 	public NewTopic orderCancelledTopic() {
 		return TopicBuilder.name(EventTopic.ORDER_CANCELLED)
 				.partitions(3)
@@ -27,8 +35,24 @@ public class KafkaTopicConfig {
 	}
 
 	@Bean
+	public NewTopic orderCancelledDltTopic() {
+		return TopicBuilder.name(EventTopic.ORDER_CANCELLED + ".DLT")
+				.partitions(3)
+				.replicas(1)
+				.build();
+	}
+
+	@Bean
 	public NewTopic bankTransferExpiredTopic() {
 		return TopicBuilder.name(EventTopic.BANK_TRANSFER_EXPIRED)
+				.partitions(3)
+				.replicas(1)
+				.build();
+	}
+
+	@Bean
+	public NewTopic bankTransferExpiredDltTopic() {
+		return TopicBuilder.name(EventTopic.BANK_TRANSFER_EXPIRED + ".DLT")
 				.partitions(3)
 				.replicas(1)
 				.build();
