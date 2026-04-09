@@ -17,6 +17,8 @@ import jakarta.persistence.LockModeType;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
+	boolean existsByIdAndStatus(Long id, OrderStatus status);
+
 	long countByUserId(Long userId);
 
 	@Query("SELECT COUNT(o) FROM Order o WHERE o.user.id = :userId AND o.status IN :statuses AND o.match.matchAt > :now")
