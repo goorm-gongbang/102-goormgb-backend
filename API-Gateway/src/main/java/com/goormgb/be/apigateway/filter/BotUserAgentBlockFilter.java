@@ -21,7 +21,7 @@ import reactor.core.publisher.Mono;
 @Component
 public class BotUserAgentBlockFilter implements GlobalFilter, Ordered {
 
-	private static final Pattern QUEUE_ENTER_PATH = Pattern.compile("^/queue/matches/\\d+/enter$");
+    private static final Pattern QUEUE_ENTER_PATH = Pattern.compile("^/queue/matches/\\d+/enter/?$");
 	private static final List<String> BLOCKED_USER_AGENTS = List.of(
 		"curl",
 		"wget",
