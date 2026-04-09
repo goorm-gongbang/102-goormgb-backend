@@ -16,6 +16,7 @@ public enum TicketTab {
 	BOOKED(List.of(
 		OrderStatus.PAYMENT_PENDING,
 		OrderStatus.PAID,
+		OrderStatus.UNDER_REVIEW,
 		OrderStatus.CANCEL_REQUESTED,
 		OrderStatus.REFUND_PROCESSING
 	)),

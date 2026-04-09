@@ -116,4 +116,24 @@ public class Order extends BaseEntity {
 		this.refundedAmount = refundedAmount;
 		this.cancelledAt = Instant.now();
 	}
+
+	/**
+	 * 토스페이/카카오페이 결제 취소 — 즉시 CANCELLED 처리
+	 */
+	public void cancelComplete(Integer cancellationFee, Integer refundedAmount) {
+		this.status = OrderStatus.CANCELLED;
+		this.cancellationFee = cancellationFee;
+		this.refundedAmount = refundedAmount;
+		this.cancelledAt = Instant.now();
+	}
+
+	/**
+	 * 무통장 입금 환불 완료 — 즉시 REFUND_COMPLETED 처리
+	 */
+	public void refundComplete(Integer cancellationFee, Integer refundedAmount) {
+		this.status = OrderStatus.REFUND_COMPLETED;
+		this.cancellationFee = cancellationFee;
+		this.refundedAmount = refundedAmount;
+		this.cancelledAt = Instant.now();
+	}
 }
