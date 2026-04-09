@@ -76,6 +76,7 @@ public enum ErrorCode {
 	QUEUE_ALREADY_ENTERED(HttpStatus.CONFLICT, "이미 대기열에 등록된 사용자입니다."),
 	QUEUE_ENTRY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 경기의 대기열에 등록되어 있지 않습니다."),
 	ADMISSION_TOKEN_EXPIRED(HttpStatus.GONE, "입장 가능 시간이 만료되었습니다. 다시 대기열에 진입해주세요."),
+	PREQUEUE_OPTIONS_REQUIRED(HttpStatus.FORBIDDEN, "예매 옵션을 먼저 저장해주세요."),
 	INVALID_TICKET_COUNT(HttpStatus.BAD_REQUEST, "예매 티켓 수가 올바르지 않습니다."),
 	INVALID_BOOKING_OPTIONS(HttpStatus.BAD_REQUEST, "예매 옵션이 올바르지 않습니다."),
 	INVALID_PROMOTE_COUNT(HttpStatus.BAD_REQUEST, "승급 인원 수가 올바르지 않습니다."),

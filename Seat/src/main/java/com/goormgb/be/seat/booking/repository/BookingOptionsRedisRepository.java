@@ -23,7 +23,7 @@ public class BookingOptionsRedisRepository {
 	private final ObjectMapper redisObjectMapper;
 
 	public BookingOptionsRedisRepository(
-		StringRedisTemplate redisTemplate,
+		@Qualifier("stringRedisTemplate") StringRedisTemplate redisTemplate,
 		@Qualifier("redisObjectMapper") ObjectMapper redisObjectMapper,
 		@Value("${booking.options-key-prefix}") String keyPrefix,
 		@Value("${booking.options-ttl-seconds}") long ttlSeconds

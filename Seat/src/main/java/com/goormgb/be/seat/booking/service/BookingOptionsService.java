@@ -11,6 +11,7 @@ import com.goormgb.be.seat.booking.dto.request.BookingOptionsRequest;
 import com.goormgb.be.seat.booking.dto.response.BookingOptionsResponse;
 import com.goormgb.be.seat.booking.model.BookingOptions;
 import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
+import com.goormgb.be.seat.booking.repository.PreQueueBookingOptionMarkerRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +21,7 @@ public class BookingOptionsService {
 
 	private final MatchRepository matchRepository;
 	private final BookingOptionsRedisRepository bookingOptionsRedisRepository;
+	private final PreQueueBookingOptionMarkerRepository preQueueBookingOptionMarkerRepository;
 
 	public BookingOptionsResponse saveBookingOptions(Long matchId, Long userId, BookingOptionsRequest request) {
 		matchRepository.findByIdOrThrow(matchId, ErrorCode.MATCH_NOT_FOUND);
@@ -41,6 +43,7 @@ public class BookingOptionsService {
 		);
 
 		bookingOptionsRedisRepository.save(options);
+		preQueueBookingOptionMarkerRepository.mark(matchId, userId);
 
 		return new BookingOptionsResponse(
 			matchId,
