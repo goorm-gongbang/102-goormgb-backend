@@ -111,29 +111,28 @@ public class Order extends BaseEntity {
 	}
 
 	public void cancel(Integer cancellationFee, Integer refundedAmount) {
-		this.status = OrderStatus.CANCEL_REQUESTED;
-		this.cancellationFee = cancellationFee;
-		this.refundedAmount = refundedAmount;
-		this.cancelledAt = Instant.now();
+		updateCancellationInfo(OrderStatus.CANCEL_REQUESTED, cancellationFee, refundedAmount, Instant.now());
 	}
 
 	/**
 	 * 토스페이/카카오페이 결제 취소 — 즉시 CANCELLED 처리
 	 */
-	public void cancelComplete(Integer cancellationFee, Integer refundedAmount) {
-		this.status = OrderStatus.CANCELLED;
-		this.cancellationFee = cancellationFee;
-		this.refundedAmount = refundedAmount;
-		this.cancelledAt = Instant.now();
+	public void cancelComplete(Integer cancellationFee, Integer refundedAmount, Instant cancelledAt) {
+		updateCancellationInfo(OrderStatus.CANCELLED, cancellationFee, refundedAmount, cancelledAt);
 	}
 
 	/**
 	 * 무통장 입금 환불 완료 — 즉시 REFUND_COMPLETED 처리
 	 */
-	public void refundComplete(Integer cancellationFee, Integer refundedAmount) {
-		this.status = OrderStatus.REFUND_COMPLETED;
+	public void refundComplete(Integer cancellationFee, Integer refundedAmount, Instant cancelledAt) {
+		updateCancellationInfo(OrderStatus.REFUND_COMPLETED, cancellationFee, refundedAmount, cancelledAt);
+	}
+
+	private void updateCancellationInfo(OrderStatus status, Integer cancellationFee, Integer refundedAmount,
+		Instant cancelledAt) {
+		this.status = status;
 		this.cancellationFee = cancellationFee;
 		this.refundedAmount = refundedAmount;
-		this.cancelledAt = Instant.now();
+		this.cancelledAt = cancelledAt;
 	}
 }

@@ -578,7 +578,7 @@ class MyPageTicketServiceTest {
 		}
 
 		@Test
-		@DisplayName("토스페이 결제 취소 시 Order는 CANCELLED, Payment는 CANCELLED 상태가 된다")
+		@DisplayName("토스페이 결제 취소 시 Order는 CANCELLED, Payment는 CANCELLED, cancelledAt은 Clock 기반 시간이다")
 		void requestTicketCancel_tossPay_즉시_취소완료() {
 			Long userId = 1L;
 			Long ticketId = 101L;
@@ -599,6 +599,7 @@ class MyPageTicketServiceTest {
 
 			assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 			assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELLED);
+			assertThat(order.getCancelledAt()).isEqualTo(Instant.now(clock));
 		}
 
 		@Test
@@ -623,6 +624,7 @@ class MyPageTicketServiceTest {
 
 			assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 			assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELLED);
+			assertThat(order.getCancelledAt()).isEqualTo(Instant.now(clock));
 		}
 
 		@Test
@@ -647,6 +649,7 @@ class MyPageTicketServiceTest {
 
 			assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUND_COMPLETED);
 			assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
+			assertThat(order.getCancelledAt()).isEqualTo(Instant.now(clock));
 			assertThat(response.status()).isEqualTo(OrderStatus.REFUND_COMPLETED);
 		}
 

@@ -251,10 +251,10 @@ public class MyPageTicketService {
 				.orElseThrow(() -> new CustomException(ErrorCode.PAYMENT_NOT_FOUND));
 
 		if (payment.getPaymentMethod() == PaymentMethod.BANK_TRANSFER) {
-			order.refundComplete(cancellationFee, refundedAmount);
+			order.refundComplete(cancellationFee, refundedAmount, now);
 			payment.refund();
 		} else {
-			order.cancelComplete(cancellationFee, refundedAmount);
+			order.cancelComplete(cancellationFee, refundedAmount, now);
 			payment.cancel();
 		}
 
