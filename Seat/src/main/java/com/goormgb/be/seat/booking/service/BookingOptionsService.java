@@ -4,6 +4,7 @@ import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 
+import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
@@ -18,6 +19,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class BookingOptionsService {
+
+	private static final int MARK_RETRY_MAX_ATTEMPTS = 3;
+	private static final long MARK_RETRY_SLEEP_MILLIS = 50L;
 
 	private final MatchRepository matchRepository;
 	private final BookingOptionsRedisRepository bookingOptionsRedisRepository;
@@ -43,7 +47,7 @@ public class BookingOptionsService {
 		);
 
 		bookingOptionsRedisRepository.save(options);
-		preQueueBookingOptionMarkerRepository.mark(matchId, userId);
+		syncPreQueueMarkerOrRollback(matchId, userId);
 
 		return new BookingOptionsResponse(
 			matchId,
@@ -51,5 +55,46 @@ public class BookingOptionsService {
 			options.ticketCount(),
 			options.nearAdjacentToggle()
 		);
+	}
+
+	private void syncPreQueueMarkerOrRollback(Long matchId, Long userId) {
+		RuntimeException lastException = null;
+
+		for (int attempt = 1; attempt <= MARK_RETRY_MAX_ATTEMPTS; attempt++) {
+			try {
+				preQueueBookingOptionMarkerRepository.mark(matchId, userId);
+				return;
+			} catch (RuntimeException e) {
+				lastException = e;
+				if (attempt < MARK_RETRY_MAX_ATTEMPTS) {
+					sleepBeforeRetry(attempt);
+				}
+			}
+		}
+
+		try {
+			bookingOptionsRedisRepository.delete(matchId, userId);
+		} catch (RuntimeException rollbackException) {
+			throw new CustomException(
+				ErrorCode.PREQUEUE_MARKER_SYNC_FAILED,
+				"예매 옵션 저장 후 prequeue 마커 동기화 및 롤백에 실패했습니다.",
+				rollbackException
+			);
+		}
+
+		throw new CustomException(
+			ErrorCode.PREQUEUE_MARKER_SYNC_FAILED,
+			"예매 옵션 저장 후 prequeue 마커 동기화에 실패하여 저장 내용을 롤백했습니다.",
+			lastException
+		);
+	}
+
+	private void sleepBeforeRetry(int attempt) {
+		try {
+			Thread.sleep(MARK_RETRY_SLEEP_MILLIS * attempt);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "prequeue 마커 재시도 중 인터럽트가 발생했습니다.", e);
+		}
 	}
 }

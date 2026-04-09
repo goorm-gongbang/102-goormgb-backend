@@ -59,6 +59,10 @@ public class BookingOptionsRedisRepository {
 		}
 	}
 
+	public void delete(Long matchId, Long userId) {
+		redisTemplate.delete(generateKey(matchId, userId));
+	}
+
 	private String generateKey(Long matchId, Long userId) {
 		return keyPrefix + ":" + matchId + ":" + userId;
 	}
