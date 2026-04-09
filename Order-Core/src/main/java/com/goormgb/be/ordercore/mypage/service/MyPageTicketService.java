@@ -35,7 +35,7 @@ import com.goormgb.be.ordercore.mypage.service.support.MyPageTicketListAssembler
 import com.goormgb.be.ordercore.mypage.service.support.MyPageTicketQrSupport;
 import com.goormgb.be.ordercore.order.entity.Order;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
-import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
+import com.goormgb.be.ordercore.order.event.OrderEventPublisher;
 import com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
@@ -76,7 +76,7 @@ public class MyPageTicketService {
 	private final QrTokenRepository qrTokenRepository;
 	private final MyPageQueryService myPageQueryService;
 	private final CancellationFeePolicyRepository cancellationFeePolicyRepository;
-	private final SeatInfoQueryService seatInfoQueryService;
+	private final OrderEventPublisher orderEventPublisher;
 	private final Clock clock;
 
 	public MyPageTicketListResponse getTickets(Long userId, String tab, int page, int size) {
@@ -243,13 +243,9 @@ public class MyPageTicketService {
 		int refundedAmount = order.getTotalAmount() - cancellationFee;
 		order.cancel(cancellationFee, refundedAmount);
 
-		// 결제된 좌석을 SOLD → AVAILABLE로 복원
+		// 주문 취소 이벤트 발행 → Seat 서비스에서 좌석 SOLD → AVAILABLE 복원
 		List<Long> matchSeatIds = orderSeatRepository.findMatchSeatIdsByOrderId(ticketId);
-		int restored = seatInfoQueryService.markAvailableIfSold(matchSeatIds);
-		if (restored != matchSeatIds.size()) {
-			log.warn("[MyPageTicketService] 좌석 AVAILABLE 복원 개수 불일치 - orderId={}, expected={}, restored={}",
-				ticketId, matchSeatIds.size(), restored);
-		}
+		orderEventPublisher.publishOrderCancelled(order, matchSeatIds);
 
 		return MyPageTicketCancelResponse.of(order);
 	}

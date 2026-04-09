@@ -53,8 +53,8 @@ class MyPageControllerTest extends WebMvcTestSupport {
 
 	private void setAuthentication(Long userId) {
 		SecurityContextHolder.getContext().setAuthentication(
-				new UsernamePasswordAuthenticationToken(userId, null,
-						List.of(new SimpleGrantedAuthority("ROLE_USER")))
+			new UsernamePasswordAuthenticationToken(userId, null,
+				List.of(new SimpleGrantedAuthority("ROLE_USER")))
 		);
 	}
 
@@ -74,24 +74,24 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			given(myPageProfileService.getAccount(1L)).willReturn(response);
 
 			mockMvc.perform(get("/mypage/account"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.code").value("OK"))
-					.andExpect(jsonPath("$.message").value("조회 성공"))
-					.andExpect(jsonPath("$.data.email").value("user@example.com"))
-					.andExpect(jsonPath("$.data.nickname").value("goorm_new"))
-					.andExpect(jsonPath("$.data.profileImageUrl").value("https://cdn.goormgb.com/profile/user-1.png"))
-					.andExpect(jsonPath("$.data.snsAccount.provider").value("KAKAO"));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("조회 성공"))
+				.andExpect(jsonPath("$.data.email").value("user@example.com"))
+				.andExpect(jsonPath("$.data.nickname").value("goorm_new"))
+				.andExpect(jsonPath("$.data.profileImageUrl").value("https://cdn.goormgb.com/profile/user-1.png"))
+				.andExpect(jsonPath("$.data.snsAccount.provider").value("KAKAO"));
 		}
 
 		@Test
 		@DisplayName("사용자가 없으면 404를 반환한다")
 		void getAccount_사용자없음_404() throws Exception {
 			given(myPageProfileService.getAccount(1L))
-					.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
 
 			mockMvc.perform(get("/mypage/account"))
-					.andExpect(status().isNotFound())
-					.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
 		}
 	}
 
@@ -109,53 +109,53 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		void updateAccount_성공() throws Exception {
 			MyPageAccountResponse response = MyPageFixture.createAccountResponse();
 			given(myPageProfileService.updateAccount(eq(1L), any(MyPageAccountUpdateRequest.class))).willReturn(
-					response);
+				response);
 
 			mockMvc.perform(put("/mypage/account")
-							.contentType("application/json")
-							.content("""
+					.contentType("application/json")
+					.content("""
 						{
 						  "nickname": "goorm_new"
 						}
 						"""))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.code").value("OK"))
-					.andExpect(jsonPath("$.message").value("수정 성공"))
-					.andExpect(jsonPath("$.data.email").value("user@example.com"))
-					.andExpect(jsonPath("$.data.nickname").value("goorm_new"))
-					.andExpect(jsonPath("$.data.profileImageUrl").value("https://cdn.goormgb.com/profile/user-1.png"))
-					.andExpect(jsonPath("$.data.snsAccount.provider").value("KAKAO"));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("수정 성공"))
+				.andExpect(jsonPath("$.data.email").value("user@example.com"))
+				.andExpect(jsonPath("$.data.nickname").value("goorm_new"))
+				.andExpect(jsonPath("$.data.profileImageUrl").value("https://cdn.goormgb.com/profile/user-1.png"))
+				.andExpect(jsonPath("$.data.snsAccount.provider").value("KAKAO"));
 		}
 
 		@Test
 		@DisplayName("닉네임이 유효하지 않으면 400을 반환한다")
 		void updateAccount_닉네임오류_400() throws Exception {
 			mockMvc.perform(put("/mypage/account")
-							.contentType("application/json")
-							.content("""
+					.contentType("application/json")
+					.content("""
 						{
 						  "nickname": "   "
 						}
 						"""))
-					.andExpect(status().isBadRequest())
-					.andExpect(jsonPath("$.message").value("nickname: 닉네임은 공백일 수 없습니다."));
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("nickname: 닉네임은 공백일 수 없습니다."));
 		}
 
 		@Test
 		@DisplayName("사용자가 없으면 404를 반환한다")
 		void updateAccount_사용자없음_404() throws Exception {
 			given(myPageProfileService.updateAccount(eq(1L), any(MyPageAccountUpdateRequest.class)))
-					.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
 
 			mockMvc.perform(put("/mypage/account")
-							.contentType("application/json")
-							.content("""
+					.contentType("application/json")
+					.content("""
 						{
 						  "nickname": "goorm_new"
 						}
 						"""))
-					.andExpect(status().isNotFound())
-					.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
 		}
 	}
 
@@ -175,25 +175,25 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			given(myPageProfileService.getProfile(1L)).willReturn(response);
 
 			mockMvc.perform(get("/mypage/profile"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.code").value("OK"))
-					.andExpect(jsonPath("$.message").value("조회 성공"))
-					.andExpect(jsonPath("$.data.profile.nickname").value("goorm123"))
-					.andExpect(jsonPath("$.data.profile.snsProvider").value("KAKAO"))
-					.andExpect(jsonPath("$.data.ticketSummary.upcomingCount").value(2))
-					.andExpect(jsonPath("$.data.ticketSummary.cancelRefundCount").value(1))
-					.andExpect(jsonPath("$.data.ticketSummary.completedCount").value(5));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("조회 성공"))
+				.andExpect(jsonPath("$.data.profile.nickname").value("goorm123"))
+				.andExpect(jsonPath("$.data.profile.snsProvider").value("KAKAO"))
+				.andExpect(jsonPath("$.data.ticketSummary.upcomingCount").value(2))
+				.andExpect(jsonPath("$.data.ticketSummary.cancelRefundCount").value(1))
+				.andExpect(jsonPath("$.data.ticketSummary.completedCount").value(5));
 		}
 
 		@Test
 		@DisplayName("사용자가 없으면 404를 반환한다")
 		void getProfile_사용자_미발견_404() throws Exception {
 			given(myPageProfileService.getProfile(any()))
-					.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
 
 			mockMvc.perform(get("/mypage/profile"))
-					.andExpect(status().isNotFound())
-					.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
 		}
 	}
 
@@ -213,15 +213,15 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			given(myPageTicketService.getTickets(eq(1L), eq("BOOKED"), eq(0), eq(10))).willReturn(response);
 
 			mockMvc.perform(get("/mypage/tickets"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.code").value("OK"))
-					.andExpect(jsonPath("$.data.currentTab").value("BOOKED"))
-					.andExpect(jsonPath("$.data.summary.totalCount").value(8))
-					.andExpect(jsonPath("$.data.pagination.page").value(0))
-					.andExpect(jsonPath("$.data.pagination.size").value(10))
-					.andExpect(jsonPath("$.data.tickets").isArray())
-					.andExpect(jsonPath("$.data.tickets.length()").value(1))
-					.andExpect(jsonPath("$.data.tickets[0].ticketId").value(101));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.data.currentTab").value("BOOKED"))
+				.andExpect(jsonPath("$.data.summary.totalCount").value(8))
+				.andExpect(jsonPath("$.data.pagination.page").value(0))
+				.andExpect(jsonPath("$.data.pagination.size").value(10))
+				.andExpect(jsonPath("$.data.tickets").isArray())
+				.andExpect(jsonPath("$.data.tickets.length()").value(1))
+				.andExpect(jsonPath("$.data.tickets[0].ticketId").value(101));
 		}
 
 		@Test
@@ -231,8 +231,8 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			given(myPageTicketService.getTickets(eq(1L), eq("CANCEL_REFUND"), eq(0), eq(10))).willReturn(response);
 
 			mockMvc.perform(get("/mypage/tickets")
-							.param("tab", "CANCEL_REFUND"))
-					.andExpect(status().isOk());
+					.param("tab", "CANCEL_REFUND"))
+				.andExpect(status().isOk());
 		}
 
 		@Test
@@ -242,49 +242,49 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			given(myPageTicketService.getTickets(eq(1L), eq("BOOKED"), eq(1), eq(5))).willReturn(response);
 
 			mockMvc.perform(get("/mypage/tickets")
-							.param("page", "1")
-							.param("size", "5"))
-					.andExpect(status().isOk());
+					.param("page", "1")
+					.param("size", "5"))
+				.andExpect(status().isOk());
 		}
 
 		@Test
 		@DisplayName("size가 10을 초과하면 400을 반환한다")
 		void getTickets_size초과_400() throws Exception {
 			given(myPageTicketService.getTickets(any(), any(), anyInt(), anyInt()))
-					.willThrow(new CustomException(ErrorCode.INVALID_PAGE_SIZE));
+				.willThrow(new CustomException(ErrorCode.INVALID_PAGE_SIZE));
 
 			mockMvc.perform(get("/mypage/tickets")
-							.param("size", "11"))
-					.andExpect(status().isBadRequest())
-					.andExpect(jsonPath("$.message").value("size는 최대 10까지 허용됩니다."));
+					.param("size", "11"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("size는 최대 10까지 허용됩니다."));
 		}
 
 		@Test
 		@DisplayName("유효하지 않은 탭 값이면 400을 반환한다")
 		void getTickets_잘못된탭_400() throws Exception {
 			given(myPageTicketService.getTickets(any(), eq("INVALID"), anyInt(), anyInt()))
-					.willThrow(new CustomException(ErrorCode.INVALID_TICKET_TAB));
+				.willThrow(new CustomException(ErrorCode.INVALID_TICKET_TAB));
 
 			mockMvc.perform(get("/mypage/tickets")
-							.param("tab", "INVALID"))
-					.andExpect(status().isBadRequest())
-					.andExpect(jsonPath("$.message").value("유효하지 않은 탭 값입니다."));
+					.param("tab", "INVALID"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("유효하지 않은 탭 값입니다."));
 		}
 
 		@Test
 		@DisplayName("티켓 목록이 비어있으면 빈 배열과 pagination 정보를 반환한다")
 		void getTickets_빈목록_반환() throws Exception {
 			MyPageTicketListResponse emptyResponse = MyPageTicketListResponse.of(
-					0, 0, 0, 0, "BOOKED", 0, 10, 0L, 0, false, List.of()
+				0, 0, 0, 0, "BOOKED", 0, 10, 0L, 0, false, List.of()
 			);
 			given(myPageTicketService.getTickets(eq(1L), eq("BOOKED"), eq(0), eq(10))).willReturn(emptyResponse);
 
 			mockMvc.perform(get("/mypage/tickets"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.data.tickets").isArray())
-					.andExpect(jsonPath("$.data.tickets.length()").value(0))
-					.andExpect(jsonPath("$.data.pagination.totalElements").value(0))
-					.andExpect(jsonPath("$.data.pagination.hasNext").value(false));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.tickets").isArray())
+				.andExpect(jsonPath("$.data.tickets.length()").value(0))
+				.andExpect(jsonPath("$.data.pagination.totalElements").value(0))
+				.andExpect(jsonPath("$.data.pagination.hasNext").value(false));
 		}
 
 		@Test
@@ -294,10 +294,10 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			given(myPageTicketService.getTickets(eq(1L), eq("BOOKED"), eq(0), eq(10))).willReturn(response);
 
 			mockMvc.perform(get("/mypage/tickets"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.data.tickets[0].actions.canDeposit").value(false))
-					.andExpect(jsonPath("$.data.tickets[0].actions.canCancel").value(true))
-					.andExpect(jsonPath("$.data.tickets[0].actions.canViewDetail").value(true));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.tickets[0].actions.canDeposit").value(false))
+				.andExpect(jsonPath("$.data.tickets[0].actions.canCancel").value(true))
+				.andExpect(jsonPath("$.data.tickets[0].actions.canViewDetail").value(true));
 		}
 	}
 
@@ -317,36 +317,36 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			given(myPageTicketService.getTicketDetail(1L, 101L)).willReturn(response);
 
 			mockMvc.perform(get("/mypage/tickets/101"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.code").value("OK"))
-					.andExpect(jsonPath("$.message").value("조회 성공"))
-					.andExpect(jsonPath("$.data.ticketId").value(101))
-					.andExpect(jsonPath("$.data.status").value("PAID"))
-					.andExpect(jsonPath("$.data.actions.canPrint").value(true))
-					.andExpect(jsonPath("$.data.match.matchId").value(55))
-					.andExpect(jsonPath("$.data.seats.length()").value(2));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("조회 성공"))
+				.andExpect(jsonPath("$.data.ticketId").value(101))
+				.andExpect(jsonPath("$.data.status").value("PAID"))
+				.andExpect(jsonPath("$.data.actions.canPrint").value(true))
+				.andExpect(jsonPath("$.data.match.matchId").value(55))
+				.andExpect(jsonPath("$.data.seats.length()").value(2));
 		}
 
 		@Test
 		@DisplayName("존재하지 않는 ticketId면 404를 반환한다")
 		void getTicketDetail_주문없음_404() throws Exception {
 			given(myPageTicketService.getTicketDetail(1L, 999L))
-					.willThrow(new CustomException(ErrorCode.ORDER_NOT_FOUND));
+				.willThrow(new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
 			mockMvc.perform(get("/mypage/tickets/999"))
-					.andExpect(status().isNotFound())
-					.andExpect(jsonPath("$.message").value("주문을 찾을 수 없습니다."));
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("주문을 찾을 수 없습니다."));
 		}
 
 		@Test
 		@DisplayName("본인 소유가 아니면 403을 반환한다")
 		void getTicketDetail_권한없음_403() throws Exception {
 			given(myPageTicketService.getTicketDetail(1L, 101L))
-					.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
+				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
 
 			mockMvc.perform(get("/mypage/tickets/101"))
-					.andExpect(status().isForbidden())
-					.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
 		}
 	}
 
@@ -366,46 +366,46 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			given(myPageTicketService.getTicketEntryQr(1L, 101L)).willReturn(response);
 
 			mockMvc.perform(get("/mypage/tickets/101/qr"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.code").value("OK"))
-					.andExpect(jsonPath("$.message").value("QR 발급 성공"))
-					.andExpect(jsonPath("$.data.ticketId").value(101))
-					.andExpect(jsonPath("$.data.qrToken").value("qr-token-uuid"))
-					.andExpect(jsonPath("$.data.match.homeClub.koName").value("LG 트윈스"))
-					.andExpect(jsonPath("$.data.seats.length()").value(2));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("QR 발급 성공"))
+				.andExpect(jsonPath("$.data.ticketId").value(101))
+				.andExpect(jsonPath("$.data.qrToken").value("qr-token-uuid"))
+				.andExpect(jsonPath("$.data.match.homeClub.koName").value("LG 트윈스"))
+				.andExpect(jsonPath("$.data.seats.length()").value(2));
 		}
 
 		@Test
 		@DisplayName("본인 소유가 아니면 403을 반환한다")
 		void getTicketEntryQr_권한없음_403() throws Exception {
 			given(myPageTicketService.getTicketEntryQr(1L, 101L))
-					.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
+				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
 
 			mockMvc.perform(get("/mypage/tickets/101/qr"))
-					.andExpect(status().isForbidden())
-					.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
 		}
 
 		@Test
 		@DisplayName("입장 가능 시간이 아니면 400을 반환한다")
 		void getTicketEntryQr_입장시간아님_400() throws Exception {
 			given(myPageTicketService.getTicketEntryQr(1L, 101L))
-					.willThrow(new CustomException(ErrorCode.ENTRY_QR_NOT_AVAILABLE_YET));
+				.willThrow(new CustomException(ErrorCode.ENTRY_QR_NOT_AVAILABLE_YET));
 
 			mockMvc.perform(get("/mypage/tickets/101/qr"))
-					.andExpect(status().isBadRequest())
-					.andExpect(jsonPath("$.message").value("아직 입장 가능 시간이 아닙니다."));
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("아직 입장 가능 시간이 아닙니다."));
 		}
 
 		@Test
 		@DisplayName("경기 시작 이후면 400을 반환한다")
 		void getTicketEntryQr_경기시작이후_400() throws Exception {
 			given(myPageTicketService.getTicketEntryQr(1L, 101L))
-					.willThrow(new CustomException(ErrorCode.ENTRY_QR_MATCH_STARTED));
+				.willThrow(new CustomException(ErrorCode.ENTRY_QR_MATCH_STARTED));
 
 			mockMvc.perform(get("/mypage/tickets/101/qr"))
-					.andExpect(status().isBadRequest())
-					.andExpect(jsonPath("$.message").value("경기 시작 이후에는 QR을 발급할 수 없습니다."));
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("경기 시작 이후에는 QR을 발급할 수 없습니다."));
 		}
 	}
 
@@ -425,36 +425,36 @@ class MyPageControllerTest extends WebMvcTestSupport {
 			given(myPageTicketService.requestTicketCancel(1L, 101L)).willReturn(response);
 
 			mockMvc.perform(post("/mypage/tickets/101/cancel"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.code").value("OK"))
-					.andExpect(jsonPath("$.message").value("취소 요청이 완료되었습니다."))
-					.andExpect(jsonPath("$.data.ticketId").value(101))
-					.andExpect(jsonPath("$.data.status").value("CANCEL_REQUESTED"))
-					.andExpect(jsonPath("$.data.totalAmount").value(42000))
-					.andExpect(jsonPath("$.data.cancellationFee").value(6000))
-					.andExpect(jsonPath("$.data.refundedAmount").value(36000));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("취소 요청이 완료되었습니다."))
+				.andExpect(jsonPath("$.data.ticketId").value(101))
+				.andExpect(jsonPath("$.data.status").value("CANCEL_REQUESTED"))
+				.andExpect(jsonPath("$.data.totalAmount").value(42000))
+				.andExpect(jsonPath("$.data.cancellationFee").value(6000))
+				.andExpect(jsonPath("$.data.refundedAmount").value(36000));
 		}
 
 		@Test
 		@DisplayName("본인 소유가 아니면 403을 반환한다")
 		void requestTicketCancel_권한없음_403() throws Exception {
 			given(myPageTicketService.requestTicketCancel(1L, 101L))
-					.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
+				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
 
 			mockMvc.perform(post("/mypage/tickets/101/cancel"))
-					.andExpect(status().isForbidden())
-					.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
 		}
 
 		@Test
 		@DisplayName("취소 가능한 기간이 아니면 400을 반환한다")
 		void requestTicketCancel_취소불가기간_400() throws Exception {
 			given(myPageTicketService.requestTicketCancel(1L, 101L))
-					.willThrow(new CustomException(ErrorCode.TICKET_CANCEL_NOT_ALLOWED));
+				.willThrow(new CustomException(ErrorCode.TICKET_CANCEL_NOT_ALLOWED));
 
 			mockMvc.perform(post("/mypage/tickets/101/cancel"))
-					.andExpect(status().isBadRequest())
-					.andExpect(jsonPath("$.message").value("취소 가능한 기간이 아닙니다."));
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("취소 가능한 기간이 아닙니다."));
 		}
 	}
 
@@ -471,51 +471,51 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@DisplayName("유효한 요청이면 200과 문의 목록을 반환한다")
 		void getInquiries_성공() throws Exception {
 			given(myPageInquiryService.getInquiries(1L))
-					.willReturn(new MyPageInquiryListResponse(
-							List.of(
-									new MyPageInquiryListResponse.InquiryItem(
-											11L,
-											"BOOKING",
-											"문의 제목",
-											"REGISTERED",
-											Instant.parse("2026-03-31T08:00:00Z")
-									)
-							)
-					));
+				.willReturn(new MyPageInquiryListResponse(
+					List.of(
+						new MyPageInquiryListResponse.InquiryItem(
+							11L,
+							"BOOKING",
+							"문의 제목",
+							"REGISTERED",
+							Instant.parse("2026-03-31T08:00:00Z")
+						)
+					)
+				));
 
 			mockMvc.perform(get("/mypage/inquiries"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.code").value("OK"))
-					.andExpect(jsonPath("$.message").value("조회 성공"))
-					.andExpect(jsonPath("$.data.inquiries").isArray())
-					.andExpect(jsonPath("$.data.inquiries.length()").value(1))
-					.andExpect(jsonPath("$.data.inquiries[0].inquiryId").value(11))
-					.andExpect(jsonPath("$.data.inquiries[0].category").value("BOOKING"))
-					.andExpect(jsonPath("$.data.inquiries[0].title").value("문의 제목"))
-					.andExpect(jsonPath("$.data.inquiries[0].status").value("REGISTERED"));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("조회 성공"))
+				.andExpect(jsonPath("$.data.inquiries").isArray())
+				.andExpect(jsonPath("$.data.inquiries.length()").value(1))
+				.andExpect(jsonPath("$.data.inquiries[0].inquiryId").value(11))
+				.andExpect(jsonPath("$.data.inquiries[0].category").value("BOOKING"))
+				.andExpect(jsonPath("$.data.inquiries[0].title").value("문의 제목"))
+				.andExpect(jsonPath("$.data.inquiries[0].status").value("REGISTERED"));
 		}
 
 		@Test
 		@DisplayName("문의가 없으면 빈 배열을 반환한다")
 		void getInquiries_빈목록_반환() throws Exception {
 			given(myPageInquiryService.getInquiries(1L))
-					.willReturn(new MyPageInquiryListResponse(List.of()));
+				.willReturn(new MyPageInquiryListResponse(List.of()));
 
 			mockMvc.perform(get("/mypage/inquiries"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.data.inquiries").isArray())
-					.andExpect(jsonPath("$.data.inquiries.length()").value(0));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.inquiries").isArray())
+				.andExpect(jsonPath("$.data.inquiries.length()").value(0));
 		}
 
 		@Test
 		@DisplayName("사용자가 없으면 404를 반환한다")
 		void getInquiries_사용자없음_404() throws Exception {
 			given(myPageInquiryService.getInquiries(1L))
-					.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
 
 			mockMvc.perform(get("/mypage/inquiries"))
-					.andExpect(status().isNotFound())
-					.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
 		}
 	}
 
@@ -532,11 +532,11 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@DisplayName("유효한 JSON 요청이면 201과 inquiryId를 반환한다")
 		void createInquiry_성공() throws Exception {
 			given(myPageInquiryService.createInquiry(eq(1L), any()))
-					.willReturn(MyPageInquiryCreateResponse.of(11L));
+				.willReturn(MyPageInquiryCreateResponse.of(11L));
 
 			mockMvc.perform(post("/mypage/inquiries")
-							.contentType("application/json")
-							.content("""
+					.contentType("application/json")
+					.content("""
 						{
 						  "category": "BOOKING",
 						  "title": "좌석 변경 문의",
@@ -544,44 +544,44 @@ class MyPageControllerTest extends WebMvcTestSupport {
 						  "phoneNumber": "010-1234-5678"
 						}
 						"""))
-					.andExpect(status().isCreated())
-					.andExpect(jsonPath("$.code").value("CREATED"))
-					.andExpect(jsonPath("$.message").value("문의가 등록되었습니다."))
-					.andExpect(jsonPath("$.data.inquiryId").value(11));
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.code").value("CREATED"))
+				.andExpect(jsonPath("$.message").value("문의가 등록되었습니다."))
+				.andExpect(jsonPath("$.data.inquiryId").value(11));
 		}
 
 		@Test
 		@DisplayName("유효하지 않은 카테고리면 400을 반환한다")
 		void createInquiry_카테고리오류_400() throws Exception {
 			given(myPageInquiryService.createInquiry(eq(1L), any()))
-					.willThrow(new CustomException(ErrorCode.INVALID_INQUIRY_CATEGORY));
+				.willThrow(new CustomException(ErrorCode.INVALID_INQUIRY_CATEGORY));
 
 			mockMvc.perform(post("/mypage/inquiries")
-							.contentType("application/json")
-							.content("""
+					.contentType("application/json")
+					.content("""
 						{
 						  "category": "INVALID",
 						  "title": "좌석 변경 문의",
 						  "content": "문의 내용"
 						}
 						"""))
-					.andExpect(status().isBadRequest())
-					.andExpect(jsonPath("$.message").value("유효하지 않은 문의 카테고리입니다."));
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("유효하지 않은 문의 카테고리입니다."));
 		}
 
 		@Test
 		@DisplayName("필수 필드가 없으면 400을 반환한다")
 		void createInquiry_필수필드누락_400() throws Exception {
 			mockMvc.perform(post("/mypage/inquiries")
-							.contentType("application/json")
-							.content("""
+					.contentType("application/json")
+					.content("""
 						{
 						  "category": "BOOKING",
 						  "content": "문의 내용"
 						}
 						"""))
-					.andExpect(status().isBadRequest())
-					.andExpect(jsonPath("$.message").value("title: title은 필수입니다."));
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("title: title은 필수입니다."));
 		}
 	}
 
@@ -598,36 +598,36 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@DisplayName("유효한 요청이면 200과 문의 상세를 반환한다")
 		void getInquiryDetail_성공() throws Exception {
 			given(myPageInquiryService.getInquiryDetail(1L, 11L))
-					.willReturn(new MyPageInquiryDetailResponse(
-							11L,
-							"BOOKING",
-							"문의 제목",
-							"문의 내용",
-							"010-1234-5678",
-							"REGISTERED",
-							true,
-							"https://signed.example.com/get",
-							Instant.parse("2026-03-31T08:00:00Z")
-					));
+				.willReturn(new MyPageInquiryDetailResponse(
+					11L,
+					"BOOKING",
+					"문의 제목",
+					"문의 내용",
+					"010-1234-5678",
+					"REGISTERED",
+					true,
+					"https://signed.example.com/get",
+					Instant.parse("2026-03-31T08:00:00Z")
+				));
 
 			mockMvc.perform(get("/mypage/inquiries/11"))
-					.andExpect(status().isOk())
-					.andExpect(jsonPath("$.code").value("OK"))
-					.andExpect(jsonPath("$.message").value("조회 성공"))
-					.andExpect(jsonPath("$.data.inquiryId").value(11))
-					.andExpect(jsonPath("$.data.fileAttached").value(true))
-					.andExpect(jsonPath("$.data.downloadUrl").value("https://signed.example.com/get"));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("조회 성공"))
+				.andExpect(jsonPath("$.data.inquiryId").value(11))
+				.andExpect(jsonPath("$.data.fileAttached").value(true))
+				.andExpect(jsonPath("$.data.downloadUrl").value("https://signed.example.com/get"));
 		}
 
 		@Test
 		@DisplayName("타인 문의면 403을 반환한다")
 		void getInquiryDetail_권한없음_403() throws Exception {
 			given(myPageInquiryService.getInquiryDetail(1L, 11L))
-					.willThrow(new CustomException(ErrorCode.INQUIRY_ACCESS_DENIED));
+				.willThrow(new CustomException(ErrorCode.INQUIRY_ACCESS_DENIED));
 
 			mockMvc.perform(get("/mypage/inquiries/11"))
-					.andExpect(status().isForbidden())
-					.andExpect(jsonPath("$.message").value("해당 문의에 접근할 권한이 없습니다."));
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("해당 문의에 접근할 권한이 없습니다."));
 		}
 	}
 }
