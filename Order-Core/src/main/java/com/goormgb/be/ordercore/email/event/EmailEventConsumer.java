@@ -32,10 +32,13 @@ public class EmailEventConsumer {
 			.orElse(null);
 
 		if (context == null) {
-			log.warn("[Kafka-Email] 주문 없음, 이메일 발송 스킵: orderId={}", event.getOrderId());
+			log.warn("[Kafka-Email] 주문없음 이메일스킵 - orderId={}, eventTopic={}, action=skip, reason=order_not_found",
+				event.getOrderId(), EventTopic.PAYMENT_COMPLETED);
 			return;
 		}
 
+		log.info("[Kafka-Email] 결제완료 이메일발송 - orderId={}, eventTopic={}, action=send", event.getOrderId(),
+			EventTopic.PAYMENT_COMPLETED);
 		emailService.sendPaymentConfirmation(context);
 	}
 
@@ -49,10 +52,13 @@ public class EmailEventConsumer {
 			.orElse(null);
 
 		if (context == null) {
-			log.warn("[Kafka-Email] 주문 없음, 이메일 발송 스킵: orderId={}", event.getOrderId());
+			log.warn("[Kafka-Email] 주문없음 이메일스킵 - orderId={}, eventTopic={}, action=skip, reason=order_not_found",
+				event.getOrderId(), EventTopic.ORDER_CANCELLED);
 			return;
 		}
 
+		log.info("[Kafka-Email] 주문취소 이메일발송 - orderId={}, eventTopic={}, action=send", event.getOrderId(),
+			EventTopic.ORDER_CANCELLED);
 		emailService.sendCancellationConfirmation(context);
 	}
 }
