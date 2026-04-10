@@ -9,6 +9,7 @@ import com.goormgb.be.ordercore.payment.enums.PaymentStatus;
 
 public record PaymentProcessResponse(
 	Long orderId,
+	String orderNumber,
 	OrderStatus orderStatus,
 	PaymentMethod paymentMethod,
 	PaymentStatus paymentStatus,
@@ -36,6 +37,7 @@ public record PaymentProcessResponse(
 
 		return new PaymentProcessResponse(
 			payment.getOrder().getId(),
+			payment.getOrder().getOrderNumber(),
 			payment.getOrder().getStatus(),
 			payment.getPaymentMethod(),
 			payment.getStatus(),

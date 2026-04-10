@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "주문 생성 응답")
 public record OrderCreateResponse(
 	@Schema(description = "주문 ID", example = "1") Long orderId,
+	@Schema(description = "주문 번호 (외부 식별자)", example = "ORD-550e8400-e29b-41d4-a716-446655440000") String orderNumber,
 	@Schema(description = "주문 상태", example = "PAYMENT_PENDING") OrderStatus status,
 	@Schema(description = "경기 ID", example = "1") Long matchId,
 	@Schema(description = "주문 좌석 수", example = "2") int seatCount,
@@ -21,6 +22,7 @@ public record OrderCreateResponse(
 	public static OrderCreateResponse of(Order order, int seatCount) {
 		return new OrderCreateResponse(
 			order.getId(),
+			order.getOrderNumber(),
 			order.getStatus(),
 			order.getMatch().getId(),
 			seatCount,

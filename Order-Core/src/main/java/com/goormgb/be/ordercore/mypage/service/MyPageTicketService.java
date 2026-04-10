@@ -190,7 +190,11 @@ public class MyPageTicketService {
 	public MyPageTicketDetailResponse getTicketDetail(Long userId, Long ticketId) {
 		TicketDetailBaseRow base = myPageQueryService.findTicketDetailBaseByOrderId(ticketId)
 				.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-		Preconditions.validate(base.userId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
+		if (!base.userId().equals(userId)) {
+			log.warn("[Security] 티켓 상세 소유권 불일치 — requestUserId={}, ticketId={}, ownerUserId={}",
+					userId, ticketId, base.userId());
+			throw new CustomException(ErrorCode.ORDER_NOT_FOUND);
+		}
 		List<TicketSeatDetailRow> seatRows = myPageQueryService.findTicketSeatRowsByOrderId(ticketId);
 
 		MyPageTicketDetailResponse.PaymentInfo payment = MyPageTicketDetailAssembler.toPaymentInfo(base);
@@ -216,7 +220,11 @@ public class MyPageTicketService {
 	public MyPageTicketQrResponse getTicketEntryQr(Long userId, Long ticketId) {
 		Order order = orderRepository.findByIdForUpdate(ticketId)
 				.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
+		if (!order.getUser().getId().equals(userId)) {
+			log.warn("[Security] QR 발급 소유권 불일치 — requestUserId={}, ticketId={}, ownerUserId={}",
+					userId, ticketId, order.getUser().getId());
+			throw new CustomException(ErrorCode.ORDER_NOT_FOUND);
+		}
 		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
 
 		Instant now = Instant.now(clock);
@@ -234,7 +242,11 @@ public class MyPageTicketService {
 		Instant now = Instant.now(clock);
 		Order order = orderRepository.findByIdForUpdate(ticketId)
 				.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
+		if (!order.getUser().getId().equals(userId)) {
+			log.warn("[Security] 취소 요청 소유권 불일치 — requestUserId={}, ticketId={}, ownerUserId={}",
+					userId, ticketId, order.getUser().getId());
+			throw new CustomException(ErrorCode.ORDER_NOT_FOUND);
+		}
 		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
 
 		CancellationFeePolicy policy = MyPageTicketCancellationCalculator.findCancellationPolicy(

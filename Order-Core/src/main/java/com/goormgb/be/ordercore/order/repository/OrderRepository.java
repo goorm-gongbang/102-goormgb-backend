@@ -17,6 +17,8 @@ import jakarta.persistence.LockModeType;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
+	Optional<Order> findByOrderNumber(String orderNumber);
+
 	boolean existsByIdAndStatus(Long id, OrderStatus status);
 
 	long countByUserId(Long userId);
