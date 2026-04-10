@@ -16,6 +16,7 @@ import com.goormgb.be.authguard.kakao.client.KakaoOAuthClient;
 import com.goormgb.be.authguard.kakao.dto.KakaoLoginResponse;
 import com.goormgb.be.authguard.kakao.dto.KakaoTokenResponse;
 import com.goormgb.be.authguard.kakao.dto.KakaoUserResponse;
+import com.goormgb.be.global.encryption.HashUtil;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
@@ -56,10 +57,11 @@ public class KakaoAuthService {
 		String nickname = userResponse.getNickname();
 		String profileImageUrl = userResponse.getProfileImageUrl();
 
-		// 3. user_sns 기준으로 기존 사용자 조회
+		// 3. user_sns 기준으로 기존 사용자 조회 (해시 기반)
 		boolean isNewUser = false;
-		Optional<UserSns> existingUserSns = userSnsRepository.findByProviderAndProviderUserId(
-				SocialProvider.KAKAO, providerUserId);
+		String providerUserIdHash = HashUtil.sha256(providerUserId);
+		Optional<UserSns> existingUserSns = userSnsRepository.findByProviderAndProviderUserIdHash(
+				SocialProvider.KAKAO, providerUserIdHash);
 		User user;
 		if (existingUserSns.isPresent()) {
 			user = existingUserSns.get().getUser();
@@ -94,7 +96,7 @@ public class KakaoAuthService {
 		// 7. refreshToken redis 에 저장
 		Instant now = Instant.now();
 
-		int expirationDays = jwtProperties.getRefreshToken().getExpirationDays();
+		int expirationHours = jwtProperties.getRefreshToken().getExpirationHours();
 
 		RefreshTokenInfo tokenInfo = RefreshTokenInfo.builder()
 				.userId(user.getId())
@@ -102,7 +104,7 @@ public class KakaoAuthService {
 				.jti(jti)
 				.sid(sid)
 				.issuedAt(now)
-				.expiresAt(now.plus(Duration.ofDays(expirationDays)))
+				.expiresAt(now.plus(Duration.ofHours(expirationHours)))
 				.userAgent(request.getHeader("User-Agent"))
 				.ipAddress(getClientIp(request))
 				.build();

@@ -23,6 +23,8 @@ import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.order.OrderFixture;
+import com.goormgb.be.ordercore.metrics.OrderMetricsService;
+import com.goormgb.be.ordercore.metrics.enums.OrderDraftEntryPoint;
 import com.goormgb.be.ordercore.order.dto.request.OrderCreateRequest;
 import com.goormgb.be.ordercore.order.dto.response.OrderCreateResponse;
 import com.goormgb.be.ordercore.order.dto.response.OrderSheetGetResponse;
@@ -49,13 +51,16 @@ class OrderServiceTest {
 	private OrderSeatRepository orderSeatRepository;
 	@Mock
 	private SeatInfoQueryService seatInfoQueryService;
+	@Mock
+	private OrderMetricsService orderMetricsService;
 
 	private OrderService orderService;
 
 	@BeforeEach
 	void setUp() {
 		orderService = new OrderService(
-			matchRepository, userRepository, orderRepository, orderSeatRepository, seatInfoQueryService
+			matchRepository, userRepository, orderRepository, orderSeatRepository, seatInfoQueryService,
+			orderMetricsService
 		);
 	}
 
@@ -76,7 +81,9 @@ class OrderServiceTest {
 			given(seatInfoQueryService.findSeatHoldInfos(userId, seatIds)).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
 
-			OrderSheetGetResponse response = orderService.getOrderSheet(userId, matchId, seatIds);
+			OrderSheetGetResponse response = orderService.getOrderSheet(
+				userId, matchId, seatIds, OrderDraftEntryPoint.RECOMMEND
+			);
 
 			assertThat(response).isNotNull();
 			assertThat(response.seats()).hasSize(1);
@@ -99,7 +106,9 @@ class OrderServiceTest {
 			given(seatInfoQueryService.findSeatHoldInfos(userId, seatIds)).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.findPrice(1L, "WEEKEND", "ADULT")).willReturn(24000);
 
-			OrderSheetGetResponse response = orderService.getOrderSheet(userId, matchId, seatIds);
+			OrderSheetGetResponse response = orderService.getOrderSheet(
+				userId, matchId, seatIds, OrderDraftEntryPoint.RECOMMEND
+			);
 
 			assertThat(response.seats().get(0).adultPrice()).isEqualTo(24000);
 			then(seatInfoQueryService).should().findPrice(1L, "WEEKEND", "ADULT");
@@ -123,7 +132,9 @@ class OrderServiceTest {
 			given(seatInfoQueryService.findSeatHoldInfos(userId, seatIds)).willReturn(List.of(hold1, hold2));
 			given(seatInfoQueryService.findPrice(eq(1L), eq("WEEKDAY"), eq("ADULT"))).willReturn(22000);
 
-			OrderSheetGetResponse response = orderService.getOrderSheet(userId, matchId, seatIds);
+			OrderSheetGetResponse response = orderService.getOrderSheet(
+				userId, matchId, seatIds, OrderDraftEntryPoint.RECOMMEND
+			);
 
 			assertThat(response.seats()).hasSize(2);
 			assertThat(response.summary().seatCount()).isEqualTo(2);
@@ -133,7 +144,7 @@ class OrderServiceTest {
 		@DisplayName("seatIds가 비어있으면 ORDER_SEAT_EMPTY 예외가 발생한다")
 		void getOrderSheet_빈seatIds_예외() {
 			assertThatThrownBy(
-				() -> orderService.getOrderSheet(1L, 1L, Collections.emptyList())
+				() -> orderService.getOrderSheet(1L, 1L, Collections.emptyList(), OrderDraftEntryPoint.RECOMMEND)
 			)
 				.isInstanceOf(CustomException.class)
 				.hasMessage(ErrorCode.ORDER_SEAT_EMPTY.getMessage());
@@ -149,7 +160,9 @@ class OrderServiceTest {
 				.willReturn(List.of(OrderFixture.createSeatHoldInfo(101L, userId))); // 1개만 반환
 
 			assertThatThrownBy(
-				() -> orderService.getOrderSheet(userId, 1L, List.of(101L, 102L))
+				() -> orderService.getOrderSheet(
+					userId, 1L, List.of(101L, 102L), OrderDraftEntryPoint.RECOMMEND
+				)
 			)
 				.isInstanceOf(CustomException.class)
 				.hasMessage(ErrorCode.SEAT_HOLD_NOT_FOUND.getMessage());
@@ -166,7 +179,7 @@ class OrderServiceTest {
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(expiredHold));
 
 			assertThatThrownBy(
-				() -> orderService.getOrderSheet(userId, 1L, List.of(101L))
+				() -> orderService.getOrderSheet(userId, 1L, List.of(101L), OrderDraftEntryPoint.RECOMMEND)
 			)
 				.isInstanceOf(CustomException.class)
 				.hasMessage(ErrorCode.SEAT_HOLD_EXPIRED.getMessage());
@@ -184,7 +197,7 @@ class OrderServiceTest {
 			given(seatInfoQueryService.findPrice(anyLong(), anyString(), anyString())).willReturn(null);
 
 			assertThatThrownBy(
-				() -> orderService.getOrderSheet(userId, 1L, List.of(101L))
+				() -> orderService.getOrderSheet(userId, 1L, List.of(101L), OrderDraftEntryPoint.RECOMMEND)
 			)
 				.isInstanceOf(CustomException.class)
 				.hasMessage(ErrorCode.PRICE_POLICY_NOT_FOUND.getMessage());
@@ -205,9 +218,9 @@ class OrderServiceTest {
 		}
 
 		private void stubNoPendingOrders() {
-			given(orderRepository.bulkUpdateStatus(anyLong(), anyLong(),
-				eq(OrderStatus.PAYMENT_PENDING), eq(OrderStatus.CANCELLED)))
-				.willReturn(0);
+			given(orderRepository.findIdsByUserIdAndMatchIdAndStatus(anyLong(), anyLong(),
+				eq(OrderStatus.PAYMENT_PENDING)))
+				.willReturn(Collections.emptyList());
 		}
 
 		@Test
@@ -251,7 +264,7 @@ class OrderServiceTest {
 			OrderCreateRequest request = new OrderCreateRequest(
 				1L,
 				List.of(101L, 102L),
-				31000,
+				46000,
 				"홍길동", "hong@test.com", "010-1234-5678", "990831"
 			);
 
@@ -268,7 +281,7 @@ class OrderServiceTest {
 			OrderCreateResponse response = orderService.createOrder(userId, request);
 
 			assertThat(response.seatCount()).isEqualTo(2);
-			assertThat(response.totalAmount()).isEqualTo(22000 + 7000 + 2000);
+			assertThat(response.totalAmount()).isEqualTo(22000 + 22000 + 2000);
 		}
 
 		@Test
@@ -318,6 +331,35 @@ class OrderServiceTest {
 			orderService.createOrder(userId, request);
 
 			then(orderSeatRepository).should().saveAll(any());
+		}
+
+		@Test
+		@DisplayName("요청 totalPrice가 서버 계산값과 다르면 ORDER_TOTAL_PRICE_MISMATCH 예외가 발생한다")
+		void createOrder_totalPrice_불일치_예외() {
+			Long userId = 1L;
+			User user = OrderFixture.createUser();
+			Match match = OrderFixture.createWeekdayMatch();
+			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
+			OrderCreateRequest request = new OrderCreateRequest(
+				1L,
+				List.of(101L),
+				0,
+				"홍길동", "hong@test.com", "010-1234-5678", "990831"
+			);
+
+			stubNoPendingOrders();
+			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
+			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
+			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
+			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
+
+			assertThatThrownBy(() -> orderService.createOrder(userId, request))
+				.isInstanceOf(CustomException.class)
+				.hasMessage(ErrorCode.ORDER_TOTAL_PRICE_MISMATCH.getMessage());
+
+			then(orderRepository).should(never()).save(any(Order.class));
+			then(orderSeatRepository).should(never()).saveAll(any());
 		}
 
 		@Test
@@ -436,6 +478,11 @@ class OrderServiceTest {
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
+			List<Long> pendingOrderIds = List.of(10L, 11L);
+			given(orderRepository.findIdsByUserIdAndMatchIdAndStatus(userId, 1L,
+				OrderStatus.PAYMENT_PENDING))
+				.willReturn(pendingOrderIds);
+			given(orderSeatRepository.deleteByOrderIdIn(pendingOrderIds)).willReturn(2);
 			given(orderRepository.bulkUpdateStatus(userId, 1L,
 				OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED))
 				.willReturn(2);
@@ -473,8 +520,8 @@ class OrderServiceTest {
 			OrderCreateResponse response = orderService.createOrder(userId, request);
 
 			assertThat(response.status()).isEqualTo(OrderStatus.PAYMENT_PENDING);
-			then(orderRepository).should().bulkUpdateStatus(userId, 1L,
-				OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED);
+			then(orderRepository).should(never()).bulkUpdateStatus(anyLong(), anyLong(),
+				any(OrderStatus.class), any(OrderStatus.class));
 		}
 	}
 }

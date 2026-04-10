@@ -43,8 +43,19 @@ public class JwtTokenProvider {
 	}
 
 	public String createAccessToken(Long userId, String authority, String sid) {
+		return createAccessToken(userId, authority, sid, jwtProperties.getAccessToken().getExpirationMinutes());
+	}
+
+	public String createRefreshToken(Long userId, String sid) {
+		return createRefreshToken(userId, sid, jwtProperties.getRefreshToken().getExpirationHours() * 60);
+	}
+
+	/**
+	 * 만료 시간을 직접 지정하여 Access Token을 생성한다. (부하테스트용)
+	 */
+	public String createAccessToken(Long userId, String authority, String sid, int expirationMinutes) {
 		Instant now = Instant.now();
-		Instant expiration = now.plus(jwtProperties.getAccessToken().getExpirationMinutes(), ChronoUnit.MINUTES);
+		Instant expiration = now.plus(expirationMinutes, ChronoUnit.MINUTES);
 
 		return Jwts.builder()
 				.header()
@@ -65,9 +76,12 @@ public class JwtTokenProvider {
 				.compact();
 	}
 
-	public String createRefreshToken(Long userId, String sid) {
+	/**
+	 * 만료 시간을 직접 지정하여 Refresh Token을 생성한다. (부하테스트용)
+	 */
+	public String createRefreshToken(Long userId, String sid, int expirationMinutes) {
 		Instant now = Instant.now();
-		Instant expiration = now.plus(jwtProperties.getRefreshToken().getExpirationDays(), ChronoUnit.DAYS);
+		Instant expiration = now.plus(expirationMinutes, ChronoUnit.MINUTES);
 
 		return Jwts.builder()
 				.header()

@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.payment.entity.Payment;
 import com.goormgb.be.ordercore.payment.enums.PaymentStatus;
 import com.goormgb.be.ordercore.payment.repository.PaymentRepository;
@@ -36,6 +37,7 @@ public class BankTransferExpireScheduler {
 
 	private final PaymentRepository paymentRepository;
 	private final BankTransferCancelService bankTransferCancelService;
+	private final OrderMetricsService orderMetricsService;
 
 	/**
 	 * 5분마다 만료된 무통장 입금 건을 조회하여 자동 취소한다.
@@ -56,12 +58,14 @@ public class BankTransferExpireScheduler {
 			try {
 				boolean cancelled = bankTransferCancelService.cancelSinglePayment(payment);
 				if (cancelled) {
+					// 만료 취소 건수 집계
+					orderMetricsService.increaseBankTransferExpired();
 					cancelledCount++;
 				}
 			} catch (Exception e) {
 				failedCount++;
 				log.error("[BankTransferExpireScheduler] 자동 취소 실패 - paymentId={}: {}",
-						payment.getId(), e.getMessage(), e);
+					payment.getId(), e.getMessage(), e);
 			}
 		}
 

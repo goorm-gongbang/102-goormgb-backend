@@ -39,11 +39,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class LoadTestUserSeeder implements CommandLineRunner {
 
-	private static final int TOTAL_USERS = 15000;
+	private static final int TOTAL_USERS = 100;
 	private static final String PASSWORD = "1234";
 	private static final int BATCH_LOG_INTERVAL = 100;
 	private static final int FLUSH_INTERVAL = 100;
-	private static final int CLUB_COUNT = 10;
 	private static final int PREFERRED_BLOCK_COUNT = 10;
 
 	/**
@@ -203,8 +202,6 @@ public class LoadTestUserSeeder implements CommandLineRunner {
 	}
 
 	private List<Club> loadClubs() {
-		return LongStream.rangeClosed(1, CLUB_COUNT)
-				.mapToObj(clubRepository::getReferenceById)
-				.toList();
+		return clubRepository.findAll();
 	}
 }

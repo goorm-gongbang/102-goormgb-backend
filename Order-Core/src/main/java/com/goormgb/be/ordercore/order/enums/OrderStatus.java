@@ -12,7 +12,8 @@ public enum OrderStatus {
 	CANCEL_REQUESTED("취소 요청"),
 	CANCELLED("취소 완료"),
 	REFUND_PROCESSING("환불 처리 중"),
-	REFUND_COMPLETED("환불 완료");
+	REFUND_COMPLETED("환불 완료"),
+	UNDER_REVIEW("정밀 확인 중");
 
 	private final String description;
 }

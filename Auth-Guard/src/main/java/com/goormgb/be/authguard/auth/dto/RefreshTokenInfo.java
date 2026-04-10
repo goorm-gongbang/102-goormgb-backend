@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
  * <p>
  * Key: {@code refresh_token:{jti}}
  * <p>
- * TTL: 7일 (application.yaml의 jwt.refresh-token.expiration-days 참조)
+ * TTL: 3시간 (application.yaml의 jwt.refresh-token.expiration-hours 참조, 부하테스트: 15분)
  * <p>
  * 중복 로그인 허용: 유저당 여러 개의 Refresh Token 저장 가능
  */

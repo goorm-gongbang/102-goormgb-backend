@@ -8,8 +8,26 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.goormgb.be.ordercore.order.entity.OrderSeat;
+import com.goormgb.be.ordercore.order.enums.OrderStatus;
 
 public interface OrderSeatRepository extends JpaRepository<OrderSeat, Long> {
+
+	/**
+	 * 특정 유저의 특정 경기에 대한 유효 주문 좌석 수를 카운트한다.
+	 */
+	@Query("""
+			SELECT COUNT(os)
+			FROM OrderSeat os
+			JOIN os.order o
+			WHERE o.user.id = :userId
+			  AND o.match.id = :matchId
+			  AND o.status IN :statuses
+			""")
+	long countByUserIdAndMatchIdAndStatuses(
+			@Param("userId") Long userId,
+			@Param("matchId") Long matchId,
+			@Param("statuses") List<OrderStatus> statuses
+	);
 
 	List<OrderSeat> findByOrderId(Long orderId);
 

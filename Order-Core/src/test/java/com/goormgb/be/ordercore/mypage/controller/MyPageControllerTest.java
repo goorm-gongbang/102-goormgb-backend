@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,7 +14,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,6 +25,8 @@ import com.goormgb.be.ordercore.fixture.mypage.MyPageFixture;
 import com.goormgb.be.ordercore.mypage.dto.request.MyPageAccountUpdateRequest;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageAccountResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryDetailResponse;
+import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryListResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketCancelResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageTicketDetailResponse;
@@ -457,6 +459,67 @@ class MyPageControllerTest extends WebMvcTestSupport {
 	}
 
 	@Nested
+	@DisplayName("GET /mypage/inquiries — 1:1 문의 목록 조회")
+	class GetInquiries {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 문의 목록을 반환한다")
+		void getInquiries_성공() throws Exception {
+			given(myPageInquiryService.getInquiries(1L))
+				.willReturn(new MyPageInquiryListResponse(
+					List.of(
+						new MyPageInquiryListResponse.InquiryItem(
+							11L,
+							"BOOKING",
+							"문의 제목",
+							"REGISTERED",
+							Instant.parse("2026-03-31T08:00:00Z")
+						)
+					)
+				));
+
+			mockMvc.perform(get("/mypage/inquiries"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("조회 성공"))
+				.andExpect(jsonPath("$.data.inquiries").isArray())
+				.andExpect(jsonPath("$.data.inquiries.length()").value(1))
+				.andExpect(jsonPath("$.data.inquiries[0].inquiryId").value(11))
+				.andExpect(jsonPath("$.data.inquiries[0].category").value("BOOKING"))
+				.andExpect(jsonPath("$.data.inquiries[0].title").value("문의 제목"))
+				.andExpect(jsonPath("$.data.inquiries[0].status").value("REGISTERED"));
+		}
+
+		@Test
+		@DisplayName("문의가 없으면 빈 배열을 반환한다")
+		void getInquiries_빈목록_반환() throws Exception {
+			given(myPageInquiryService.getInquiries(1L))
+				.willReturn(new MyPageInquiryListResponse(List.of()));
+
+			mockMvc.perform(get("/mypage/inquiries"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.inquiries").isArray())
+				.andExpect(jsonPath("$.data.inquiries.length()").value(0));
+		}
+
+		@Test
+		@DisplayName("사용자가 없으면 404를 반환한다")
+		void getInquiries_사용자없음_404() throws Exception {
+			given(myPageInquiryService.getInquiries(1L))
+				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+
+			mockMvc.perform(get("/mypage/inquiries"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
+		}
+	}
+
+	@Nested
 	@DisplayName("POST /mypage/inquiries — 1:1 문의 작성")
 	class CreateInquiry {
 
@@ -466,34 +529,21 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		}
 
 		@Test
-		@DisplayName("유효한 멀티파트 요청이면 201과 inquiryId를 반환한다")
+		@DisplayName("유효한 JSON 요청이면 201과 inquiryId를 반환한다")
 		void createInquiry_성공() throws Exception {
-			given(myPageInquiryService.createInquiry(eq(1L), any(), any()))
+			given(myPageInquiryService.createInquiry(eq(1L), any()))
 				.willReturn(MyPageInquiryCreateResponse.of(11L));
 
-			MockMultipartFile inquiryPart = new MockMultipartFile(
-				"inquiry",
-				"inquiry.json",
-				"application/json",
-				"""
-					{
-					  "category": "BOOKING",
-					  "title": "좌석 변경 문의",
-					  "content": "좌석 변경이 가능한지 확인 부탁드립니다.",
-					  "phoneNumber": "010-1234-5678"
-					}
-					""".getBytes()
-			);
-			MockMultipartFile filePart = new MockMultipartFile(
-				"file",
-				"seat.jpg",
-				"image/jpeg",
-				new byte[] {(byte)0xFF, (byte)0xD8, (byte)0xFF, 0x00}
-			);
-
-			mockMvc.perform(multipart("/mypage/inquiries")
-					.file(inquiryPart)
-					.file(filePart))
+			mockMvc.perform(post("/mypage/inquiries")
+					.contentType("application/json")
+					.content("""
+						{
+						  "category": "BOOKING",
+						  "title": "좌석 변경 문의",
+						  "content": "좌석 변경이 가능한지 확인 부탁드립니다.",
+						  "phoneNumber": "010-1234-5678"
+						}
+						"""))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.code").value("CREATED"))
 				.andExpect(jsonPath("$.message").value("문의가 등록되었습니다."))
@@ -503,34 +553,81 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		@Test
 		@DisplayName("유효하지 않은 카테고리면 400을 반환한다")
 		void createInquiry_카테고리오류_400() throws Exception {
-			given(myPageInquiryService.createInquiry(eq(1L), any(), any()))
+			given(myPageInquiryService.createInquiry(eq(1L), any()))
 				.willThrow(new CustomException(ErrorCode.INVALID_INQUIRY_CATEGORY));
 
-			MockMultipartFile inquiryPart = new MockMultipartFile(
-				"inquiry",
-				"inquiry.json",
-				"application/json",
-				"""
-					{
-					  "category": "INVALID",
-					  "title": "좌석 변경 문의",
-					  "content": "문의 내용"
-					}
-					""".getBytes()
-			);
-
-			mockMvc.perform(multipart("/mypage/inquiries")
-					.file(inquiryPart))
+			mockMvc.perform(post("/mypage/inquiries")
+					.contentType("application/json")
+					.content("""
+						{
+						  "category": "INVALID",
+						  "title": "좌석 변경 문의",
+						  "content": "문의 내용"
+						}
+						"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message").value("유효하지 않은 문의 카테고리입니다."));
 		}
 
 		@Test
-		@DisplayName("필수 inquiry 파트가 없으면 400을 반환한다")
-		void createInquiry_필수파트누락_400() throws Exception {
-			mockMvc.perform(multipart("/mypage/inquiries"))
+		@DisplayName("필수 필드가 없으면 400을 반환한다")
+		void createInquiry_필수필드누락_400() throws Exception {
+			mockMvc.perform(post("/mypage/inquiries")
+					.contentType("application/json")
+					.content("""
+						{
+						  "category": "BOOKING",
+						  "content": "문의 내용"
+						}
+						"""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.message").value("필수 파트 'inquiry'이(가) 누락되었습니다."));
+				.andExpect(jsonPath("$.message").value("title: title은 필수입니다."));
+		}
+	}
+
+	@Nested
+	@DisplayName("GET /mypage/inquiries/{inquiryId} — 문의 상세 조회")
+	class GetInquiryDetail {
+
+		@BeforeEach
+		void setAuth() {
+			setAuthentication(1L);
+		}
+
+		@Test
+		@DisplayName("유효한 요청이면 200과 문의 상세를 반환한다")
+		void getInquiryDetail_성공() throws Exception {
+			given(myPageInquiryService.getInquiryDetail(1L, 11L))
+				.willReturn(new MyPageInquiryDetailResponse(
+					11L,
+					"BOOKING",
+					"문의 제목",
+					"문의 내용",
+					"010-1234-5678",
+					"REGISTERED",
+					true,
+					"https://signed.example.com/get",
+					Instant.parse("2026-03-31T08:00:00Z")
+				));
+
+			mockMvc.perform(get("/mypage/inquiries/11"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.code").value("OK"))
+				.andExpect(jsonPath("$.message").value("조회 성공"))
+				.andExpect(jsonPath("$.data.inquiryId").value(11))
+				.andExpect(jsonPath("$.data.fileAttached").value(true))
+				.andExpect(jsonPath("$.data.downloadUrl").value("https://signed.example.com/get"));
+		}
+
+		@Test
+		@DisplayName("타인 문의면 403을 반환한다")
+		void getInquiryDetail_권한없음_403() throws Exception {
+			given(myPageInquiryService.getInquiryDetail(1L, 11L))
+				.willThrow(new CustomException(ErrorCode.INQUIRY_ACCESS_DENIED));
+
+			mockMvc.perform(get("/mypage/inquiries/11"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.message").value("해당 문의에 접근할 권한이 없습니다."));
 		}
 	}
 }

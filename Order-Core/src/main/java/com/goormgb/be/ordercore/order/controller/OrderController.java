@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.goormgb.be.global.response.ApiResult;
+import com.goormgb.be.ordercore.metrics.enums.OrderDraftEntryPoint;
 import com.goormgb.be.ordercore.order.dto.request.OrderCreateRequest;
 import com.goormgb.be.ordercore.order.dto.response.OrderCreateResponse;
 import com.goormgb.be.ordercore.order.dto.response.OrderSheetGetResponse;
@@ -60,9 +61,11 @@ public class OrderController {
 		@Parameter(description = "경기 ID", required = true, example = "1")
 		@RequestParam Long matchId,
 		@Parameter(description = "match_seat ID 목록 (콤마 구분)", required = true)
-		@RequestParam List<Long> seatIds
+		@RequestParam List<Long> seatIds,
+		@Parameter(description = "주문서 진입 경로 (RECOMMEND, MAP)", example = "RECOMMEND")
+		@RequestParam(defaultValue = "RECOMMEND") OrderDraftEntryPoint entryPoint
 	) {
-		return ApiResult.ok(orderService.getOrderSheet(userId, matchId, seatIds));
+		return ApiResult.ok(orderService.getOrderSheet(userId, matchId, seatIds, entryPoint));
 	}
 
 	@Operation(
@@ -70,7 +73,7 @@ public class OrderController {
 		description = """
 			예매자 정보, 좌석 ID 목록, 총 결제 금액을 받아 주문을 생성합니다.
 			- matchSeatIds: 주문서 조회에서 받은 매치 좌석 ID 목록
-			- totalPrice: 프론트에서 할인 적용 후 계산한 총 결제 금액 (수수료 2,000원 포함)
+			- totalPrice: 프론트에서 계산한 총 결제 금액 (서버에서 좌석 가격 기준으로 검증, 수수료 2,000원 포함)
 			- 결제는 목업(무조건 성공)으로 처리됩니다.
 			""",
 		security = @SecurityRequirement(name = "BearerAuth")

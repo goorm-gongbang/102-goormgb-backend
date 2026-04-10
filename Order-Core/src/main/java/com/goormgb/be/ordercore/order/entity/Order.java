@@ -30,6 +30,7 @@ import lombok.NoArgsConstructor;
 		@Index(name = "idx_orders_user_id", columnList = "user_id"),
 		@Index(name = "idx_orders_match_id", columnList = "match_id"),
 		@Index(name = "idx_orders_user_id_status", columnList = "user_id, status"),
+		@Index(name = "idx_orders_user_id_status_match", columnList = "user_id, status, match_id"),
 		@Index(name = "idx_orders_user_id_created_at", columnList = "user_id, created_at"),
 		@Index(name = "idx_orders_status", columnList = "status")
 	}

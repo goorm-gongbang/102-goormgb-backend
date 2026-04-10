@@ -20,7 +20,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         jdbc:
@@ -84,5 +84,3 @@ springdoc:
 
 logging:
   config: classpath:logback-spring.xml
-  level:
-    org.springframework.web: DEBUG

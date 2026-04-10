@@ -18,6 +18,7 @@ application-local.yaml
 application-secret.properties
 application-secret.yml
 application-secret.yaml
+**/application-local.yaml
 
 ### Environment ###
 .env
@@ -88,3 +89,5 @@ Temporary Items
 ### AI Agent ###
 .claude/
 .codex/
+
+.logs
