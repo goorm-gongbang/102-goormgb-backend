@@ -2,6 +2,12 @@ server:
   port: 8082
   servlet:
     context-path: /seat
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    max-connections: 8192
+    accept-count: 100
 
 spring:
   application:
@@ -10,11 +16,22 @@ spring:
     time-zone: UTC
     data-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
 
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 50
+        queue-capacity: 100
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 3000
 
   jpa:
     hibernate:
@@ -72,6 +89,7 @@ management:
     health:
       probes:
         enabled: true
+      show-details: never
       group:
         readiness:
           include: readinessState, db
