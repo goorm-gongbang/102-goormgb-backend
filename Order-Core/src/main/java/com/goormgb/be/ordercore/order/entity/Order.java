@@ -1,6 +1,7 @@
 package com.goormgb.be.ordercore.order.entity;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.global.encryption.EncryptionConverter;
@@ -17,6 +18,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -32,7 +34,8 @@ import lombok.NoArgsConstructor;
 		@Index(name = "idx_orders_user_id_status", columnList = "user_id, status"),
 		@Index(name = "idx_orders_user_id_status_match", columnList = "user_id, status, match_id"),
 		@Index(name = "idx_orders_user_id_created_at", columnList = "user_id, created_at"),
-		@Index(name = "idx_orders_status", columnList = "status")
+		@Index(name = "idx_orders_status", columnList = "status"),
+		@Index(name = "idx_orders_order_number", columnList = "order_number")
 	}
 )
 @Getter
@@ -40,6 +43,9 @@ import lombok.NoArgsConstructor;
 public class Order extends BaseEntity {
 
 	private static final int DEFAULT_BOOKING_FEE = 2000;
+
+	@Column(name = "order_number", nullable = false, unique = true, updatable = false, length = 40)
+	private String orderNumber;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id", nullable = false)
@@ -104,6 +110,13 @@ public class Order extends BaseEntity {
 		this.ordererEmail = ordererEmail;
 		this.ordererPhone = ordererPhone;
 		this.ordererBirthDate = ordererBirthDate;
+	}
+
+	@PrePersist
+	private void generateOrderNumber() {
+		if (this.orderNumber == null) {
+			this.orderNumber = "ORD-" + UUID.randomUUID();
+		}
 	}
 
 	public void updateStatus(OrderStatus status) {

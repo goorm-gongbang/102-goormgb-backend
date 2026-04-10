@@ -47,7 +47,6 @@ public class PaymentController {
 		@ApiResponse(responseCode = "200", description = "결제 처리 성공"),
 		@ApiResponse(responseCode = "400", description = "이미 결제 완료 또는 잘못된 요청", content = @Content),
 		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
-		@ApiResponse(responseCode = "403", description = "주문 소유권 없음", content = @Content),
 		@ApiResponse(responseCode = "404", description = "주문 없음", content = @Content)
 	})
 	@PostMapping("/{orderId}/payment")
@@ -70,7 +69,6 @@ public class PaymentController {
 		@ApiResponse(responseCode = "201", description = "현금영수증 신청 성공"),
 		@ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content),
 		@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
-		@ApiResponse(responseCode = "403", description = "주문 소유권 없음", content = @Content),
 		@ApiResponse(responseCode = "404", description = "주문 또는 결제 정보 없음", content = @Content),
 		@ApiResponse(responseCode = "409", description = "현금영수증 이미 신청됨", content = @Content)
 	})

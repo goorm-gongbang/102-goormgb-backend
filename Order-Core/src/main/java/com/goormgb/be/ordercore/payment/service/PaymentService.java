@@ -163,14 +163,20 @@ public class PaymentService {
 		return CashReceiptCreateResponse.of(orderId, cashReceipt);
 	}
 
+	/**
+	 * 주문 ID로 주문을 조회하고 소유권을 검증한다.
+	 * 소유자가 다른 경우 비정상 접근으로 경고 로그를 남기되, 외부 응답은 ORDER_NOT_FOUND로 통일하여 주문 열거를 방지한다.
+	 */
 	private Order findOrderAndValidateOwnership(Long userId, Long orderId) {
 		Order order = orderRepository.findById(orderId)
 			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
-		Preconditions.validate(
-			order.getUser().getId().equals(userId),
-			ErrorCode.ORDER_ACCESS_DENIED
-		);
+		if (!order.getUser().getId().equals(userId)) {
+			log.warn("[Security] 주문 소유권 불일치 — 비정상 접근 감지. "
+				+ "requestUserId={}, orderId={}, ownerUserId={}",
+				userId, orderId, order.getUser().getId());
+			throw new CustomException(ErrorCode.ORDER_NOT_FOUND);
+		}
 
 		return order;
 	}
