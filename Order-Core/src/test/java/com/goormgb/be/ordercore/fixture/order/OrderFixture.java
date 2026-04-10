@@ -111,13 +111,18 @@ public final class OrderFixture {
 
 	public static Order createOrder(User user, Match match) {
 		Order order = Order.builder()
-			.user(user)
-			.match(match)
+			.userId(user.getId())
+			.matchId(match.getId())
 			.totalAmount(24000)
 			.ordererName("홍길동")
 			.ordererEmail("hong@test.com")
 			.ordererPhone("010-1234-5678")
 			.ordererBirthDate("990831")
+			.matchTitle(match.getHomeClub().getKoName() + " vs " + match.getAwayClub().getKoName())
+			.matchDate(match.getMatchAt())
+			.stadiumName(match.getStadium().getKoName())
+			.homeClubName(match.getHomeClub().getKoName())
+			.awayClubName(match.getAwayClub().getKoName())
 			.build();
 		ReflectionTestUtils.setField(order, "id", 1L);
 		ReflectionTestUtils.setField(order, "createdAt", Instant.now());
@@ -126,13 +131,18 @@ public final class OrderFixture {
 
 	public static Order createOrderWithId(Long id, User user, Match match, int totalAmount) {
 		Order order = Order.builder()
-			.user(user)
-			.match(match)
+			.userId(user.getId())
+			.matchId(match.getId())
 			.totalAmount(totalAmount)
 			.ordererName("홍길동")
 			.ordererEmail("hong@test.com")
 			.ordererPhone("010-1234-5678")
 			.ordererBirthDate("990831")
+			.matchTitle(match.getHomeClub().getKoName() + " vs " + match.getAwayClub().getKoName())
+			.matchDate(match.getMatchAt())
+			.stadiumName(match.getStadium().getKoName())
+			.homeClubName(match.getHomeClub().getKoName())
+			.awayClubName(match.getAwayClub().getKoName())
 			.build();
 		ReflectionTestUtils.setField(order, "id", id);
 		ReflectionTestUtils.setField(order, "createdAt", Instant.now());

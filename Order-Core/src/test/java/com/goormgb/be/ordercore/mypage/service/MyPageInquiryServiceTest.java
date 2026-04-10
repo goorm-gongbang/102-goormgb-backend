@@ -18,7 +18,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.ordercore.fixture.order.OrderFixture;
 import com.goormgb.be.ordercore.inquiry.entity.Inquiry;
 import com.goormgb.be.ordercore.inquiry.enums.InquiryCategory;
 import com.goormgb.be.ordercore.inquiry.enums.InquiryStatus;
@@ -27,15 +26,11 @@ import com.goormgb.be.ordercore.mypage.dto.request.MyPageInquiryCreateRequest;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryListResponse;
-import com.goormgb.be.user.entity.User;
-import com.goormgb.be.user.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MyPageInquiryService 서비스 단위 테스트")
 class MyPageInquiryServiceTest {
 
-	@Mock
-	private UserRepository userRepository;
 	@Mock
 	private InquiryRepository inquiryRepository;
 
@@ -44,7 +39,6 @@ class MyPageInquiryServiceTest {
 	@BeforeEach
 	void setUp() {
 		myPageInquiryService = new MyPageInquiryService(
-			userRepository,
 			inquiryRepository
 		);
 	}
@@ -56,8 +50,6 @@ class MyPageInquiryServiceTest {
 		@Test
 		@DisplayName("문의를 등록할 수 있다")
 		void createInquiry_성공() {
-			User user = OrderFixture.createUser();
-			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(inquiryRepository.save(any(Inquiry.class))).willAnswer(invocation -> {
 				Inquiry inquiry = invocation.getArgument(0);
 				ReflectionTestUtils.setField(inquiry, "id", 11L);
@@ -75,9 +67,6 @@ class MyPageInquiryServiceTest {
 		@Test
 		@DisplayName("카테고리가 잘못되면 예외가 발생한다")
 		void createInquiry_카테고리오류_예외() {
-			User user = OrderFixture.createUser();
-			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND)).willReturn(user);
-
 			assertThatThrownBy(() -> myPageInquiryService.createInquiry(
 				1L,
 				new MyPageInquiryCreateRequest("INVALID", "제목", "내용", null)
@@ -95,13 +84,11 @@ class MyPageInquiryServiceTest {
 		@Test
 		@DisplayName("문의 목록을 최신순으로 매핑해서 반환한다")
 		void getInquiries_성공() {
-			User user = OrderFixture.createUserWithId(1L);
-			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND)).willReturn(user);
-			Inquiry first = createInquiry(user, 20L, "가장 최근 문의");
+			Inquiry first = createInquiry(1L, 20L, "가장 최근 문의");
 			first.updateStatus(InquiryStatus.ANSWERED);
 			ReflectionTestUtils.setField(first, "createdAt", Instant.parse("2026-04-07T01:00:00Z"));
 
-			Inquiry second = createInquiry(user, 10L, "이전 문의");
+			Inquiry second = createInquiry(1L, 10L, "이전 문의");
 			ReflectionTestUtils.setField(second, "createdAt", Instant.parse("2026-04-06T01:00:00Z"));
 
 			given(inquiryRepository.findAllByUserIdOrderByCreatedAtDesc(1L))
@@ -118,8 +105,6 @@ class MyPageInquiryServiceTest {
 		@Test
 		@DisplayName("문의가 없으면 빈 목록을 반환한다")
 		void getInquiries_빈목록() {
-			User user = OrderFixture.createUserWithId(1L);
-			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(inquiryRepository.findAllByUserIdOrderByCreatedAtDesc(1L))
 				.willReturn(List.of());
 
@@ -128,21 +113,9 @@ class MyPageInquiryServiceTest {
 			assertThat(response.inquiries()).isEmpty();
 		}
 
-		@Test
-		@DisplayName("사용자가 없으면 예외가 발생한다")
-		void getInquiries_사용자없음_예외() {
-			given(userRepository.findByIdOrThrow(1L, ErrorCode.USER_NOT_FOUND))
-				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
-
-			assertThatThrownBy(() -> myPageInquiryService.getInquiries(1L))
-				.isInstanceOf(CustomException.class)
-				.satisfies(ex -> assertThat(((CustomException)ex).getErrorCode())
-					.isEqualTo(ErrorCode.USER_NOT_FOUND));
-		}
-
-		private Inquiry createInquiry(User user, Long inquiryId, String title) {
+		private Inquiry createInquiry(Long userId, Long inquiryId, String title) {
 			Inquiry inquiry = Inquiry.create(
-				user,
+				userId,
 				InquiryCategory.BOOKING,
 				title,
 				"내용",
@@ -160,8 +133,7 @@ class MyPageInquiryServiceTest {
 		@Test
 		@DisplayName("첨부파일이 없으면 downloadUrl 없이 조회된다")
 		void getInquiryDetail_첨부없음_성공() {
-			User user = OrderFixture.createUserWithId(1L);
-			Inquiry inquiry = createInquiry(user, 11L, null);
+			Inquiry inquiry = createInquiry(1L, 11L, null);
 			given(inquiryRepository.findById(11L)).willReturn(java.util.Optional.of(inquiry));
 
 			MyPageInquiryDetailResponse response = myPageInquiryService.getInquiryDetail(1L, 11L);
@@ -174,8 +146,7 @@ class MyPageInquiryServiceTest {
 		@Test
 		@DisplayName("첨부파일이 있어도 fileAttached=false, downloadUrl=null로 반환된다 (파일 업로드 비활성화)")
 		void getInquiryDetail_첨부있음_downloadUrl_null() {
-			User user = OrderFixture.createUserWithId(1L);
-			Inquiry inquiry = createInquiry(user, 12L, "dev/12/1/uuid.jpg");
+			Inquiry inquiry = createInquiry(1L, 12L, "dev/12/1/uuid.jpg");
 			given(inquiryRepository.findById(12L)).willReturn(java.util.Optional.of(inquiry));
 
 			MyPageInquiryDetailResponse response = myPageInquiryService.getInquiryDetail(1L, 12L);
@@ -199,8 +170,7 @@ class MyPageInquiryServiceTest {
 		@Test
 		@DisplayName("타인 문의면 예외가 발생한다")
 		void getInquiryDetail_권한없음_예외() {
-			User owner = OrderFixture.createUserWithId(2L);
-			Inquiry inquiry = createInquiry(owner, 13L, null);
+			Inquiry inquiry = createInquiry(2L, 13L, null);
 			given(inquiryRepository.findById(13L)).willReturn(java.util.Optional.of(inquiry));
 
 			assertThatThrownBy(() -> myPageInquiryService.getInquiryDetail(1L, 13L))
@@ -209,9 +179,9 @@ class MyPageInquiryServiceTest {
 					.isEqualTo(ErrorCode.INQUIRY_ACCESS_DENIED));
 		}
 
-		private Inquiry createInquiry(User user, Long inquiryId, String fileKey) {
+		private Inquiry createInquiry(Long userId, Long inquiryId, String fileKey) {
 			Inquiry inquiry = Inquiry.create(
-				user,
+				userId,
 				InquiryCategory.BOOKING,
 				"제목",
 				"내용",

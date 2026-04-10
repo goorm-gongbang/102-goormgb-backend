@@ -25,6 +25,7 @@ import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.ordercore.fixture.order.OrderFixture;
 import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.metrics.enums.OrderDraftEntryPoint;
+import com.goormgb.be.ordercore.order.client.SeatInternalClient;
 import com.goormgb.be.ordercore.order.dto.request.OrderCreateRequest;
 import com.goormgb.be.ordercore.order.dto.response.OrderCreateResponse;
 import com.goormgb.be.ordercore.order.dto.response.OrderSheetGetResponse;
@@ -34,8 +35,6 @@ import com.goormgb.be.ordercore.order.query.SeatHoldInfo;
 import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
-import com.goormgb.be.user.entity.User;
-import com.goormgb.be.user.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrderService 서비스 단위 테스트")
@@ -44,11 +43,11 @@ class OrderServiceTest {
 	@Mock
 	private MatchRepository matchRepository;
 	@Mock
-	private UserRepository userRepository;
-	@Mock
 	private OrderRepository orderRepository;
 	@Mock
 	private OrderSeatRepository orderSeatRepository;
+	@Mock
+	private SeatInternalClient seatInternalClient;
 	@Mock
 	private SeatInfoQueryService seatInfoQueryService;
 	@Mock
@@ -59,8 +58,8 @@ class OrderServiceTest {
 	@BeforeEach
 	void setUp() {
 		orderService = new OrderService(
-			matchRepository, userRepository, orderRepository, orderSeatRepository, seatInfoQueryService,
-			orderMetricsService
+			matchRepository, orderRepository, orderSeatRepository, seatInternalClient,
+			seatInfoQueryService, orderMetricsService
 		);
 	}
 
@@ -78,8 +77,8 @@ class OrderServiceTest {
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 
 			given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, seatIds)).willReturn(List.of(holdInfo));
-			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
+			given(seatInternalClient.findSeatHoldInfos(userId, matchId, seatIds)).willReturn(List.of(holdInfo));
+			given(seatInternalClient.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
 
 			OrderSheetGetResponse response = orderService.getOrderSheet(
 				userId, matchId, seatIds, OrderDraftEntryPoint.RECOMMEND
@@ -103,15 +102,15 @@ class OrderServiceTest {
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 
 			given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(weekendMatch);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, seatIds)).willReturn(List.of(holdInfo));
-			given(seatInfoQueryService.findPrice(1L, "WEEKEND", "ADULT")).willReturn(24000);
+			given(seatInternalClient.findSeatHoldInfos(userId, matchId, seatIds)).willReturn(List.of(holdInfo));
+			given(seatInternalClient.findPrice(1L, "WEEKEND", "ADULT")).willReturn(24000);
 
 			OrderSheetGetResponse response = orderService.getOrderSheet(
 				userId, matchId, seatIds, OrderDraftEntryPoint.RECOMMEND
 			);
 
 			assertThat(response.seats().get(0).adultPrice()).isEqualTo(24000);
-			then(seatInfoQueryService).should().findPrice(1L, "WEEKEND", "ADULT");
+			then(seatInternalClient).should().findPrice(1L, "WEEKEND", "ADULT");
 		}
 
 		@Test
@@ -129,8 +128,8 @@ class OrderServiceTest {
 			);
 
 			given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, seatIds)).willReturn(List.of(hold1, hold2));
-			given(seatInfoQueryService.findPrice(eq(1L), eq("WEEKDAY"), eq("ADULT"))).willReturn(22000);
+			given(seatInternalClient.findSeatHoldInfos(userId, matchId, seatIds)).willReturn(List.of(hold1, hold2));
+			given(seatInternalClient.findPrice(eq(1L), eq("WEEKDAY"), eq("ADULT"))).willReturn(22000);
 
 			OrderSheetGetResponse response = orderService.getOrderSheet(
 				userId, matchId, seatIds, OrderDraftEntryPoint.RECOMMEND
@@ -154,14 +153,15 @@ class OrderServiceTest {
 		@DisplayName("선점 정보가 누락된 경우 SEAT_HOLD_NOT_FOUND 예외가 발생한다")
 		void getOrderSheet_선점_미발견_예외() {
 			Long userId = 1L;
+			Long matchId = 1L;
 			Match match = OrderFixture.createWeekdayMatch();
-			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L, 102L)))
-				.willReturn(List.of(OrderFixture.createSeatHoldInfo(101L, userId))); // 1개만 반환
+			given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
+			given(seatInternalClient.findSeatHoldInfos(userId, matchId, List.of(101L, 102L)))
+				.willReturn(List.of(OrderFixture.createSeatHoldInfo(101L, userId)));
 
 			assertThatThrownBy(
 				() -> orderService.getOrderSheet(
-					userId, 1L, List.of(101L, 102L), OrderDraftEntryPoint.RECOMMEND
+					userId, matchId, List.of(101L, 102L), OrderDraftEntryPoint.RECOMMEND
 				)
 			)
 				.isInstanceOf(CustomException.class)
@@ -172,14 +172,15 @@ class OrderServiceTest {
 		@DisplayName("선점이 만료된 경우 SEAT_HOLD_EXPIRED 예외가 발생한다")
 		void getOrderSheet_선점_만료_예외() {
 			Long userId = 1L;
+			Long matchId = 1L;
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo expiredHold = OrderFixture.createExpiredSeatHoldInfo(101L, userId);
 
-			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(expiredHold));
+			given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
+			given(seatInternalClient.findSeatHoldInfos(userId, matchId, List.of(101L))).willReturn(List.of(expiredHold));
 
 			assertThatThrownBy(
-				() -> orderService.getOrderSheet(userId, 1L, List.of(101L), OrderDraftEntryPoint.RECOMMEND)
+				() -> orderService.getOrderSheet(userId, matchId, List.of(101L), OrderDraftEntryPoint.RECOMMEND)
 			)
 				.isInstanceOf(CustomException.class)
 				.hasMessage(ErrorCode.SEAT_HOLD_EXPIRED.getMessage());
@@ -189,15 +190,16 @@ class OrderServiceTest {
 		@DisplayName("가격 정책이 없는 경우 PRICE_POLICY_NOT_FOUND 예외가 발생한다")
 		void getOrderSheet_가격정책_미발견_예외() {
 			Long userId = 1L;
+			Long matchId = 1L;
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 
-			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
-			given(seatInfoQueryService.findPrice(anyLong(), anyString(), anyString())).willReturn(null);
+			given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
+			given(seatInternalClient.findSeatHoldInfos(userId, matchId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInternalClient.findPrice(anyLong(), anyString(), anyString())).willReturn(null);
 
 			assertThatThrownBy(
-				() -> orderService.getOrderSheet(userId, 1L, List.of(101L), OrderDraftEntryPoint.RECOMMEND)
+				() -> orderService.getOrderSheet(userId, matchId, List.of(101L), OrderDraftEntryPoint.RECOMMEND)
 			)
 				.isInstanceOf(CustomException.class)
 				.hasMessage(ErrorCode.PRICE_POLICY_NOT_FOUND.getMessage());
@@ -227,17 +229,15 @@ class OrderServiceTest {
 		@DisplayName("유효한 단일 좌석 주문 시 totalAmount = 티켓가격 + 2000이다")
 		void createOrder_단일좌석_totalAmount_계산() {
 			Long userId = 1L;
-			User user = OrderFixture.createUser();
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
 			stubNoPendingOrders();
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInternalClient.findSeatHoldInfos(userId, 1L, List.of(101L))).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
-			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
+			given(seatInternalClient.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
 			stubSaveOrder(1L);
 
 			OrderCreateResponse response = orderService.createOrder(userId, request);
@@ -253,7 +253,6 @@ class OrderServiceTest {
 		@DisplayName("복수 좌석 주문 시 totalAmount = 모든 티켓 합산 + 2000이다")
 		void createOrder_복수좌석_totalAmount_계산() {
 			Long userId = 1L;
-			User user = OrderFixture.createUser();
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo hold1 = OrderFixture.createSeatHoldInfo(101L, userId);
 			SeatHoldInfo hold2 = new SeatHoldInfo(
@@ -269,13 +268,12 @@ class OrderServiceTest {
 			);
 
 			stubNoPendingOrders();
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L, 102L)))
+			given(seatInternalClient.findSeatHoldInfos(userId, 1L, List.of(101L, 102L)))
 				.willReturn(List.of(hold1, hold2));
 			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
 			given(seatInfoQueryService.isAlreadyOrdered(102L)).willReturn(false);
-			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
+			given(seatInternalClient.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
 			stubSaveOrder(1L);
 
 			OrderCreateResponse response = orderService.createOrder(userId, request);
@@ -288,7 +286,6 @@ class OrderServiceTest {
 		@DisplayName("주말 경기 주문 시 WEEKEND 가격이 적용된다")
 		void createOrder_주말경기_WEEKEND가격_적용() {
 			Long userId = 1L;
-			User user = OrderFixture.createUser();
 			Match weekendMatch = OrderFixture.createWeekendMatch();
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = new OrderCreateRequest(
@@ -299,33 +296,30 @@ class OrderServiceTest {
 			);
 
 			stubNoPendingOrders();
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(2L)).willReturn(weekendMatch);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInternalClient.findSeatHoldInfos(userId, 2L, List.of(101L))).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
-			given(seatInfoQueryService.findPrice(1L, "WEEKEND", "ADULT")).willReturn(24000);
+			given(seatInternalClient.findPrice(1L, "WEEKEND", "ADULT")).willReturn(24000);
 			stubSaveOrder(1L);
 
 			orderService.createOrder(userId, request);
 
-			then(seatInfoQueryService).should().findPrice(1L, "WEEKEND", "ADULT");
+			then(seatInternalClient).should().findPrice(1L, "WEEKEND", "ADULT");
 		}
 
 		@Test
 		@DisplayName("OrderSeat이 모두 저장된다")
 		void createOrder_OrderSeat_저장() {
 			Long userId = 1L;
-			User user = OrderFixture.createUser();
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
 			stubNoPendingOrders();
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInternalClient.findSeatHoldInfos(userId, 1L, List.of(101L))).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
-			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
+			given(seatInternalClient.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
 			stubSaveOrder(1L);
 
 			orderService.createOrder(userId, request);
@@ -337,7 +331,6 @@ class OrderServiceTest {
 		@DisplayName("요청 totalPrice가 서버 계산값과 다르면 ORDER_TOTAL_PRICE_MISMATCH 예외가 발생한다")
 		void createOrder_totalPrice_불일치_예외() {
 			Long userId = 1L;
-			User user = OrderFixture.createUser();
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = new OrderCreateRequest(
@@ -348,11 +341,10 @@ class OrderServiceTest {
 			);
 
 			stubNoPendingOrders();
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInternalClient.findSeatHoldInfos(userId, 1L, List.of(101L))).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
-			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
+			given(seatInternalClient.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
 
 			assertThatThrownBy(() -> orderService.createOrder(userId, request))
 				.isInstanceOf(CustomException.class)
@@ -377,32 +369,15 @@ class OrderServiceTest {
 		}
 
 		@Test
-		@DisplayName("사용자가 없으면 USER_NOT_FOUND 예외가 발생한다")
-		void createOrder_사용자_미발견_예외() {
-			Long userId = 999L;
-			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
-
-			stubNoPendingOrders();
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND))
-				.willThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
-
-			assertThatThrownBy(() -> orderService.createOrder(userId, request))
-				.isInstanceOf(CustomException.class)
-				.hasMessage(ErrorCode.USER_NOT_FOUND.getMessage());
-		}
-
-		@Test
 		@DisplayName("선점 정보가 누락된 경우 SEAT_HOLD_NOT_FOUND 예외가 발생한다")
 		void createOrder_선점_미발견_예외() {
 			Long userId = 1L;
-			User user = OrderFixture.createUser();
 			Match match = OrderFixture.createWeekdayMatch();
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
 			stubNoPendingOrders();
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(Collections.emptyList());
+			given(seatInternalClient.findSeatHoldInfos(userId, 1L, List.of(101L))).willReturn(Collections.emptyList());
 
 			assertThatThrownBy(() -> orderService.createOrder(userId, request))
 				.isInstanceOf(CustomException.class)
@@ -413,15 +388,13 @@ class OrderServiceTest {
 		@DisplayName("선점이 만료된 경우 SEAT_HOLD_EXPIRED 예외가 발생한다")
 		void createOrder_선점_만료_예외() {
 			Long userId = 1L;
-			User user = OrderFixture.createUser();
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo expiredHold = OrderFixture.createExpiredSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
 			stubNoPendingOrders();
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(expiredHold));
+			given(seatInternalClient.findSeatHoldInfos(userId, 1L, List.of(101L))).willReturn(List.of(expiredHold));
 
 			assertThatThrownBy(() -> orderService.createOrder(userId, request))
 				.isInstanceOf(CustomException.class)
@@ -432,15 +405,13 @@ class OrderServiceTest {
 		@DisplayName("이미 주문된 좌석이면 INVALID_ORDER_STATUS 예외가 발생한다")
 		void createOrder_이미_주문된_좌석_예외() {
 			Long userId = 1L;
-			User user = OrderFixture.createUser();
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
 			stubNoPendingOrders();
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInternalClient.findSeatHoldInfos(userId, 1L, List.of(101L))).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(true);
 
 			assertThatThrownBy(() -> orderService.createOrder(userId, request))
@@ -452,17 +423,15 @@ class OrderServiceTest {
 		@DisplayName("가격 정책이 없는 경우 PRICE_POLICY_NOT_FOUND 예외가 발생한다")
 		void createOrder_가격정책_미발견_예외() {
 			Long userId = 1L;
-			User user = OrderFixture.createUser();
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
 			stubNoPendingOrders();
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInternalClient.findSeatHoldInfos(userId, 1L, List.of(101L))).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
-			given(seatInfoQueryService.findPrice(anyLong(), anyString(), anyString())).willReturn(null);
+			given(seatInternalClient.findPrice(anyLong(), anyString(), anyString())).willReturn(null);
 
 			assertThatThrownBy(() -> orderService.createOrder(userId, request))
 				.isInstanceOf(CustomException.class)
@@ -473,7 +442,6 @@ class OrderServiceTest {
 		@DisplayName("미결제 주문이 존재하면 벌크 취소 후 재주문에 성공한다")
 		void createOrder_미결제_주문_자동취소_후_재주문_성공() {
 			Long userId = 1L;
-			User user = OrderFixture.createUser();
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
@@ -486,11 +454,10 @@ class OrderServiceTest {
 			given(orderRepository.bulkUpdateStatus(userId, 1L,
 				OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED))
 				.willReturn(2);
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInternalClient.findSeatHoldInfos(userId, 1L, List.of(101L))).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
-			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
+			given(seatInternalClient.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
 			stubSaveOrder(1L);
 
 			OrderCreateResponse response = orderService.createOrder(userId, request);
@@ -504,17 +471,15 @@ class OrderServiceTest {
 		@DisplayName("미결제 주문이 없으면 취소 없이 바로 주문이 생성된다")
 		void createOrder_미결제_주문_없음_정상_생성() {
 			Long userId = 1L;
-			User user = OrderFixture.createUser();
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 			OrderCreateRequest request = OrderFixture.createOrderCreateRequest();
 
 			stubNoPendingOrders();
-			given(userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
-			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
+			given(seatInternalClient.findSeatHoldInfos(userId, 1L, List.of(101L))).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.isAlreadyOrdered(101L)).willReturn(false);
-			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
+			given(seatInternalClient.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
 			stubSaveOrder(1L);
 
 			OrderCreateResponse response = orderService.createOrder(userId, request);

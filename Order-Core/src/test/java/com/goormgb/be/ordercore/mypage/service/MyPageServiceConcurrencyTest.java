@@ -178,13 +178,18 @@ class MyPageServiceConcurrencyTest {
 			entityManager.persist(user);
 
 			Order order = Order.builder()
-				.user(user)
-				.match(match)
+				.userId(user.getId())
+				.matchId(match.getId())
 				.totalAmount(42000)
 				.ordererName("홍길동")
 				.ordererEmail("hong@test.com")
 				.ordererPhone("010-1234-5678")
 				.ordererBirthDate("990831")
+				.matchTitle(home.getKoName() + " vs " + away.getKoName())
+				.matchDate(match.getMatchAt())
+				.stadiumName(stadium.getKoName())
+				.homeClubName(home.getKoName())
+				.awayClubName(away.getKoName())
 				.build();
 			order.updateStatus(OrderStatus.PAID);
 			entityManager.persist(order);

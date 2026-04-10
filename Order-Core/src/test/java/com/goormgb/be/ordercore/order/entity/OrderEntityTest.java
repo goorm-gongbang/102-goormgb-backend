@@ -8,23 +8,25 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.goormgb.be.ordercore.fixture.order.OrderFixture;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
-import com.goormgb.be.user.entity.User;
 
 @DisplayName("Order 엔티티 단위 테스트")
 class OrderEntityTest {
 
 	private Order createTestOrder() {
-		User user = OrderFixture.createUser();
 		return Order.builder()
-			.user(user)
-			.match(OrderFixture.createWeekdayMatch())
+			.userId(1L)
+			.matchId(1L)
 			.totalAmount(24000)
 			.ordererName("홍길동")
 			.ordererEmail("hong@test.com")
 			.ordererPhone("010-1234-5678")
 			.ordererBirthDate("990831")
+			.matchTitle("LG 트윈스 vs 두산 베어스")
+			.matchDate(Instant.parse("2026-03-11T09:30:00Z"))
+			.stadiumName("잠실야구장")
+			.homeClubName("LG 트윈스")
+			.awayClubName("두산 베어스")
 			.build();
 	}
 
