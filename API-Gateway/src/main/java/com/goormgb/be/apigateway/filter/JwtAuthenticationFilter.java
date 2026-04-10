@@ -1,10 +1,12 @@
 package com.goormgb.be.apigateway.filter;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -32,32 +34,54 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 	private static final String HEADER_SESSION_ID = "X-Session-Id";
 	private static final String HEADER_TOKEN_JTI = "X-Token-Jti";
 
-	// 인증 없이 통과시킬 경로 prefix 목록
-	private static final List<String> WHITELIST = List.of(
-			"/auth/kakao",
-			"/auth/token/refresh",
-			"/auth/dev/auth",
-			"/auth/loadtest",
-			"/swagger-ui",
-			"/v3/api-docs",
-			"/auth/v3/api-docs",
-			"/queue/v3/api-docs",
-			"/seat/v3/api-docs",
-			"/order/v3/api-docs",
-			"/recommendation/v3/api-docs",
-			"/actuator/health",
-			"/actuator/prometheus",
-			"/auth/actuator/health",
-			"/auth/actuator/prometheus",
-			"/queue/actuator/health",
-			"/queue/actuator/prometheus",
-			"/seat/actuator/health",
-			"/seat/actuator/prometheus",
-			"/order/actuator/health",
-			"/order/actuator/prometheus",
-			"/seat/blocks",
-			"/order/clubs",
-			"/order/matches"
+	/**
+	 * 화이트리스트: (허용 HTTP 메서드, 경로 prefix) 쌍으로 관리한다.
+	 * methods가 비어 있으면 모든 메서드를 허용한다.
+	 */
+	private record WhitelistEntry(Set<String> methods, String pathPrefix) {
+		boolean matches(String method, String path) {
+			return path.startsWith(pathPrefix)
+				&& (methods.isEmpty() || methods.contains(method));
+		}
+	}
+
+	private static final Set<String> GET_ONLY = Set.of("GET");
+	private static final Set<String> POST_ONLY = Set.of("POST");
+	private static final Set<String> GET_POST = Set.of("GET", "POST");
+	private static final Set<String> ANY_METHOD = Set.of();
+
+	private static final List<WhitelistEntry> WHITELIST = List.of(
+		// 인증 관련 — /auth/kakao는 GET(login-url) + POST(콜백) 모두 필요
+		new WhitelistEntry(GET_POST, "/auth/kakao"),
+		new WhitelistEntry(POST_ONLY, "/auth/token/refresh"),
+		new WhitelistEntry(ANY_METHOD, "/auth/dev/auth"),
+		new WhitelistEntry(ANY_METHOD, "/auth/loadtest"),
+
+		// Swagger / API docs — GET만
+		new WhitelistEntry(GET_ONLY, "/swagger-ui"),
+		new WhitelistEntry(GET_ONLY, "/v3/api-docs"),
+		new WhitelistEntry(GET_ONLY, "/auth/v3/api-docs"),
+		new WhitelistEntry(GET_ONLY, "/queue/v3/api-docs"),
+		new WhitelistEntry(GET_ONLY, "/seat/v3/api-docs"),
+		new WhitelistEntry(GET_ONLY, "/order/v3/api-docs"),
+		new WhitelistEntry(GET_ONLY, "/recommendation/v3/api-docs"),
+
+		// Actuator — GET만
+		new WhitelistEntry(GET_ONLY, "/actuator/health"),
+		new WhitelistEntry(GET_ONLY, "/actuator/prometheus"),
+		new WhitelistEntry(GET_ONLY, "/auth/actuator/health"),
+		new WhitelistEntry(GET_ONLY, "/auth/actuator/prometheus"),
+		new WhitelistEntry(GET_ONLY, "/queue/actuator/health"),
+		new WhitelistEntry(GET_ONLY, "/queue/actuator/prometheus"),
+		new WhitelistEntry(GET_ONLY, "/seat/actuator/health"),
+		new WhitelistEntry(GET_ONLY, "/seat/actuator/prometheus"),
+		new WhitelistEntry(GET_ONLY, "/order/actuator/health"),
+		new WhitelistEntry(GET_ONLY, "/order/actuator/prometheus"),
+
+		// 공개 조회 API — GET만
+		new WhitelistEntry(GET_ONLY, "/seat/blocks"),
+		new WhitelistEntry(GET_ONLY, "/order/clubs"),
+		new WhitelistEntry(GET_ONLY, "/order/matches")
 	);
 
 	private final JwtTokenProvider jwtTokenProvider;
@@ -66,8 +90,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 		String path = exchange.getRequest().getPath().value();
+		String method = exchange.getRequest().getMethod() != null
+			? exchange.getRequest().getMethod().name()
+			: "GET";
 
-		if (isWhitelisted(path)) {
+		if (isWhitelisted(method, path)) {
 			return chain.filter(exchange);
 		}
 
@@ -123,8 +150,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 		return -1;
 	}
 
-	private boolean isWhitelisted(String path) {
-		return WHITELIST.stream().anyMatch(path::startsWith);
+	private boolean isWhitelisted(String method, String path) {
+		return WHITELIST.stream().anyMatch(entry -> entry.matches(method, path));
 	}
 
 	private String resolveToken(ServerHttpRequest request) {
