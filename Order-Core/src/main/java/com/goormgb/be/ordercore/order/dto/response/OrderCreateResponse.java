@@ -22,7 +22,7 @@ public record OrderCreateResponse(
 		return new OrderCreateResponse(
 			order.getId(),
 			order.getStatus(),
-			order.getMatch().getId(),
+			order.getMatchId(),
 			seatCount,
 			order.getTotalAmount(),
 			order.getBookingFee(),

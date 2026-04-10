@@ -16,6 +16,7 @@ import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.metrics.enums.OrderDraftEntryPoint;
+import com.goormgb.be.ordercore.order.client.SeatInternalClient;
 import com.goormgb.be.ordercore.order.dto.request.OrderCreateRequest;
 import com.goormgb.be.ordercore.order.dto.response.OrderCreateResponse;
 import com.goormgb.be.ordercore.order.dto.response.OrderSheetGetResponse;
@@ -26,8 +27,6 @@ import com.goormgb.be.ordercore.order.query.SeatHoldInfo;
 import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
-import com.goormgb.be.user.entity.User;
-import com.goormgb.be.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,9 +45,9 @@ public class OrderService {
 	);
 
 	private final MatchRepository matchRepository;
-	private final UserRepository userRepository;
 	private final OrderRepository orderRepository;
 	private final OrderSeatRepository orderSeatRepository;
+	private final SeatInternalClient seatInternalClient;
 	private final SeatInfoQueryService seatInfoQueryService;
 	private final OrderMetricsService orderMetricsService;
 
@@ -62,7 +61,6 @@ public class OrderService {
 			List<Long> matchSeatIds,
 			OrderDraftEntryPoint entryPoint
 	) {
-		// 주문서 진입 경로 집계
 		orderMetricsService.increaseOrderDraftEnter(entryPoint);
 		Preconditions.validate(!matchSeatIds.isEmpty(), ErrorCode.ORDER_SEAT_EMPTY);
 
@@ -70,14 +68,14 @@ public class OrderService {
 
 		String dayType = determineDayType(match.getMatchAt());
 
-		List<SeatHoldInfo> holdInfos = seatInfoQueryService.findSeatHoldInfos(userId, matchSeatIds);
+		List<SeatHoldInfo> holdInfos = seatInternalClient.findSeatHoldInfos(userId, matchId, matchSeatIds);
 		Preconditions.validate(holdInfos.size() == matchSeatIds.size(), ErrorCode.SEAT_HOLD_NOT_FOUND);
 
 		Instant now = Instant.now();
 		List<OrderSheetGetResponse.SeatInfo> seatInfos = holdInfos.stream()
 				.map(hold -> {
 					Preconditions.validate(!hold.isExpired(now), ErrorCode.SEAT_HOLD_EXPIRED);
-					Integer adultPrice = seatInfoQueryService.findPrice(hold.sectionId(), dayType, "ADULT");
+					Integer adultPrice = seatInternalClient.findPrice(hold.sectionId(), dayType, "ADULT");
 					Preconditions.validate(adultPrice != null, ErrorCode.PRICE_POLICY_NOT_FOUND);
 					return OrderSheetGetResponse.SeatInfo.of(hold, adultPrice);
 				})
@@ -95,16 +93,14 @@ public class OrderService {
 		cancelExistingPendingOrders(userId, request.matchId());
 		validateMaxTicketsPerMatch(userId, request.matchId(), request.matchSeatIds().size());
 
-		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		Match match = matchRepository.findDetailByIdOrThrow(request.matchId());
 
-		List<SeatHoldInfo> holdInfos = seatInfoQueryService.findSeatHoldInfos(userId, request.matchSeatIds());
+		List<SeatHoldInfo> holdInfos = seatInternalClient.findSeatHoldInfos(userId, request.matchId(), request.matchSeatIds());
 		Preconditions.validate(holdInfos.size() == request.matchSeatIds().size(), ErrorCode.SEAT_HOLD_NOT_FOUND);
 
 		Instant now = Instant.now();
 		String dayType = determineDayType(match.getMatchAt());
 
-		// 유효성 검증 + 좌석별 성인 기본가 조회 (order_seats 저장용)
 		List<OrderSeat> orderSeats = new ArrayList<>();
 		int totalSeatPrice = 0;
 		for (SeatHoldInfo hold : holdInfos) {
@@ -112,7 +108,7 @@ public class OrderService {
 			Preconditions.validate(!seatInfoQueryService.isAlreadyOrdered(hold.matchSeatId()),
 					ErrorCode.INVALID_ORDER_STATUS);
 
-			Integer adultPrice = seatInfoQueryService.findPrice(hold.sectionId(), dayType, "ADULT");
+			Integer adultPrice = seatInternalClient.findPrice(hold.sectionId(), dayType, "ADULT");
 			Preconditions.validate(adultPrice != null, ErrorCode.PRICE_POLICY_NOT_FOUND);
 			totalSeatPrice += adultPrice;
 
@@ -124,19 +120,28 @@ public class OrderService {
 					.seatNo(hold.seatNo())
 					.price(adultPrice)
 					.ticketType(TicketType.ADULT)
+					.sectionName(hold.sectionName())
+					.blockCode(hold.blockCode())
 					.build());
 		}
 		int serverCalculatedTotal = totalSeatPrice + BOOKING_FEE;
 		Preconditions.validate(serverCalculatedTotal == request.totalPrice(), ErrorCode.ORDER_TOTAL_PRICE_MISMATCH);
 
+		String matchTitle = match.getHomeClub().getKoName() + " vs " + match.getAwayClub().getKoName();
+
 		Order order = Order.builder()
-				.user(user)
-				.match(match)
+				.userId(userId)
+				.matchId(request.matchId())
 				.totalAmount(serverCalculatedTotal)
 				.ordererName(request.ordererName())
 				.ordererEmail(request.ordererEmail())
 				.ordererPhone(request.ordererPhone())
 				.ordererBirthDate(request.ordererBirthDate())
+				.matchTitle(matchTitle)
+				.matchDate(match.getMatchAt())
+				.stadiumName(match.getStadium().getKoName())
+				.homeClubName(match.getHomeClub().getKoName())
+				.awayClubName(match.getAwayClub().getKoName())
 				.build();
 
 		orderRepository.save(order);
@@ -150,14 +155,7 @@ public class OrderService {
 	}
 
 	/**
-	 * 같은 유저 + 같은 경기의 미결제 주문(PAYMENT_PENDING)을 자동 취소한다.
-	 * 이전 주문의 order_seats를 삭제하여 동일 좌석 재주문 시 unique constraint 위반을 방지한다.
-	 */
-	/**
 	 * 차단된 유저의 결제 완료(PAID) 및 입금 대기(PAYMENT_PENDING) 주문을 정밀 확인 중(UNDER_REVIEW)으로 일괄 변경한다.
-	 *
-	 * @param userId 차단 대상 유저 ID
-	 * @return 상태가 변경된 주문 건수
 	 */
 	public int markOrdersUnderReviewByBlockedUser(Long userId) {
 		List<OrderStatus> targetStatuses = List.of(OrderStatus.PAID, OrderStatus.PAYMENT_PENDING);
@@ -173,7 +171,6 @@ public class OrderService {
 
 	/**
 	 * 경기당 1인 최대 예매 수량(8매)을 초과하는지 검증한다.
-	 * 유효 주문(PAYMENT_PENDING, PAID, UNDER_REVIEW) 좌석 수 + 신규 좌석 수가 8을 초과하면 예외를 발생시킨다.
 	 */
 	private void validateMaxTicketsPerMatch(Long userId, Long matchId, int newSeatCount) {
 		long existingSeatCount = orderSeatRepository.countByUserIdAndMatchIdAndStatuses(

@@ -58,6 +58,14 @@ public class OrderSeat extends BaseEntity {
 	@Column(name = "ticket_type", nullable = false, length = 30)
 	private TicketType ticketType;
 
+	// --- 비정규화 컬럼 (주문 생성 시점 스냅샷) ---
+
+	@Column(name = "section_name", length = 100)
+	private String sectionName;
+
+	@Column(name = "block_code", length = 20)
+	private String blockCode;
+
 	@Builder
 	public OrderSeat(
 		Order order,
@@ -67,7 +75,9 @@ public class OrderSeat extends BaseEntity {
 		Integer rowNo,
 		Integer seatNo,
 		Integer price,
-		TicketType ticketType
+		TicketType ticketType,
+		String sectionName,
+		String blockCode
 	) {
 		this.order = order;
 		this.matchSeatId = matchSeatId;
@@ -77,6 +87,8 @@ public class OrderSeat extends BaseEntity {
 		this.seatNo = seatNo;
 		this.price = price;
 		this.ticketType = ticketType;
+		this.sectionName = sectionName;
+		this.blockCode = blockCode;
 	}
 
 	public void assignOrder(Order order) {

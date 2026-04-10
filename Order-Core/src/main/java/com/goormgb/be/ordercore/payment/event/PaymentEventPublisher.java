@@ -35,8 +35,8 @@ public class PaymentEventPublisher {
 		applicationEventPublisher.publishEvent(
 			new PaymentCompletedInternalEvent(
 				order.getId(),
-				order.getUser().getId(),
-				order.getMatch().getId(),
+				order.getUserId(),
+				order.getMatchId(),
 				matchSeatIds,
 				order.getTotalAmount(),
 				paymentMethod,
@@ -53,8 +53,8 @@ public class PaymentEventPublisher {
 		applicationEventPublisher.publishEvent(
 			new BankTransferExpiredInternalEvent(
 				order.getId(),
-				order.getUser().getId(),
-				order.getMatch().getId(),
+				order.getUserId(),
+				order.getMatchId(),
 				payment.getId(),
 				matchSeatIds,
 				Instant.now()

@@ -47,24 +47,19 @@ public class MyPageQueryService {
 
 	/**
 	 * 탭 조건에 해당하는 티켓 목록을 페이지네이션하여 반환한다.
+	 * 비정규화 컬럼(match_date, home_club_name, away_club_name, stadium_name)을 사용한다.
 	 */
 	public List<TicketRow> findTickets(Long userId, List<String> statuses, int page, int size) {
 		String sql = """
 				SELECT
-				    o.id           AS order_id,
+				    o.id             AS order_id,
 				    o.status,
-				    m.match_at,
-				    hc.id          AS home_club_id,
-				    hc.ko_name     AS home_club_name,
-				    ac.id          AS away_club_id,
-				    ac.ko_name     AS away_club_name,
-				    st.ko_name     AS stadium_name,
+				    o.match_date     AS match_at,
+				    o.home_club_name,
+				    o.away_club_name,
+				    o.stadium_name,
 				    (SELECT COUNT(*) FROM order_seats os2 WHERE os2.order_id = o.id) AS seat_count
 				FROM orders o
-				JOIN matches m  ON o.match_id    = m.id
-				JOIN clubs hc   ON m.home_club_id = hc.id
-				JOIN clubs ac   ON m.away_club_id = ac.id
-				JOIN stadiums st ON m.stadium_id  = st.id
 				WHERE o.user_id = :userId
 				  AND o.status IN (:statuses)
 				ORDER BY o.created_at DESC
@@ -80,10 +75,11 @@ public class MyPageQueryService {
 		return namedJdbc.query(sql, params, (rs, rowNum) -> new TicketRow(
 				rs.getLong("order_id"),
 				OrderStatus.valueOf(rs.getString("status")),
-				rs.getObject("match_at", Timestamp.class).toInstant(),
-				rs.getLong("home_club_id"),
+				rs.getObject("match_at", Timestamp.class) != null
+						? rs.getObject("match_at", Timestamp.class).toInstant() : null,
+				null,
 				rs.getString("home_club_name"),
-				rs.getLong("away_club_id"),
+				null,
 				rs.getString("away_club_name"),
 				rs.getString("stadium_name"),
 				rs.getInt("seat_count")
@@ -92,6 +88,7 @@ public class MyPageQueryService {
 
 	/**
 	 * 주문 ID 목록에 해당하는 좌석 정보를 orderId와 함께 반환한다.
+	 * OrderSeat 비정규화 컬럼(section_name, block_code)을 사용한다.
 	 */
 	public List<OrderSeatRow> findOrderSeatRowsByOrderIds(List<Long> orderIds) {
 		if (orderIds.isEmpty()) {
@@ -101,13 +98,11 @@ public class MyPageQueryService {
 		String sql = """
 				SELECT
 				    os.order_id,
-				    sec.name    AS section_name,
-				    b.block_code,
+				    os.section_name,
+				    os.block_code,
 				    os.row_no,
 				    os.seat_no
 				FROM order_seats os
-				JOIN sections sec ON os.section_id = sec.id
-				JOIN blocks b     ON os.block_id   = b.id
 				WHERE os.order_id IN (:orderIds)
 				ORDER BY os.order_id, os.id
 				""";
@@ -126,6 +121,7 @@ public class MyPageQueryService {
 
 	/**
 	 * ticketId(orderId)에 해당하는 상세 기본 정보를 반환한다.
+	 * Order 비정규화 컬럼을 사용하여 matches/clubs/stadiums JOIN을 제거한다.
 	 */
 	public Optional<TicketDetailBaseRow> findTicketDetailBaseByOrderId(Long orderId) {
 		String sql = """
@@ -138,15 +134,11 @@ public class MyPageQueryService {
 				    o.cancelled_at,
 				    o.cancellation_fee,
 				    o.refunded_amount,
-				    m.id             AS match_id,
-				    m.match_at,
-				    hc.id            AS home_club_id,
-				    hc.ko_name       AS home_club_name,
-				    ac.id            AS away_club_id,
-				    ac.ko_name       AS away_club_name,
-				    st.id            AS stadium_id,
-				    st.ko_name       AS stadium_name,
-				    st.address       AS stadium_address,
+				    o.match_id,
+				    o.match_date     AS match_at,
+				    o.home_club_name,
+				    o.away_club_name,
+				    o.stadium_name,
 				    p.payment_method,
 				    p.paid_at,
 				    p.account_bank,
@@ -156,10 +148,6 @@ public class MyPageQueryService {
 				    cr.purpose       AS cash_receipt_purpose,
 				    cr.number        AS cash_receipt_number
 				FROM orders o
-				JOIN matches m      ON o.match_id = m.id
-				JOIN clubs hc       ON m.home_club_id = hc.id
-				JOIN clubs ac       ON m.away_club_id = ac.id
-				JOIN stadiums st    ON m.stadium_id = st.id
 				LEFT JOIN payments p ON p.order_id = o.id
 				LEFT JOIN cash_receipts cr ON cr.payment_id = p.id
 				WHERE o.id = :orderId
@@ -183,14 +171,15 @@ public class MyPageQueryService {
 					rs.getInt("cancellation_fee"),
 					rs.getObject("refunded_amount", Integer.class),
 					rs.getLong("match_id"),
-					rs.getObject("match_at", Timestamp.class).toInstant(),
-					rs.getLong("home_club_id"),
+					rs.getObject("match_at", Timestamp.class) != null
+							? rs.getObject("match_at", Timestamp.class).toInstant() : null,
+					null,
 					rs.getString("home_club_name"),
-					rs.getLong("away_club_id"),
+					null,
 					rs.getString("away_club_name"),
-					rs.getLong("stadium_id"),
+					null,
 					rs.getString("stadium_name"),
-					rs.getString("stadium_address"),
+					null,
 					paymentMethod == null ? null : PaymentMethod.valueOf(paymentMethod),
 					rs.getObject("paid_at", Timestamp.class) == null ? null
 							: rs.getObject("paid_at", Timestamp.class).toInstant(),
@@ -209,19 +198,18 @@ public class MyPageQueryService {
 
 	/**
 	 * ticketId(orderId)에 해당하는 좌석 상세 정보를 반환한다.
+	 * OrderSeat 비정규화 컬럼을 사용한다.
 	 */
 	public List<TicketSeatDetailRow> findTicketSeatRowsByOrderId(Long orderId) {
 		String sql = """
 				SELECT
-				    sec.name      AS section_name,
-				    b.block_code,
+				    os.section_name,
+				    os.block_code,
 				    os.row_no,
 				    os.seat_no,
 				    os.price,
 				    os.ticket_type
 				FROM order_seats os
-				JOIN sections sec ON os.section_id = sec.id
-				JOIN blocks b     ON os.block_id = b.id
 				WHERE os.order_id = :orderId
 				ORDER BY os.id
 				""";
@@ -240,16 +228,15 @@ public class MyPageQueryService {
 	}
 
 	/**
-	 * 경기 예정 티켓 수를 반환한다. (오늘 이후 경기 + 유효 상태)
+	 * 경기 예정 티켓 수를 반환한다. (비정규화 match_date 사용)
 	 */
 	public long countUpcomingTickets(Long userId, List<String> statuses, java.time.Instant now) {
 		String sql = """
 				SELECT COUNT(*)
 				FROM orders o
-				JOIN matches m ON o.match_id = m.id
 				WHERE o.user_id = :userId
 				  AND o.status IN (:statuses)
-				  AND m.match_at > :now
+				  AND o.match_date > :now
 				""";
 
 		var params = new MapSqlParameterSource()
@@ -262,32 +249,26 @@ public class MyPageQueryService {
 	}
 
 	/**
-	 * 경기 예정 티켓 목록을 matchAt ASC로 페이지네이션하여 반환한다.
+	 * 경기 예정 티켓 목록을 matchDate ASC로 페이지네이션하여 반환한다.
+	 * 비정규화 컬럼을 사용하여 matches/clubs/stadiums JOIN을 제거한다.
 	 */
 	public List<UpcomingTicketRow> findUpcomingTickets(Long userId, List<String> statuses,
 			java.time.Instant now, int page, int size) {
 		String sql = """
 				SELECT
-				    o.id           AS order_id,
+				    o.id             AS order_id,
 				    o.status,
-				    m.id           AS match_id,
-				    m.match_at,
-				    hc.id          AS home_club_id,
-				    hc.ko_name     AS home_club_name,
-				    ac.id          AS away_club_id,
-				    ac.ko_name     AS away_club_name,
-				    st.id          AS stadium_id,
-				    st.ko_name     AS stadium_name,
+				    o.match_id,
+				    o.match_date     AS match_at,
+				    o.home_club_name,
+				    o.away_club_name,
+				    o.stadium_name,
 				    (SELECT COUNT(*) FROM order_seats os2 WHERE os2.order_id = o.id) AS seat_count
 				FROM orders o
-				JOIN matches m   ON o.match_id    = m.id
-				JOIN clubs hc    ON m.home_club_id = hc.id
-				JOIN clubs ac    ON m.away_club_id = ac.id
-				JOIN stadiums st ON m.stadium_id  = st.id
 				WHERE o.user_id = :userId
 				  AND o.status IN (:statuses)
-				  AND m.match_at > :now
-				ORDER BY m.match_at ASC
+				  AND o.match_date > :now
+				ORDER BY o.match_date ASC
 				LIMIT :size OFFSET :offset
 				""";
 
@@ -302,12 +283,13 @@ public class MyPageQueryService {
 				rs.getLong("order_id"),
 				OrderStatus.valueOf(rs.getString("status")),
 				rs.getLong("match_id"),
-				rs.getObject("match_at", Timestamp.class).toInstant(),
-				rs.getLong("home_club_id"),
+				rs.getObject("match_at", Timestamp.class) != null
+						? rs.getObject("match_at", Timestamp.class).toInstant() : null,
+				null,
 				rs.getString("home_club_name"),
-				rs.getLong("away_club_id"),
+				null,
 				rs.getString("away_club_name"),
-				rs.getLong("stadium_id"),
+				null,
 				rs.getString("stadium_name"),
 				rs.getInt("seat_count")
 		));

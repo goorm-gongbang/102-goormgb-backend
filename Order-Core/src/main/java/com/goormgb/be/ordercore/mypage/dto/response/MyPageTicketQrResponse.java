@@ -37,10 +37,10 @@ public record MyPageTicketQrResponse(
 	) {
 		public static MatchInfo from(Order order) {
 			return new MatchInfo(
-				order.getMatch().getMatchAt(),
-				new ClubInfo(order.getMatch().getHomeClub().getKoName()),
-				new ClubInfo(order.getMatch().getAwayClub().getKoName()),
-				order.getMatch().getStadium().getKoName()
+				order.getMatchDate(),
+				new ClubInfo(order.getHomeClubName()),
+				new ClubInfo(order.getAwayClubName()),
+				order.getStadiumName()
 			);
 		}
 	}

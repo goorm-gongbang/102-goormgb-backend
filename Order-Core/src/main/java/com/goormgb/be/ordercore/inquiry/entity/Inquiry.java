@@ -4,18 +4,14 @@ import com.goormgb.be.global.encryption.EncryptionConverter;
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.ordercore.inquiry.enums.InquiryCategory;
 import com.goormgb.be.ordercore.inquiry.enums.InquiryStatus;
-import com.goormgb.be.user.entity.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -35,9 +31,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Inquiry extends BaseEntity {
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "user_id", nullable = false)
-	private User user;
+	@Column(name = "user_id", nullable = false)
+	private Long userId;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "category", nullable = false, length = 30)
@@ -63,13 +58,13 @@ public class Inquiry extends BaseEntity {
 
 	@Builder
 	public Inquiry(
-		User user,
+		Long userId,
 		InquiryCategory category,
 		String title,
 		String content,
 		String phoneNumber
 	) {
-		this.user = user;
+		this.userId = userId;
 		this.category = category;
 		this.title = title;
 		this.content = content;
@@ -78,14 +73,14 @@ public class Inquiry extends BaseEntity {
 	}
 
 	public static Inquiry create(
-		User user,
+		Long userId,
 		InquiryCategory category,
 		String title,
 		String content,
 		String phoneNumber
 	) {
 		return Inquiry.builder()
-			.user(user)
+			.userId(userId)
 			.category(category)
 			.title(title)
 			.content(content)

@@ -84,7 +84,7 @@ public class PaymentService {
 			);
 
 			if (request.paymentMethod() == PaymentMethod.BANK_TRANSFER) {
-				Instant matchDeadline = order.getMatch().getMatchAt().minus(MATCH_DAY_DEADLINE_BEFORE);
+				Instant matchDeadline = order.getMatchDate().minus(MATCH_DAY_DEADLINE_BEFORE);
 				Preconditions.validate(
 					clock.instant().isBefore(matchDeadline),
 					ErrorCode.BANK_TRANSFER_NOT_AVAILABLE
@@ -168,7 +168,7 @@ public class PaymentService {
 			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
 		Preconditions.validate(
-			order.getUser().getId().equals(userId),
+			order.getUserId().equals(userId),
 			ErrorCode.ORDER_ACCESS_DENIED
 		);
 
@@ -177,7 +177,7 @@ public class PaymentService {
 
 	private Payment buildPayment(Order order, PaymentMethod method) {
 		if (method == PaymentMethod.BANK_TRANSFER) {
-			Instant depositDeadline = calculateDepositDeadline(order.getMatch().getMatchAt());
+			Instant depositDeadline = calculateDepositDeadline(order.getMatchDate());
 
 			return Payment.builder()
 				.order(order)

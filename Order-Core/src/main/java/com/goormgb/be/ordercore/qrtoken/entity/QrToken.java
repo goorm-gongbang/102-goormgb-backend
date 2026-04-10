@@ -4,7 +4,6 @@ import java.time.Instant;
 
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.ordercore.order.entity.Order;
-import com.goormgb.be.user.entity.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,9 +38,8 @@ public class QrToken extends BaseEntity {
 	@JoinColumn(name = "order_id", nullable = false)
 	private Order order;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "user_id", nullable = false)
-	private User user;
+	@Column(name = "user_id", nullable = false)
+	private Long userId;
 
 	@Column(name = "qr_token", nullable = false, unique = true, length = 512)
 	private String qrToken;
@@ -50,9 +48,9 @@ public class QrToken extends BaseEntity {
 	private Instant expiresAt;
 
 	@Builder
-	public QrToken(Order order, User user, String qrToken, Instant expiresAt) {
+	public QrToken(Order order, Long userId, String qrToken, Instant expiresAt) {
 		this.order = order;
-		this.user = user;
+		this.userId = userId;
 		this.qrToken = qrToken;
 		this.expiresAt = expiresAt;
 	}

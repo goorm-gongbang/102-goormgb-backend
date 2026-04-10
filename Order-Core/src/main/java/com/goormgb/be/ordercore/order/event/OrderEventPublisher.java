@@ -29,8 +29,8 @@ public class OrderEventPublisher {
 		applicationEventPublisher.publishEvent(
 			new OrderCancelledInternalEvent(
 				order.getId(),
-				order.getUser().getId(),
-				order.getMatch().getId(),
+				order.getUserId(),
+				order.getMatchId(),
 				order.getCancellationFee(),
 				order.getRefundedAmount(),
 				matchSeatIds,

@@ -27,7 +27,7 @@ public final class MyPageTicketQrSupport {
 	public static QrToken issueNewQrToken(Order order, Instant now, QrTokenRepository qrTokenRepository) {
 		QrToken qrToken = QrToken.builder()
 			.order(order)
-			.user(order.getUser())
+			.userId(order.getUserId())
 			.qrToken(UUID.randomUUID().toString())
 			.expiresAt(calculateNextQrExpiry(now))
 			.build();

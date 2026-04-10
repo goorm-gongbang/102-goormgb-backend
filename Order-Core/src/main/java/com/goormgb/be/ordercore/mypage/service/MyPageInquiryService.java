@@ -16,8 +16,6 @@ import com.goormgb.be.ordercore.mypage.dto.request.MyPageInquiryCreateRequest;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryCreateResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryDetailResponse;
 import com.goormgb.be.ordercore.mypage.dto.response.MyPageInquiryListResponse;
-import com.goormgb.be.user.entity.User;
-import com.goormgb.be.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,15 +24,12 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class MyPageInquiryService {
 
-	private final UserRepository userRepository;
 	private final InquiryRepository inquiryRepository;
 
 	@Transactional
 	public MyPageInquiryCreateResponse createInquiry(Long userId, MyPageInquiryCreateRequest request) {
-		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
-
 		Inquiry inquiry = Inquiry.create(
-			user,
+			userId,
 			parseCategory(request.category()),
 			request.title().trim(),
 			request.content().trim(),
@@ -46,7 +41,6 @@ public class MyPageInquiryService {
 	}
 
 	public MyPageInquiryListResponse getInquiries(Long userId) {
-		userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		List<Inquiry> inquiries = inquiryRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
 		return MyPageInquiryListResponse.of(inquiries);
 	}
@@ -54,7 +48,7 @@ public class MyPageInquiryService {
 	public MyPageInquiryDetailResponse getInquiryDetail(Long userId, Long inquiryId) {
 		Inquiry inquiry = inquiryRepository.findById(inquiryId)
 			.orElseThrow(() -> new CustomException(ErrorCode.INQUIRY_NOT_FOUND));
-		Preconditions.validate(inquiry.getUser().getId().equals(userId), ErrorCode.INQUIRY_ACCESS_DENIED);
+		Preconditions.validate(inquiry.getUserId().equals(userId), ErrorCode.INQUIRY_ACCESS_DENIED);
 
 		return MyPageInquiryDetailResponse.of(inquiry, null);
 	}

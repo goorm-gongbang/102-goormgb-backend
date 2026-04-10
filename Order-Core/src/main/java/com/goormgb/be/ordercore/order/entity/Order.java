@@ -2,21 +2,16 @@ package com.goormgb.be.ordercore.order.entity;
 
 import java.time.Instant;
 
-import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.global.encryption.EncryptionConverter;
 import com.goormgb.be.global.entity.BaseEntity;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
-import com.goormgb.be.user.entity.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -41,13 +36,11 @@ public class Order extends BaseEntity {
 
 	private static final int DEFAULT_BOOKING_FEE = 2000;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "user_id", nullable = false)
-	private User user;
+	@Column(name = "user_id", nullable = false)
+	private Long userId;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "match_id", nullable = false)
-	private Match match;
+	@Column(name = "match_id", nullable = false)
+	private Long matchId;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status", nullable = false, length = 30)
@@ -84,18 +77,44 @@ public class Order extends BaseEntity {
 	@Column(name = "orderer_birth_date", nullable = false, length = 512)
 	private String ordererBirthDate;
 
+	// --- 비정규화 컬럼 (주문 생성 시점 스냅샷) ---
+
+	@Column(name = "user_nickname")
+	private String userNickname;
+
+	@Column(name = "match_title", length = 200)
+	private String matchTitle;
+
+	@Column(name = "match_date")
+	private Instant matchDate;
+
+	@Column(name = "stadium_name", length = 100)
+	private String stadiumName;
+
+	@Column(name = "home_club_name", length = 50)
+	private String homeClubName;
+
+	@Column(name = "away_club_name", length = 50)
+	private String awayClubName;
+
 	@Builder
 	public Order(
-		User user,
-		Match match,
+		Long userId,
+		Long matchId,
 		Integer totalAmount,
 		String ordererName,
 		String ordererEmail,
 		String ordererPhone,
-		String ordererBirthDate
+		String ordererBirthDate,
+		String userNickname,
+		String matchTitle,
+		Instant matchDate,
+		String stadiumName,
+		String homeClubName,
+		String awayClubName
 	) {
-		this.user = user;
-		this.match = match;
+		this.userId = userId;
+		this.matchId = matchId;
 		this.status = OrderStatus.PAYMENT_PENDING;
 		this.totalAmount = totalAmount;
 		this.bookingFee = DEFAULT_BOOKING_FEE;
@@ -104,6 +123,12 @@ public class Order extends BaseEntity {
 		this.ordererEmail = ordererEmail;
 		this.ordererPhone = ordererPhone;
 		this.ordererBirthDate = ordererBirthDate;
+		this.userNickname = userNickname;
+		this.matchTitle = matchTitle;
+		this.matchDate = matchDate;
+		this.stadiumName = stadiumName;
+		this.homeClubName = homeClubName;
+		this.awayClubName = awayClubName;
 	}
 
 	public void updateStatus(OrderStatus status) {
@@ -115,17 +140,21 @@ public class Order extends BaseEntity {
 	}
 
 	/**
-	 * 토스페이/카카오페이 결제 취소 — 즉시 CANCELLED 처리
+	 * 토스페이/카카오페이 결제 취소 -- 즉시 CANCELLED 처리
 	 */
 	public void cancelComplete(Integer cancellationFee, Integer refundedAmount, Instant cancelledAt) {
 		updateCancellationInfo(OrderStatus.CANCELLED, cancellationFee, refundedAmount, cancelledAt);
 	}
 
 	/**
-	 * 무통장 입금 환불 완료 — 즉시 REFUND_COMPLETED 처리
+	 * 무통장 입금 환불 완료 -- 즉시 REFUND_COMPLETED 처리
 	 */
 	public void refundComplete(Integer cancellationFee, Integer refundedAmount, Instant cancelledAt) {
 		updateCancellationInfo(OrderStatus.REFUND_COMPLETED, cancellationFee, refundedAmount, cancelledAt);
+	}
+
+	public void updateUserNickname(String userNickname) {
+		this.userNickname = userNickname;
 	}
 
 	private void updateCancellationInfo(OrderStatus status, Integer cancellationFee, Integer refundedAmount,

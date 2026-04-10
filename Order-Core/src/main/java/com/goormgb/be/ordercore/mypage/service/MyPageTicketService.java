@@ -216,11 +216,11 @@ public class MyPageTicketService {
 	public MyPageTicketQrResponse getTicketEntryQr(Long userId, Long ticketId) {
 		Order order = orderRepository.findByIdForUpdate(ticketId)
 				.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
+		Preconditions.validate(order.getUserId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
 		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
 
 		Instant now = Instant.now(clock);
-		MyPageTicketQrSupport.validateQrIssuableTime(order.getMatch().getMatchAt(), now);
+		MyPageTicketQrSupport.validateQrIssuableTime(order.getMatchDate(), now);
 
 		QrToken qrToken = qrTokenRepository.findByOrderIdAndExpiresAtAfter(ticketId, now)
 				.orElseGet(() -> MyPageTicketQrSupport.issueNewQrToken(order, now, qrTokenRepository));
@@ -234,11 +234,11 @@ public class MyPageTicketService {
 		Instant now = Instant.now(clock);
 		Order order = orderRepository.findByIdForUpdate(ticketId)
 				.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
+		Preconditions.validate(order.getUserId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
 		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
 
 		CancellationFeePolicy policy = MyPageTicketCancellationCalculator.findCancellationPolicy(
-				order.getMatch().getMatchAt(),
+				order.getMatchDate(),
 				now,
 				cancellationFeePolicyRepository
 		);

@@ -21,27 +21,27 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
 	long countByUserId(Long userId);
 
-	@Query("SELECT COUNT(o) FROM Order o WHERE o.user.id = :userId AND o.status IN :statuses AND o.match.matchAt > :now")
+	@Query("SELECT COUNT(o) FROM Order o WHERE o.userId = :userId AND o.status IN :statuses AND o.matchDate > :now")
 	long countUpcomingOrders(@Param("userId") Long userId,
 		@Param("statuses") List<OrderStatus> statuses,
 		@Param("now") Instant now);
 
-	@Query("SELECT COUNT(o) FROM Order o WHERE o.user.id = :userId AND o.status = 'PAID' AND o.match.matchAt < :now")
+	@Query("SELECT COUNT(o) FROM Order o WHERE o.userId = :userId AND o.status = 'PAID' AND o.matchDate < :now")
 	long countCompletedOrders(@Param("userId") Long userId, @Param("now") Instant now);
 
-	@Query("SELECT COUNT(o) FROM Order o WHERE o.user.id = :userId AND o.status IN :statuses")
+	@Query("SELECT COUNT(o) FROM Order o WHERE o.userId = :userId AND o.status IN :statuses")
 	long countByUserIdAndStatusIn(@Param("userId") Long userId, @Param("statuses") List<OrderStatus> statuses);
 
 	@Query("""
 		SELECT new com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts(
 			COUNT(o),
-			COALESCE(SUM(CASE WHEN o.status IN :upcomingStatuses AND o.match.matchAt > :now THEN 1 ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN o.status IN :upcomingStatuses AND o.matchDate > :now THEN 1 ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN o.status IN :cancelRefundStatuses THEN 1 ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN o.status IN :cancelProcessingStatuses THEN 1 ELSE 0 END), 0),
-			COALESCE(SUM(CASE WHEN o.status = :completedStatus AND o.match.matchAt < :now THEN 1 ELSE 0 END), 0)
+			COALESCE(SUM(CASE WHEN o.status = :completedStatus AND o.matchDate < :now THEN 1 ELSE 0 END), 0)
 		)
 		FROM Order o
-		WHERE o.user.id = :userId
+		WHERE o.userId = :userId
 		""")
 	OrderMyPageSummaryCounts findMyPageSummaryCounts(
 		@Param("userId") Long userId,
@@ -54,8 +54,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
 	@Query("""
 		SELECT o.id FROM Order o
-		WHERE o.user.id = :userId
-		  AND o.match.id = :matchId
+		WHERE o.userId = :userId
+		  AND o.matchId = :matchId
 		  AND o.status = :status
 		""")
 	List<Long> findIdsByUserIdAndMatchIdAndStatus(
@@ -68,8 +68,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 	@Query("""
 		UPDATE Order o
 		SET o.status = :newStatus
-		WHERE o.user.id = :userId
-		  AND o.match.id = :matchId
+		WHERE o.userId = :userId
+		  AND o.matchId = :matchId
 		  AND o.status = :oldStatus
 		""")
 	int bulkUpdateStatus(
@@ -86,7 +86,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 	@Query("""
 		UPDATE Order o
 		SET o.status = :newStatus
-		WHERE o.user.id = :userId
+		WHERE o.userId = :userId
 		  AND o.status IN :statuses
 		""")
 	int bulkUpdateStatusByUserIdAndStatuses(
@@ -96,39 +96,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 	);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	@Query("""
-		SELECT o
-		FROM Order o
-		JOIN FETCH o.user u
-		JOIN FETCH o.match m
-		JOIN FETCH m.homeClub hc
-		JOIN FETCH m.awayClub ac
-		JOIN FETCH m.stadium s
-		WHERE o.id = :orderId
-		""")
+	@Query("SELECT o FROM Order o WHERE o.id = :orderId")
 	Optional<Order> findByIdForUpdate(@Param("orderId") Long orderId);
 
-	@Query("""
-		SELECT o
-		FROM Order o
-		JOIN FETCH o.match m
-		JOIN FETCH m.homeClub
-		JOIN FETCH m.awayClub
-		JOIN FETCH m.stadium
-		WHERE o.id = :orderId
-		""")
+	@Query("SELECT o FROM Order o WHERE o.id = :orderId")
 	Optional<Order> findByIdWithMatchDetails(@Param("orderId") Long orderId);
 
 	@Query("""
-		SELECT o
-		FROM Order o
-		JOIN FETCH o.match m
-		JOIN FETCH m.homeClub
-		JOIN FETCH m.awayClub
-		JOIN FETCH m.stadium
-		WHERE o.user.id = :userId
+		SELECT o FROM Order o
+		WHERE o.userId = :userId
 		  AND o.status IN :statuses
-		  AND m.matchAt > :now
+		  AND o.matchDate > :now
 		""")
 	List<Order> findUpcomingOrdersByUserIdAndStatuses(
 		@Param("userId") Long userId,
