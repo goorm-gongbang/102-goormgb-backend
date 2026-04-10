@@ -45,6 +45,7 @@ import lombok.RequiredArgsConstructor;
 public class SeatHoldTransactionalService {
 
 	private static final Duration HOLD_TTL = Duration.ofMinutes(5);
+	private static final int MAX_HOLD_SEATS_PER_USER = 8;
 
 	private final SeatMetricsService seatMetricsService;
 
@@ -73,13 +74,23 @@ public class SeatHoldTransactionalService {
 			Instant now = clock.instant();
 			Instant expiresAt = now.plus(HOLD_TTL);
 
+			// 1인당 최대 선점 좌석 수 제한
+			Preconditions.validate(
+				seatIds.size() <= MAX_HOLD_SEATS_PER_USER,
+				ErrorCode.INVALID_SEAT_HOLD_REQUEST
+			);
+
 			List<MatchSeat> requestedSeats = matchSeatRepository.findAllByMatchIdAndSeatIdIn(matchId, seatIds);
 
 			Preconditions.validate(requestedSeats.size() == seatIds.size(), ErrorCode.MATCH_SEAT_NOT_FOUND);
-			Preconditions.validate(
-				requestedSeats.stream().noneMatch(seat -> seat.getSaleStatus() == MatchSeatSaleStatus.SOLD),
-				ErrorCode.SEAT_ALREADY_SOLD
-			);
+
+			// AVAILABLE 또는 본인 BLOCKED만 허용 (SOLD 및 타인 BLOCKED 차단)
+			for (MatchSeat seat : requestedSeats) {
+				Preconditions.validate(
+					seat.getSaleStatus() != MatchSeatSaleStatus.SOLD,
+					ErrorCode.SEAT_ALREADY_SOLD
+				);
+			}
 
 			List<SeatHold> activeRequestedHolds = seatHoldRepository
 				.findAllByMatchIdAndSeatIdInAndExpiresAtAfter(matchId, seatIds, now);
