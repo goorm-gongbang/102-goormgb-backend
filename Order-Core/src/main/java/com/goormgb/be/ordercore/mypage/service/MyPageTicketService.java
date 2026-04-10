@@ -39,6 +39,9 @@ import com.goormgb.be.ordercore.order.event.OrderEventPublisher;
 import com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
+import com.goormgb.be.ordercore.payment.entity.Payment;
+import com.goormgb.be.ordercore.payment.enums.PaymentMethod;
+import com.goormgb.be.ordercore.payment.repository.PaymentRepository;
 import com.goormgb.be.ordercore.qrtoken.entity.QrToken;
 import com.goormgb.be.ordercore.qrtoken.repository.QrTokenRepository;
 
@@ -57,7 +60,8 @@ public class MyPageTicketService {
 
 	private static final List<OrderStatus> UPCOMING_STATUSES = List.of(
 			OrderStatus.PAYMENT_PENDING,
-			OrderStatus.PAID
+			OrderStatus.PAID,
+			OrderStatus.UNDER_REVIEW
 	);
 
 	private static final List<String> UPCOMING_TICKET_STATUSES = List.of(
@@ -74,6 +78,7 @@ public class MyPageTicketService {
 	private final OrderRepository orderRepository;
 	private final OrderSeatRepository orderSeatRepository;
 	private final QrTokenRepository qrTokenRepository;
+	private final PaymentRepository paymentRepository;
 	private final MyPageQueryService myPageQueryService;
 	private final CancellationFeePolicyRepository cancellationFeePolicyRepository;
 	private final OrderEventPublisher orderEventPublisher;
@@ -241,7 +246,17 @@ public class MyPageTicketService {
 
 		int cancellationFee = MyPageTicketCancellationCalculator.calculateCancellationFee(order, policy, now);
 		int refundedAmount = order.getTotalAmount() - cancellationFee;
-		order.cancel(cancellationFee, refundedAmount);
+
+		Payment payment = paymentRepository.findByOrderId(ticketId)
+				.orElseThrow(() -> new CustomException(ErrorCode.PAYMENT_NOT_FOUND));
+
+		if (payment.getPaymentMethod() == PaymentMethod.BANK_TRANSFER) {
+			order.refundComplete(cancellationFee, refundedAmount, now);
+			payment.refund();
+		} else {
+			order.cancelComplete(cancellationFee, refundedAmount, now);
+			payment.cancel();
+		}
 
 		// 주문 취소 이벤트 발행 → Seat 서비스에서 좌석 SOLD → AVAILABLE 복원
 		List<Long> matchSeatIds = orderSeatRepository.findMatchSeatIdsByOrderId(ticketId);
