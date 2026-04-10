@@ -10,10 +10,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 @Configuration
 public class PreQueueRedisConfig {
 
-	@Value("${prequeue.redis.host:${REDIS_HOST}}")
+	@Value("${prequeue.redis.host:${REDIS_QUEUE_HOST}}")
 	private String host;
 
-	@Value("${prequeue.redis.port:${REDIS_PORT}}")
+	@Value("${prequeue.redis.port:${REDIS_QUEUE_PORT}}")
 	private int port;
 
 	/**
