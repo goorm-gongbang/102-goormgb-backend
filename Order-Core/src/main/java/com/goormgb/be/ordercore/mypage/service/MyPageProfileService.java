@@ -30,7 +30,8 @@ public class MyPageProfileService {
 
 	private static final List<OrderStatus> UPCOMING_STATUSES = List.of(
 		OrderStatus.PAYMENT_PENDING,
-		OrderStatus.PAID
+		OrderStatus.PAID,
+		OrderStatus.UNDER_REVIEW
 	);
 
 	private static final List<OrderStatus> CANCEL_REFUND_STATUSES = List.of(
