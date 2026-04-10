@@ -1,0 +1,30 @@
+# ====================================================
+# Order-Core — staging 환경 보안 강화 설정
+# 침투테스트 대응: Actuator 최소 노출, Thread Pool 제한
+# ====================================================
+
+server:
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    max-connections: 8192
+    accept-count: 100
+
+spring:
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 50
+        queue-capacity: 100
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 3000
+
+management:
+  endpoint:
+    health:
+      show-details: never

@@ -1,0 +1,10 @@
+# ====================================================
+# API-Gateway — staging 환경 보안 강화 설정
+# 침투테스트 대응: Actuator 최소 노출
+# (WebFlux/Netty 기반이므로 Tomcat 설정 불필요)
+# ====================================================
+
+management:
+  endpoint:
+    health:
+      show-details: never
