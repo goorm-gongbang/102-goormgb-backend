@@ -48,6 +48,13 @@ booking:
   options-key-prefix: seat:booking-options
   options-ttl-seconds: 900
 
+prequeue:
+  redis:
+    host: ${QUEUE_REDIS_HOST:${REDIS_HOST}}
+    port: ${QUEUE_REDIS_PORT:${REDIS_PORT}}
+  booking-option-key-prefix: queue:precheck:booking-option
+  booking-option-ttl-seconds: ${booking.options-ttl-seconds}
+
 admission:
   jwt:
     public-key: ${ADMISSION_PUBLIC_KEY}

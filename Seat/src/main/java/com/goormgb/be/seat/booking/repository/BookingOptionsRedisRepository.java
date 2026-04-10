@@ -23,7 +23,7 @@ public class BookingOptionsRedisRepository {
 	private final ObjectMapper redisObjectMapper;
 
 	public BookingOptionsRedisRepository(
-		StringRedisTemplate redisTemplate,
+		@Qualifier("stringRedisTemplate") StringRedisTemplate redisTemplate,
 		@Qualifier("redisObjectMapper") ObjectMapper redisObjectMapper,
 		@Value("${booking.options-key-prefix}") String keyPrefix,
 		@Value("${booking.options-ttl-seconds}") long ttlSeconds
@@ -57,6 +57,10 @@ public class BookingOptionsRedisRepository {
 			throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,
 				"예매 옵션 역직렬화 실패: key=" + key, e);
 		}
+	}
+
+	public void delete(Long matchId, Long userId) {
+		redisTemplate.delete(generateKey(matchId, userId));
 	}
 
 	private String generateKey(Long matchId, Long userId) {
