@@ -167,10 +167,12 @@ public class PaymentService {
 		Order order = orderRepository.findById(orderId)
 			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
-		Preconditions.validate(
-			order.getUser().getId().equals(userId),
-			ErrorCode.ORDER_ACCESS_DENIED
-		);
+		if (!order.getUser().getId().equals(userId)) {
+			log.warn("[Security] 주문 소유권 불일치 — 비정상 접근 감지. "
+				+ "requestUserId={}, orderId={}, ownerUserId={}",
+				userId, orderId, order.getUser().getId());
+			throw new CustomException(ErrorCode.ORDER_NOT_FOUND);
+		}
 
 		return order;
 	}

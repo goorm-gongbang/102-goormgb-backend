@@ -190,7 +190,7 @@ public class MyPageTicketService {
 	public MyPageTicketDetailResponse getTicketDetail(Long userId, Long ticketId) {
 		TicketDetailBaseRow base = myPageQueryService.findTicketDetailBaseByOrderId(ticketId)
 				.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-		Preconditions.validate(base.userId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
+		validateTicketOwnership(userId, ticketId, base.userId());
 		List<TicketSeatDetailRow> seatRows = myPageQueryService.findTicketSeatRowsByOrderId(ticketId);
 
 		MyPageTicketDetailResponse.PaymentInfo payment = MyPageTicketDetailAssembler.toPaymentInfo(base);
@@ -216,7 +216,7 @@ public class MyPageTicketService {
 	public MyPageTicketQrResponse getTicketEntryQr(Long userId, Long ticketId) {
 		Order order = orderRepository.findByIdForUpdate(ticketId)
 				.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
+		validateTicketOwnership(userId, ticketId, order.getUser().getId());
 		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
 
 		Instant now = Instant.now(clock);
@@ -234,7 +234,7 @@ public class MyPageTicketService {
 		Instant now = Instant.now(clock);
 		Order order = orderRepository.findByIdForUpdate(ticketId)
 				.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
+		validateTicketOwnership(userId, ticketId, order.getUser().getId());
 		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
 
 		CancellationFeePolicy policy = MyPageTicketCancellationCalculator.findCancellationPolicy(
@@ -263,5 +263,18 @@ public class MyPageTicketService {
 		orderEventPublisher.publishOrderCancelled(order, matchSeatIds);
 
 		return MyPageTicketCancelResponse.of(order);
+	}
+
+	/**
+	 * 티켓 소유권 검증 — 불일치 시 404 반환 + 보안 로깅.
+	 * 403/404 응답 차이로 주문 존재 여부가 노출되는 것을 방지한다.
+	 */
+	private void validateTicketOwnership(Long requestUserId, Long ticketId, Long ownerUserId) {
+		if (!ownerUserId.equals(requestUserId)) {
+			log.warn("[Security] 주문 소유권 불일치 — 비정상 접근 감지. "
+				+ "requestUserId={}, orderId={}, ownerUserId={}",
+				requestUserId, ticketId, ownerUserId);
+			throw new CustomException(ErrorCode.ORDER_NOT_FOUND);
+		}
 	}
 }
