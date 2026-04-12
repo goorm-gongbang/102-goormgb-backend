@@ -2,7 +2,11 @@ package com.goormgb.be.authguard.auth.service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,6 +16,16 @@ import com.goormgb.be.authguard.auth.dto.RefreshTokenInfo;
 import com.goormgb.be.authguard.jwt.config.JwtProperties;
 import com.goormgb.be.authguard.jwt.provider.JwtTokenProvider;
 import com.goormgb.be.authguard.jwt.repository.RefreshTokenRepository;
+import com.goormgb.be.domain.club.entity.Club;
+import com.goormgb.be.domain.club.repository.ClubRepository;
+import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
+import com.goormgb.be.domain.onboarding.entity.OnboardingPreferredBlock;
+import com.goormgb.be.domain.onboarding.entity.OnboardingViewpointPriority;
+import com.goormgb.be.domain.onboarding.enums.CheerProximityPref;
+import com.goormgb.be.domain.onboarding.enums.Viewpoint;
+import com.goormgb.be.domain.onboarding.repository.OnboardingPreferenceRepository;
+import com.goormgb.be.domain.onboarding.repository.OnboardingPreferredBlockRepository;
+import com.goormgb.be.domain.onboarding.repository.OnboardingViewpointPriorityRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
@@ -31,6 +45,20 @@ import lombok.extern.slf4j.Slf4j;
 public class DevAuthService {
 
 	private static final String DEFAULT_AUTHORITY = "ROLE_USER";
+	private static final Viewpoint[] VIEWPOINTS = Viewpoint.values();
+	private static final List<Long> VALID_BLOCK_NUMS = List.of(
+			1L, 2L, 3L,
+			101L, 102L, 103L, 104L, 105L, 106L, 107L, 108L, 109L,
+			110L, 111L, 112L, 113L, 114L, 115L, 116L, 117L, 118L, 119L, 120L, 121L, 122L,
+			201L, 202L, 203L, 204L, 205L, 206L, 207L, 208L, 209L, 210L, 211L,
+			212L, 213L, 214L, 215L, 216L, 217L, 218L, 219L, 220L, 221L, 222L, 223L, 224L, 225L, 226L,
+			301L, 302L, 303L, 304L, 305L, 306L, 307L, 308L, 309L, 310L,
+			311L, 312L, 313L, 314L, 315L, 316L, 317L, 318L, 319L, 320L, 321L, 322L, 323L, 324L,
+			325L, 326L, 327L, 328L, 329L, 330L, 331L, 332L, 333L, 334L,
+			401L, 402L, 403L, 404L, 405L, 406L, 407L, 408L, 409L, 410L,
+			411L, 412L, 413L, 414L, 415L, 416L, 417L, 418L, 419L, 420L, 421L, 422L
+	);
+	private static final int PREFERRED_BLOCK_COUNT = 10;
 
 	private final UserRepository userRepository;
 	private final DevUserRepository devUserRepository;
@@ -38,7 +66,15 @@ public class DevAuthService {
 	private final JwtTokenProvider jwtTokenProvider;
 	private final JwtProperties jwtProperties;
 	private final RefreshTokenRepository refreshTokenRepository;
+	private final ClubRepository clubRepository;
+	private final OnboardingPreferenceRepository onboardingPreferenceRepository;
+	private final OnboardingPreferredBlockRepository onboardingPreferredBlockRepository;
+	private final OnboardingViewpointPriorityRepository onboardingViewpointPriorityRepository;
 
+	/**
+	 * 개발용 회원가입 — 온보딩 정보(응원 구단·응원석·뷰포인트·선호 블록)를 자동 생성하여
+	 * 가입 즉시 서비스 이용이 가능하도록 처리한다.
+	 */
 	@Transactional
 	public void signup(String loginId, String password, String nickname, String email) {
 		if (devUserRepository.existsByLoginId(loginId)) {
@@ -58,7 +94,60 @@ public class DevAuthService {
 				.build();
 		devUserRepository.save(devUser);
 
-		log.info("Dev user created - loginId: {}, userId: {}", loginId, user.getId());
+		seedOnboarding(user);
+		user.completeOnboarding();
+		user.updateMarketingConsent(true);
+
+		log.info("Dev user created with onboarding - loginId: {}, userId: {}", loginId, user.getId());
+	}
+
+	/**
+	 * 온보딩 기본 데이터 자동 시딩:
+	 * - 응원 구단: 랜덤 선택
+	 * - 응원석 근접: 항상 NEAR (인접 선호)
+	 * - 뷰포인트 우선순위: 랜덤 3개
+	 * - 선호 블록: 유효 블록 중 랜덤 10개
+	 */
+	private void seedOnboarding(User user) {
+		List<Club> clubs = clubRepository.findAll();
+		if (clubs.isEmpty()) {
+			log.warn("클럽 데이터가 없어 온보딩 시딩을 건너뜁니다.");
+			return;
+		}
+
+		ThreadLocalRandom random = ThreadLocalRandom.current();
+
+		// 응원 구단 랜덤 + 응원석 NEAR 고정
+		Club favoriteClub = clubs.get(random.nextInt(clubs.size()));
+		OnboardingPreference preference = OnboardingPreference.builder()
+				.user(user)
+				.favoriteClub(favoriteClub)
+				.cheerProximityPref(CheerProximityPref.NEAR)
+				.build();
+		onboardingPreferenceRepository.save(preference);
+
+		// 뷰포인트 우선순위: 랜덤 시작 인덱스로 3개 슬라이딩 윈도우
+		int startIdx = random.nextInt(VIEWPOINTS.length);
+		for (int p = 0; p < 3; p++) {
+			Viewpoint vp = VIEWPOINTS[(startIdx + p) % VIEWPOINTS.length];
+			OnboardingViewpointPriority priority = OnboardingViewpointPriority.builder()
+					.user(user)
+					.priority(p + 1)
+					.viewpoint(vp)
+					.build();
+			onboardingViewpointPriorityRepository.save(priority);
+		}
+
+		// 선호 블록: 랜덤 10개
+		List<Long> shuffledBlocks = new ArrayList<>(VALID_BLOCK_NUMS);
+		Collections.shuffle(shuffledBlocks, random);
+		for (int b = 0; b < PREFERRED_BLOCK_COUNT; b++) {
+			OnboardingPreferredBlock block = OnboardingPreferredBlock.builder()
+					.user(user)
+					.blockId(shuffledBlocks.get(b))
+					.build();
+			onboardingPreferredBlockRepository.save(block);
+		}
 	}
 
 	@Transactional
