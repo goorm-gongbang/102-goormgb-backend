@@ -35,6 +35,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SeatHoldService {
 
+	/** 1인당 1회 hold 최대 좌석 수 (경기당 최대 구매 수량과 동일) */
+	private static final int MAX_HOLD_SEATS_PER_REQUEST = 8;
+
 	private final SeatHoldLockManager seatHoldLockManager;
 	private final SeatHoldTransactionalService seatHoldTransactionalService;
 
@@ -52,6 +55,10 @@ public class SeatHoldService {
 	private List<Long> normalizeSeatIds(List<Long> seatIds) {
 		Preconditions.validate(
 				seatIds != null && !seatIds.isEmpty(),
+				ErrorCode.INVALID_SEAT_HOLD_REQUEST);
+
+		Preconditions.validate(
+				seatIds.size() <= MAX_HOLD_SEATS_PER_REQUEST,
 				ErrorCode.INVALID_SEAT_HOLD_REQUEST);
 
 		Preconditions.validate(
