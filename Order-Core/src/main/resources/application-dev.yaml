@@ -39,6 +39,22 @@ spring:
       properties:
         spring.json.trusted.packages: ${KAFKA_CONSUMER_TRUSTED_PACKAGES}
 
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    check-template-location: true
+
   data:
     redis:
       host: ${REDIS_HOST}
@@ -77,3 +93,4 @@ logging:
   level:
     root: INFO
     com.goormgb.be: DEBUG
+    org.springframework.web: DEBUG

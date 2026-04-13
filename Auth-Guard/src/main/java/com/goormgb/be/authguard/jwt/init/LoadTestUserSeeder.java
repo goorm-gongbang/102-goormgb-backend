@@ -39,10 +39,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class LoadTestUserSeeder implements CommandLineRunner {
 
-	private static final int TOTAL_USERS = 100;
+	private static final int TOTAL_USERS = 30;
 	private static final String PASSWORD = "1234";
-	private static final int BATCH_LOG_INTERVAL = 100;
-	private static final int FLUSH_INTERVAL = 100;
+	private static final int BATCH_LOG_INTERVAL = 10;
+	private static final int FLUSH_INTERVAL = 10;
 	private static final int PREFERRED_BLOCK_COUNT = 10;
 
 	/**

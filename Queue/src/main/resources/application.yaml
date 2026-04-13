@@ -56,6 +56,9 @@ queue:
       public-key: ${ADMISSION_PUBLIC_KEY}
       issuer: queue-service
 
+prequeue:
+  booking-option-key-prefix: queue:precheck:booking-option
+
 encryption:
   db-key: ${DB_ENCRYPTION_KEY}
 

@@ -3,6 +3,7 @@ package com.goormgb.be.queue.queue.service;
 import java.time.Duration;
 import java.time.Instant;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import com.goormgb.be.queue.queue.model.ReadyTokenPayload;
 import com.goormgb.be.queue.queue.policy.QueuePollingPolicy;
 import com.goormgb.be.queue.queue.repository.QueueRedisRepository;
 
+import io.micrometer.core.instrument.Counter;
 @Service
 public class QueueService {
 
@@ -28,24 +30,28 @@ public class QueueService {
 	private final QueueProperties queueProperties;
 	private final QueuePollingPolicy queuePollingPolicy;
 	private final QueueMetricsService queueMetricsService;
+	private final PreQueueValidationService preQueueValidationService;
 
 	public QueueService(
 		MatchRepository matchRepository,
 		QueueRedisRepository queueRedisRepository,
 		QueueProperties queueProperties,
 		QueuePollingPolicy queuePollingPolicy,
-		QueueMetricsService queueMetricsService
+		QueueMetricsService queueMetricsService,
+		PreQueueValidationService preQueueValidationService
 	) {
 		this.matchRepository = matchRepository;
 		this.queueRedisRepository = queueRedisRepository;
 		this.queueProperties = queueProperties;
 		this.queuePollingPolicy = queuePollingPolicy;
 		this.queueMetricsService = queueMetricsService;
+		this.preQueueValidationService = preQueueValidationService;
 	}
 
 	@Transactional
 	public QueueEnterResponse enter(Long matchId, Long userId) {
 		requireAuthenticated(userId);
+		preQueueValidationService.validateBeforeEnter(matchId, userId);
 
 		Match match = matchRepository.findByIdOrThrow(matchId, ErrorCode.MATCH_NOT_FOUND);
 		validateQueueOpen(match);

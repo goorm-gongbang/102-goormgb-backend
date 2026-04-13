@@ -45,6 +45,10 @@ import com.goormgb.be.ordercore.order.event.OrderEventPublisher;
 import com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
+import com.goormgb.be.ordercore.payment.entity.Payment;
+import com.goormgb.be.ordercore.payment.enums.PaymentMethod;
+import com.goormgb.be.ordercore.payment.enums.PaymentStatus;
+import com.goormgb.be.ordercore.payment.repository.PaymentRepository;
 import com.goormgb.be.ordercore.qrtoken.entity.QrToken;
 import com.goormgb.be.ordercore.qrtoken.repository.QrTokenRepository;
 import com.goormgb.be.user.entity.User;
@@ -64,6 +68,8 @@ class MyPageTicketServiceTest {
 	@Mock
 	private QrTokenRepository qrTokenRepository;
 	@Mock
+	private PaymentRepository paymentRepository;
+	@Mock
 	private OrderEventPublisher orderEventPublisher;
 
 	private MyPageTicketService myPageService;
@@ -76,6 +82,7 @@ class MyPageTicketServiceTest {
 				orderRepository,
 				orderSeatRepository,
 				qrTokenRepository,
+				paymentRepository,
 				myPageQueryService,
 				cancellationFeePolicyRepository,
 				orderEventPublisher,
@@ -485,11 +492,12 @@ class MyPageTicketServiceTest {
 		}
 
 		@Test
-		@DisplayName("D-1~D-6 정책이면 취소수수료는 bookingFee + 티켓금액 10% 이다")
+		@DisplayName("D-1~D-6 정책이면 취소수수료는 bookingFee + 티켓금액 10% 이다 (토스페이)")
 		void requestTicketCancel_d1to6_성공() {
 			Long userId = 1L;
 			Long ticketId = 101L;
 			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(2, ChronoUnit.DAYS));
+			Payment payment = Payment.builder().order(order).paymentMethod(PaymentMethod.TOSS_PAY).build();
 			CancellationFeePolicy policy = CancellationFeePolicy.builder()
 					.daysBeforeMatchMin(1)
 					.daysBeforeMatchMax(6)
@@ -499,17 +507,18 @@ class MyPageTicketServiceTest {
 					.build();
 
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
 
 			MyPageTicketCancelResponse response = myPageService.requestTicketCancel(userId, ticketId);
 
 			assertThat(response.ticketId()).isEqualTo(ticketId);
-			assertThat(response.status()).isEqualTo(OrderStatus.CANCEL_REQUESTED);
+			assertThat(response.status()).isEqualTo(OrderStatus.CANCELLED);
 			assertThat(response.totalAmount()).isEqualTo(42000);
 			assertThat(response.cancellationFee()).isEqualTo(6000);
 			assertThat(response.refundedAmount()).isEqualTo(36000);
-			assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCEL_REQUESTED);
+			assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 			assertThat(order.getCancellationFee()).isEqualTo(6000);
 			assertThat(order.getRefundedAmount()).isEqualTo(36000);
 		}
@@ -520,6 +529,7 @@ class MyPageTicketServiceTest {
 			Long userId = 1L;
 			Long ticketId = 101L;
 			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(10, ChronoUnit.DAYS));
+			Payment payment = Payment.builder().order(order).paymentMethod(PaymentMethod.TOSS_PAY).build();
 			CancellationFeePolicy policy = CancellationFeePolicy.builder()
 					.daysBeforeMatchMin(7)
 					.daysBeforeMatchMax(null)
@@ -529,6 +539,7 @@ class MyPageTicketServiceTest {
 					.build();
 
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
 
@@ -545,6 +556,7 @@ class MyPageTicketServiceTest {
 			Long ticketId = 101L;
 			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(10, ChronoUnit.DAYS));
 			ReflectionTestUtils.setField(order, "createdAt", Instant.now(clock).minus(1, ChronoUnit.DAYS));
+			Payment payment = Payment.builder().order(order).paymentMethod(PaymentMethod.TOSS_PAY).build();
 
 			CancellationFeePolicy policy = CancellationFeePolicy.builder()
 					.daysBeforeMatchMin(7)
@@ -555,6 +567,7 @@ class MyPageTicketServiceTest {
 					.build();
 
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
 
@@ -562,6 +575,82 @@ class MyPageTicketServiceTest {
 
 			assertThat(response.cancellationFee()).isEqualTo(2000);
 			assertThat(response.refundedAmount()).isEqualTo(40000);
+		}
+
+		@Test
+		@DisplayName("토스페이 결제 취소 시 Order는 CANCELLED, Payment는 CANCELLED, cancelledAt은 Clock 기반 시간이다")
+		void requestTicketCancel_tossPay_즉시_취소완료() {
+			Long userId = 1L;
+			Long ticketId = 101L;
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(2, ChronoUnit.DAYS));
+			Payment payment = Payment.builder().order(order).paymentMethod(PaymentMethod.TOSS_PAY).build();
+			payment.complete();
+			CancellationFeePolicy policy = CancellationFeePolicy.builder()
+					.daysBeforeMatchMin(1).daysBeforeMatchMax(6)
+					.cancellable(true).ticketFeeRate(new BigDecimal("0.100")).bookingFeeRefundable(false)
+					.build();
+
+			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
+			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
+			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
+
+			myPageService.requestTicketCancel(userId, ticketId);
+
+			assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+			assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELLED);
+			assertThat(order.getCancelledAt()).isEqualTo(Instant.now(clock));
+		}
+
+		@Test
+		@DisplayName("카카오페이 결제 취소 시 Order는 CANCELLED, Payment는 CANCELLED 상태가 된다")
+		void requestTicketCancel_kakaoPay_즉시_취소완료() {
+			Long userId = 1L;
+			Long ticketId = 101L;
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(2, ChronoUnit.DAYS));
+			Payment payment = Payment.builder().order(order).paymentMethod(PaymentMethod.KAKAO_PAY).build();
+			payment.complete();
+			CancellationFeePolicy policy = CancellationFeePolicy.builder()
+					.daysBeforeMatchMin(1).daysBeforeMatchMax(6)
+					.cancellable(true).ticketFeeRate(new BigDecimal("0.100")).bookingFeeRefundable(false)
+					.build();
+
+			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
+			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
+			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
+
+			myPageService.requestTicketCancel(userId, ticketId);
+
+			assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+			assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELLED);
+			assertThat(order.getCancelledAt()).isEqualTo(Instant.now(clock));
+		}
+
+		@Test
+		@DisplayName("무통장입금 취소 시 Order는 REFUND_COMPLETED, Payment는 REFUNDED 상태가 된다")
+		void requestTicketCancel_bankTransfer_즉시_환불완료() {
+			Long userId = 1L;
+			Long ticketId = 101L;
+			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(2, ChronoUnit.DAYS));
+			Payment payment = Payment.builder().order(order).paymentMethod(PaymentMethod.BANK_TRANSFER).build();
+			payment.complete();
+			CancellationFeePolicy policy = CancellationFeePolicy.builder()
+					.daysBeforeMatchMin(1).daysBeforeMatchMax(6)
+					.cancellable(true).ticketFeeRate(new BigDecimal("0.100")).bookingFeeRefundable(false)
+					.build();
+
+			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
+			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
+			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
+
+			MyPageTicketCancelResponse response = myPageService.requestTicketCancel(userId, ticketId);
+
+			assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUND_COMPLETED);
+			assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
+			assertThat(order.getCancelledAt()).isEqualTo(Instant.now(clock));
+			assertThat(response.status()).isEqualTo(OrderStatus.REFUND_COMPLETED);
 		}
 
 		@Test
@@ -615,6 +704,7 @@ class MyPageTicketServiceTest {
 			Long userId = 1L;
 			Long ticketId = 101L;
 			Order order = createOrder(ticketId, userId, OrderStatus.PAID, Instant.now(clock).plus(2, ChronoUnit.DAYS));
+			Payment payment = Payment.builder().order(order).paymentMethod(PaymentMethod.TOSS_PAY).build();
 			List<Long> matchSeatIds = List.of(101L, 102L);
 			CancellationFeePolicy policy = CancellationFeePolicy.builder()
 					.daysBeforeMatchMin(1)
@@ -625,6 +715,7 @@ class MyPageTicketServiceTest {
 					.build();
 
 			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(matchSeatIds);
 

@@ -57,6 +57,11 @@ public class EmailDataQueryService {
 	);
 
 	@Transactional(readOnly = true)
+	public boolean isOrderPaid(Long orderId) {
+		return orderRepository.existsByIdAndStatus(orderId, OrderStatus.PAID);
+	}
+
+	@Transactional(readOnly = true)
 	public Optional<Map<String, Object>> buildPaymentEmailContext(Long orderId, PaymentCompletedEvent event) {
 		Order order = orderRepository.findByIdWithMatchDetails(orderId).orElse(null);
 		if (order == null) {
@@ -71,6 +76,7 @@ public class EmailDataQueryService {
 		Map<String, Object> ctx = new HashMap<>();
 		ctx.put("ordererName", order.getOrdererName());
 		ctx.put("ordererEmail", order.getOrdererEmail());
+		ctx.put("toEmail", order.getUser().getEmail());
 		ctx.put("orderId", order.getId());
 
 		ctx.put("matchTitle", match.getHomeClub().getKoName() + " vs " + match.getAwayClub().getKoName());
@@ -113,6 +119,7 @@ public class EmailDataQueryService {
 		Map<String, Object> ctx = new HashMap<>();
 		ctx.put("ordererName", order.getOrdererName());
 		ctx.put("ordererEmail", order.getOrdererEmail());
+		ctx.put("toEmail", order.getOrdererEmail());
 		ctx.put("orderId", order.getId());
 
 		ctx.put("matchTitle", match.getHomeClub().getKoName() + " vs " + match.getAwayClub().getKoName());

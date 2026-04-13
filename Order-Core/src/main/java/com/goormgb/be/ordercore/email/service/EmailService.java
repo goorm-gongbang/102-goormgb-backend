@@ -32,6 +32,8 @@ public class EmailService {
 
 	private static final ClassPathResource LOGO_RESOURCE =
 			new ClassPathResource("static/images/playball-logo.png");
+	private static final ClassPathResource MAIL_RESOURCE =
+			new ClassPathResource("static/images/mail.png");
 
 	public void sendPaymentConfirmation(Map<String, Object> emailContext) {
 		String to = extractEmail(emailContext);
@@ -68,7 +70,10 @@ public class EmailService {
 	}
 
 	private String extractEmail(Map<String, Object> emailContext) {
-		String to = (String)emailContext.get("ordererEmail");
+		String to = (String)emailContext.get("toEmail");
+		if (to == null || to.isBlank()) {
+			to = (String)emailContext.get("ordererEmail");
+		}
 		return to != null ? to : "";
 	}
 
@@ -83,6 +88,9 @@ public class EmailService {
 
 			if (LOGO_RESOURCE.exists()) {
 				helper.addInline("playball-logo", LOGO_RESOURCE, "image/png");
+			}
+			if (MAIL_RESOURCE.exists()) {
+				helper.addInline("mailIcon", MAIL_RESOURCE, "image/png");
 			}
 
 			mailSender.send(mimeMessage);

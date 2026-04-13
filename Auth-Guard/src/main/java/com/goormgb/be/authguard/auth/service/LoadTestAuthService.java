@@ -83,7 +83,6 @@ public class LoadTestAuthService {
 		Preconditions.validate(user.getStatus() != UserStatus.BLOCKED, ErrorCode.USER_ALREADY_BLOCKED);
 
 		// 부하테스트 로그인에서는 lastLoginAt 업데이트 생략 (동시 UPDATE 병목 방지)
-// user.updateLastLoginAt();
 
 		String sid = UUID.randomUUID().toString();
 		int loadTestMinutes = jwtProperties.getLoadTest().getTokenExpirationMinutes();
