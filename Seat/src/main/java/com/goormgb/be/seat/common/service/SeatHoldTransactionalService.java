@@ -18,6 +18,7 @@ import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
+import com.goormgb.be.seat.matchSeat.repository.UserPurchasedSeatCountRepository;
 import com.goormgb.be.seat.metrics.SeatMetricsService;
 import com.goormgb.be.seat.metrics.enums.SeatHoldFailReason;
 import com.goormgb.be.seat.metrics.enums.SeatHoldMode;
@@ -45,11 +46,13 @@ import lombok.RequiredArgsConstructor;
 public class SeatHoldTransactionalService {
 
 	private static final Duration HOLD_TTL = Duration.ofMinutes(5);
+	private static final int MAX_TICKETS_PER_MATCH = 8;
 
 	private final SeatMetricsService seatMetricsService;
 
 	private final MatchSeatRepository matchSeatRepository;
 	private final SeatHoldRepository seatHoldRepository;
+	private final UserPurchasedSeatCountRepository userPurchasedSeatCountRepository;
 	private final Clock clock;
 
 	/**
@@ -69,6 +72,13 @@ public class SeatHoldTransactionalService {
 		try {
 			// 일반 좌석 hold 횟수 증가
 			seatMetricsService.increaseHoldAttempt(SeatHoldMode.MAP);
+
+			// 기존 구매 완료 좌석 수 사전 검증 (Redis 캐시 기반, Order-Core DB 검증이 최종 방어)
+			long purchasedCount = userPurchasedSeatCountRepository.get(userId, matchId);
+			Preconditions.validate(
+				purchasedCount + seatIds.size() <= MAX_TICKETS_PER_MATCH,
+				ErrorCode.EXCEEDED_MAX_TICKETS_PER_MATCH
+			);
 
 			Instant now = clock.instant();
 			Instant expiresAt = now.plus(HOLD_TTL);
@@ -154,7 +164,7 @@ public class SeatHoldTransactionalService {
 
 	private SeatHoldFailReason mapFailReason(ErrorCode errorCode) {
 		return switch (errorCode) {
-			case MATCH_SEAT_NOT_FOUND -> SeatHoldFailReason.VALIDATION;
+			case MATCH_SEAT_NOT_FOUND, EXCEEDED_MAX_TICKETS_PER_MATCH -> SeatHoldFailReason.VALIDATION;
 			case SEAT_ALREADY_SOLD, SEAT_ALREADY_HELD_BY_OTHER -> SeatHoldFailReason.CONFLICT;
 			default -> SeatHoldFailReason.SYSTEM_ERROR;
 		};

@@ -12,9 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
+import com.goormgb.be.seat.matchSeat.repository.UserPurchasedSeatCountRepository;
 import com.goormgb.be.seat.metrics.SeatMetricsService;
 import com.goormgb.be.seat.metrics.enums.FallbackType;
 import com.goormgb.be.seat.metrics.enums.RecommendDegradeType;
@@ -52,10 +54,12 @@ public class SeatAssignmentTransactionalService {
 
 	private static final Duration HOLD_TTL = Duration.ofMinutes(5);
 	private static final int MAX_RETRY = 3;
+	private static final int MAX_TICKETS_PER_MATCH = 8;
 
 	private final SeatMetricsService seatMetricsService;
 	private final MatchSeatRepository matchSeatRepository;
 	private final SeatHoldRepository seatHoldRepository;
+	private final UserPurchasedSeatCountRepository userPurchasedSeatCountRepository;
 	private final RealConsecutiveFinder realConsecutiveFinder;
 	private final SemiConsecutiveFinder semiConsecutiveFinder;
 	private final Clock clock;
@@ -81,6 +85,13 @@ public class SeatAssignmentTransactionalService {
 		Long userId, Long matchId, Long blockId, Block block,
 		int requiredSeats, boolean nearAdjacentToggle
 	) {
+		// 기존 구매 완료 좌석 수 사전 검증 (Redis 캐시 기반, Order-Core DB 검증이 최종 방어)
+		long purchasedCount = userPurchasedSeatCountRepository.get(userId, matchId);
+		Preconditions.validate(
+			purchasedCount + requiredSeats <= MAX_TICKETS_PER_MATCH,
+			ErrorCode.EXCEEDED_MAX_TICKETS_PER_MATCH
+		);
+
 		cleanupExistingHolds(userId, matchId);
 
 		// 1. 진짜 연석 탐색 + 충돌 시 재탐색
