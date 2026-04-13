@@ -81,7 +81,7 @@ public class AbstractErrorResponseStrategy implements ErrorResponseStrategy {
 				 MATCH_SEAT_NOT_FOUND, SEAT_HOLD_NOT_FOUND, QUEUE_ENTRY_NOT_FOUND,
 
 				 USER_ALREADY_EXISTS, USER_ALREADY_BLOCKED, USER_ALREADY_ACTIVE,
-				 USER_NOT_FOUND, EXCEEDED_MAX_TICKETS_PER_MATCH -> errorCode.getMessage();
+				 USER_NOT_FOUND, EXCEEDED_MAX_TICKETS_PER_MATCH, ORDER_TOTAL_PRICE_MISMATCH -> errorCode.getMessage();
 
 			default -> switch (errorCode.getStatus().series()) {
 				case SERVER_ERROR -> "서버 통신에 일시적 오류가 발생했습니다.";
