@@ -94,25 +94,24 @@ public class DevAuthService {
 				.build();
 		devUserRepository.save(devUser);
 
-		seedOnboarding(user);
-		user.completeOnboarding();
-		user.updateMarketingConsent(true);
+		if (seedOnboarding(user)) {
+			user.completeOnboarding();
+			user.updateMarketingConsent(true);
+		}
 
 		log.info("Dev user created with onboarding - loginId: {}, userId: {}", loginId, user.getId());
 	}
 
 	/**
-	 * 온보딩 기본 데이터 자동 시딩:
-	 * - 응원 구단: 랜덤 선택
-	 * - 응원석 근접: 항상 NEAR (인접 선호)
-	 * - 뷰포인트 우선순위: 랜덤 3개
-	 * - 선호 블록: 유효 블록 중 랜덤 10개
+	 * 온보딩 기본 데이터 자동 시딩.
+	 *
+	 * @return 시딩 성공 여부 (클럽 데이터 부재 시 false)
 	 */
-	private void seedOnboarding(User user) {
+	private boolean seedOnboarding(User user) {
 		List<Club> clubs = clubRepository.findAll();
 		if (clubs.isEmpty()) {
 			log.warn("클럽 데이터가 없어 온보딩 시딩을 건너뜁니다.");
-			return;
+			return false;
 		}
 
 		ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -126,28 +125,35 @@ public class DevAuthService {
 				.build();
 		onboardingPreferenceRepository.save(preference);
 
-		// 뷰포인트 우선순위: 랜덤 시작 인덱스로 3개 슬라이딩 윈도우
-		int startIdx = random.nextInt(VIEWPOINTS.length);
-		for (int p = 0; p < 3; p++) {
-			Viewpoint vp = VIEWPOINTS[(startIdx + p) % VIEWPOINTS.length];
-			OnboardingViewpointPriority priority = OnboardingViewpointPriority.builder()
-					.user(user)
-					.priority(p + 1)
-					.viewpoint(vp)
-					.build();
-			onboardingViewpointPriorityRepository.save(priority);
+		// 뷰포인트 우선순위: 랜덤 시작 인덱스로 최대 3개 슬라이딩 윈도우
+		if (VIEWPOINTS.length > 0) {
+			List<OnboardingViewpointPriority> priorities = new ArrayList<>();
+			int startIdx = random.nextInt(VIEWPOINTS.length);
+			int count = Math.min(3, VIEWPOINTS.length);
+			for (int p = 0; p < count; p++) {
+				Viewpoint vp = VIEWPOINTS[(startIdx + p) % VIEWPOINTS.length];
+				priorities.add(OnboardingViewpointPriority.builder()
+						.user(user)
+						.priority(p + 1)
+						.viewpoint(vp)
+						.build());
+			}
+			onboardingViewpointPriorityRepository.saveAll(priorities);
 		}
 
-		// 선호 블록: 랜덤 10개
+		// 선호 블록: 랜덤 10개 일괄 저장
 		List<Long> shuffledBlocks = new ArrayList<>(VALID_BLOCK_NUMS);
 		Collections.shuffle(shuffledBlocks, random);
+		List<OnboardingPreferredBlock> blocks = new ArrayList<>();
 		for (int b = 0; b < PREFERRED_BLOCK_COUNT; b++) {
-			OnboardingPreferredBlock block = OnboardingPreferredBlock.builder()
+			blocks.add(OnboardingPreferredBlock.builder()
 					.user(user)
 					.blockId(shuffledBlocks.get(b))
-					.build();
-			onboardingPreferredBlockRepository.save(block);
+					.build());
 		}
+		onboardingPreferredBlockRepository.saveAll(blocks);
+
+		return true;
 	}
 
 	@Transactional
