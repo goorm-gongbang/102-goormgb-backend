@@ -70,12 +70,6 @@ public class MyPageTicketService {
 			OrderStatus.UNDER_REVIEW.name()
 	);
 
-	private static final List<String> UPCOMING_TICKET_STATUSES = List.of(
-			OrderStatus.PAYMENT_PENDING.name(),
-			OrderStatus.PAID.name(),
-			OrderStatus.UNDER_REVIEW.name()
-	);
-
 	private static final List<OrderStatus> CANCEL_PROCESSING_STATUSES = List.of(
 			OrderStatus.CANCEL_REQUESTED,
 			OrderStatus.REFUND_PROCESSING
