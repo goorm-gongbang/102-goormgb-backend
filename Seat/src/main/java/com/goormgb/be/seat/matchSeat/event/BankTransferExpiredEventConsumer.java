@@ -11,6 +11,7 @@ import com.goormgb.be.kafka.event.BankTransferExpiredEvent;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
+import com.goormgb.be.seat.matchSeat.repository.UserPurchasedSeatCountRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 public class BankTransferExpiredEventConsumer {
 
 	private final MatchSeatRepository matchSeatRepository;
+	private final UserPurchasedSeatCountRepository userPurchasedSeatCountRepository;
 
 	@KafkaListener(topics = EventTopic.BANK_TRANSFER_EXPIRED, groupId = "seat-service")
 	@Transactional
@@ -62,5 +64,11 @@ public class BankTransferExpiredEventConsumer {
 			unexpectedStateCount,
 			missingSeatCount
 		);
+
+		// 구매 완료 좌석 수 Redis 카운터 갱신 (SOLD → AVAILABLE 복원된 수만큼 감소)
+		// PaymentCompletedEvent 발행 시 카운터가 증가했으므로, 만료 시 반드시 감소해야 한다
+		if (updatedCount > 0) {
+			userPurchasedSeatCountRepository.decrement(event.getUserId(), event.getMatchId(), updatedCount);
+		}
 	}
 }
