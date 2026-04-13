@@ -28,6 +28,7 @@ import com.goormgb.be.ordercore.order.query.SeatHoldInfo;
 import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
+import com.goormgb.be.ordercore.payment.enums.PaymentStatus;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.repository.UserRepository;
 
@@ -49,6 +50,8 @@ public class OrderService {
 	private static final List<OrderStatus> REMOVABLE_ORDER_SEAT_STATUSES = List.of(
 			OrderStatus.CANCELLED, OrderStatus.REFUND_COMPLETED
 	);
+	private static final OrderStatus EXPIRED_PENDING_ORDER_STATUS = OrderStatus.PAYMENT_PENDING;
+	private static final PaymentStatus EXPIRED_PENDING_PAYMENT_STATUS = PaymentStatus.PENDING;
 
 	private final MatchRepository matchRepository;
 	private final UserRepository userRepository;
@@ -161,12 +164,22 @@ public class OrderService {
 	}
 
 	private void cleanupReusableCancelledOrderSeats(List<Long> matchSeatIds) {
-		int deleted = orderSeatRepository.deleteByMatchSeatIdInAndOrderStatuses(
+		int reusableCancelledDeleted = orderSeatRepository.deleteByMatchSeatIdInAndOrderStatuses(
 				matchSeatIds,
 				REMOVABLE_ORDER_SEAT_STATUSES
 		);
-		if (deleted > 0) {
-			log.info("[OrderService] 취소/환불 완료 주문 좌석 {}건 정리", deleted);
+
+		int expiredPendingDeleted = orderSeatRepository.deleteExpiredPendingBankTransferSeats(
+				matchSeatIds,
+				EXPIRED_PENDING_ORDER_STATUS,
+				EXPIRED_PENDING_PAYMENT_STATUS,
+				Instant.now()
+		);
+
+		int totalDeleted = reusableCancelledDeleted + expiredPendingDeleted;
+		if (totalDeleted > 0) {
+			log.info("[OrderService] 재사용 가능 좌석 {}건 정리 (취소/환불={}, 만료 미결제={})",
+					totalDeleted, reusableCancelledDeleted, expiredPendingDeleted);
 		}
 	}
 
