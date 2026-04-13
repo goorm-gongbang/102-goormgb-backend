@@ -10,6 +10,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.user.dto.response.UserInfoGetResponse;
 import com.goormgb.be.user.entity.User;
@@ -46,7 +48,7 @@ class UserServiceTest {
 	void getMyInfo_온보딩_완료() {
 		// given
 		User user = UserFixture.createOnboardingCompleted();
-		org.springframework.test.util.ReflectionTestUtils.setField(user, "id", 2L);
+		ReflectionTestUtils.setField(user, "id", 2L);
 		given(userRepository.findByIdOrThrow(2L, ErrorCode.USER_NOT_FOUND)).willReturn(user);
 
 		// when
