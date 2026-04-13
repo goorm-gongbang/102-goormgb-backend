@@ -6,12 +6,14 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.domain.ticket.enums.TicketType;
+import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.ordercore.metrics.OrderMetricsService;
@@ -26,6 +28,7 @@ import com.goormgb.be.ordercore.order.query.SeatHoldInfo;
 import com.goormgb.be.ordercore.order.query.SeatInfoQueryService;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.ordercore.order.repository.OrderSeatRepository;
+import com.goormgb.be.ordercore.payment.enums.PaymentStatus;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.repository.UserRepository;
 
@@ -44,6 +47,11 @@ public class OrderService {
 	private static final List<OrderStatus> COUNTABLE_ORDER_STATUSES = List.of(
 			OrderStatus.PAYMENT_PENDING, OrderStatus.PAID, OrderStatus.UNDER_REVIEW
 	);
+	private static final List<OrderStatus> REMOVABLE_ORDER_SEAT_STATUSES = List.of(
+			OrderStatus.CANCELLED, OrderStatus.REFUND_COMPLETED
+	);
+	private static final OrderStatus EXPIRED_PENDING_ORDER_STATUS = OrderStatus.PAYMENT_PENDING;
+	private static final PaymentStatus EXPIRED_PENDING_PAYMENT_STATUS = PaymentStatus.PENDING;
 
 	private final MatchRepository matchRepository;
 	private final UserRepository userRepository;
@@ -93,6 +101,7 @@ public class OrderService {
 		Preconditions.validate(!request.matchSeatIds().isEmpty(), ErrorCode.ORDER_SEAT_EMPTY);
 
 		cancelExistingPendingOrders(userId, request.matchId());
+		cleanupReusableCancelledOrderSeats(request.matchSeatIds());
 		validateMaxTicketsPerMatch(userId, request.matchId(), request.matchSeatIds().size());
 
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
@@ -141,12 +150,37 @@ public class OrderService {
 
 		orderRepository.save(order);
 		orderSeats.forEach(seat -> seat.assignOrder(order));
-		orderSeatRepository.saveAll(orderSeats);
+		try {
+			orderSeatRepository.saveAll(orderSeats);
+		} catch (DataIntegrityViolationException e) {
+			// 동시 주문/잔존 데이터로 unique(match_seat_id) 충돌 시 500 대신 도메인 에러로 매핑한다.
+			throw new CustomException(ErrorCode.SEAT_ALREADY_SOLD, e);
+		}
 
 		log.info("[OrderService] 주문 생성 완료 - orderId={}, userId={}, seatCount={}, totalAmount={}",
 				order.getId(), userId, orderSeats.size(), request.totalPrice());
 
 		return OrderCreateResponse.of(order, orderSeats.size());
+	}
+
+	private void cleanupReusableCancelledOrderSeats(List<Long> matchSeatIds) {
+		int reusableCancelledDeleted = orderSeatRepository.deleteByMatchSeatIdInAndOrderStatuses(
+				matchSeatIds,
+				REMOVABLE_ORDER_SEAT_STATUSES
+		);
+
+		int expiredPendingDeleted = orderSeatRepository.deleteExpiredPendingBankTransferSeats(
+				matchSeatIds,
+				EXPIRED_PENDING_ORDER_STATUS,
+				EXPIRED_PENDING_PAYMENT_STATUS,
+				Instant.now()
+		);
+
+		int totalDeleted = reusableCancelledDeleted + expiredPendingDeleted;
+		if (totalDeleted > 0) {
+			log.info("[OrderService] 재사용 가능 좌석 {}건 정리 (취소/환불={}, 만료 미결제={})",
+					totalDeleted, reusableCancelledDeleted, expiredPendingDeleted);
+		}
 	}
 
 	/**
