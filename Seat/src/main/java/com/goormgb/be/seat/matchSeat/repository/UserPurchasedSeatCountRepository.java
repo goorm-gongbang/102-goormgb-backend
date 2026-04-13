@@ -11,14 +11,15 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 사용자별 경기당 구매 완료 좌석 수를 Redis에 캐싱하는 Repository.
  *
- * <p>Kafka 이벤트(결제완료/주문취소)를 통해 카운터를 동기화하며,
+ * <p>Kafka 이벤트(결제완료/주문취소/무통장만료)를 통해 카운터를 동기화하며,
  * Seat 서비스의 Hold 단계에서 최대 예매 수량(8매) 초과 여부를 사전 검증할 때 사용된다.</p>
  *
  * <h3>Redis Key</h3>
  * <pre>purchased:{userId}:{matchId}</pre>
  *
  * <h3>TTL</h3>
- * <p>90일 — 경기 종료 후 자동 만료</p>
+ * <p>7일 — 예매 오픈은 경기 7일 전 오전 11시이므로 구매 후 최대 7일 이내에 경기가 시작된다.
+ * 경기 시작 후에는 Hold 자체가 불가능하므로 카운터를 읽을 일이 없다.</p>
  *
  * <h3>일관성 보장 수준</h3>
  * <p>Kafka at-least-once 특성으로 중복 처리될 수 있으나,
@@ -30,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserPurchasedSeatCountRepository {
 
 	private static final String KEY_PREFIX = "purchased:";
-	private static final Duration TTL = Duration.ofDays(90);
+	private static final Duration TTL = Duration.ofDays(7);
 
 	private final StringRedisTemplate stringRedisTemplate;
 
@@ -84,7 +85,7 @@ public class UserPurchasedSeatCountRepository {
 	/**
 	 * 구매 완료 좌석 수를 감소시킨다.
 	 *
-	 * <p>주문 취소(OrderCancelledEvent) 시 호출한다.
+	 * <p>주문 취소(OrderCancelledEvent) 또는 무통장 만료(BankTransferExpiredEvent) 시 호출한다.
 	 * 감소 결과가 음수가 되면 0으로 보정한다.</p>
 	 *
 	 * @param userId  사용자 ID
@@ -101,8 +102,7 @@ public class UserPurchasedSeatCountRepository {
 			} else if (result != null) {
 				stringRedisTemplate.expire(key, TTL);
 				log.debug("[PurchasedSeatCount 경기 구매 완료 좌석 수] 감소: userId={}, matchId={}, count={}, result={}", userId,
-						matchId, count,
-						result);
+						matchId, count, result);
 			}
 		} catch (Exception e) {
 			log.warn("[PurchasedSeatCount 경기 구매 완료 좌석 수] Redis 감소 실패: userId={}, matchId={}, count={}", userId, matchId,
