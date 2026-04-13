@@ -3,7 +3,7 @@ package com.goormgb.be.seat.config;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 public class RedissonConfig {
 
 	@Bean(destroyMethod = "shutdown")
-	public RedissonClient redissonClient(RedisProperties redisProperties) {
+	public RedissonClient redissonClient(DataRedisProperties redisProperties) {
 		Config config = new Config();
 		String scheme = redisProperties.getSsl().isEnabled() ? "rediss://" : "redis://";
 		config.useSingleServer()
