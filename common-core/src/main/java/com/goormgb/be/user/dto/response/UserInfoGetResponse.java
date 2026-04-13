@@ -14,14 +14,17 @@ public record UserInfoGetResponse(
 	@Schema(description = "이메일", example = "user@example.com")
 	String email,
 	@Schema(description = "닉네임", example = "홍길동")
-	String nickname
+	String nickname,
+	@Schema(description = "온보딩 필요 여부", example = "true")
+	boolean onboardingRequired
 ) {
 	public static UserInfoGetResponse from(User user) {
 		return new UserInfoGetResponse(
 			user.getId(),
 			user.getStatus(),
 			user.getEmail(),
-			user.getNickname()
+			user.getNickname(),
+			!user.isCompletedOnboarding()
 		);
 	}
 }
