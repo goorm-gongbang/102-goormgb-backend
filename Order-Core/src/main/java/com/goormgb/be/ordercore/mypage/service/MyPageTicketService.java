@@ -261,7 +261,6 @@ public class MyPageTicketService {
 		// 주문 취소 이벤트 발행 → Seat 서비스에서 좌석 SOLD → AVAILABLE 복원
 		List<Long> matchSeatIds = orderSeatRepository.findMatchSeatIdsByOrderId(ticketId);
 		orderEventPublisher.publishOrderCancelled(order, matchSeatIds);
-		orderSeatRepository.deleteByOrderId(ticketId);
 
 		return MyPageTicketCancelResponse.of(order);
 	}

@@ -6,12 +6,14 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.domain.ticket.enums.TicketType;
+import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.ordercore.metrics.OrderMetricsService;
@@ -145,7 +147,12 @@ public class OrderService {
 
 		orderRepository.save(order);
 		orderSeats.forEach(seat -> seat.assignOrder(order));
-		orderSeatRepository.saveAll(orderSeats);
+		try {
+			orderSeatRepository.saveAll(orderSeats);
+		} catch (DataIntegrityViolationException e) {
+			// 동시 주문/잔존 데이터로 unique(match_seat_id) 충돌 시 500 대신 도메인 에러로 매핑한다.
+			throw new CustomException(ErrorCode.SEAT_ALREADY_SOLD, e);
+		}
 
 		log.info("[OrderService] 주문 생성 완료 - orderId={}, userId={}, seatCount={}, totalAmount={}",
 				order.getId(), userId, orderSeats.size(), request.totalPrice());
