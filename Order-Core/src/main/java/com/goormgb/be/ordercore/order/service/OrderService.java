@@ -44,6 +44,9 @@ public class OrderService {
 	private static final List<OrderStatus> COUNTABLE_ORDER_STATUSES = List.of(
 			OrderStatus.PAYMENT_PENDING, OrderStatus.PAID, OrderStatus.UNDER_REVIEW
 	);
+	private static final List<OrderStatus> REMOVABLE_ORDER_SEAT_STATUSES = List.of(
+			OrderStatus.CANCELLED, OrderStatus.REFUND_COMPLETED
+	);
 
 	private final MatchRepository matchRepository;
 	private final UserRepository userRepository;
@@ -93,6 +96,7 @@ public class OrderService {
 		Preconditions.validate(!request.matchSeatIds().isEmpty(), ErrorCode.ORDER_SEAT_EMPTY);
 
 		cancelExistingPendingOrders(userId, request.matchId());
+		cleanupReusableCancelledOrderSeats(request.matchSeatIds());
 		validateMaxTicketsPerMatch(userId, request.matchId(), request.matchSeatIds().size());
 
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
@@ -147,6 +151,16 @@ public class OrderService {
 				order.getId(), userId, orderSeats.size(), request.totalPrice());
 
 		return OrderCreateResponse.of(order, orderSeats.size());
+	}
+
+	private void cleanupReusableCancelledOrderSeats(List<Long> matchSeatIds) {
+		int deleted = orderSeatRepository.deleteByMatchSeatIdInAndOrderStatuses(
+				matchSeatIds,
+				REMOVABLE_ORDER_SEAT_STATUSES
+		);
+		if (deleted > 0) {
+			log.info("[OrderService] 취소/환불 완료 주문 좌석 {}건 정리", deleted);
+		}
 	}
 
 	/**

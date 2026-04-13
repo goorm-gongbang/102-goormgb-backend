@@ -37,4 +37,19 @@ public interface OrderSeatRepository extends JpaRepository<OrderSeat, Long> {
 	@Modifying
 	@Query("DELETE FROM OrderSeat os WHERE os.order.id IN :orderIds")
 	int deleteByOrderIdIn(@Param("orderIds") List<Long> orderIds);
+
+	@Modifying
+	@Query("DELETE FROM OrderSeat os WHERE os.order.id = :orderId")
+	int deleteByOrderId(@Param("orderId") Long orderId);
+
+	@Modifying
+	@Query("""
+		DELETE FROM OrderSeat os
+		WHERE os.matchSeatId IN :matchSeatIds
+		  AND os.order.status IN :statuses
+		""")
+	int deleteByMatchSeatIdInAndOrderStatuses(
+		@Param("matchSeatIds") List<Long> matchSeatIds,
+		@Param("statuses") List<OrderStatus> statuses
+	);
 }

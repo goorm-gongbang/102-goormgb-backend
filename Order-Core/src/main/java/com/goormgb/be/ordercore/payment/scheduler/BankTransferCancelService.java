@@ -46,6 +46,7 @@ public class BankTransferCancelService {
 		// 무통장 입금 만료 이벤트 발행 → Seat 서비스에서 좌석 SOLD → AVAILABLE 복원
 		List<Long> matchSeatIds = orderSeatRepository.findMatchSeatIdsByOrderId(order.getId());
 		paymentEventPublisher.publishBankTransferExpired(order, payment, matchSeatIds);
+		orderSeatRepository.deleteByOrderId(order.getId());
 
 		return true;
 	}
