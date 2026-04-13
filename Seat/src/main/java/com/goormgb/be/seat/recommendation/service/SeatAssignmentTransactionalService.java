@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
@@ -87,10 +86,11 @@ public class SeatAssignmentTransactionalService {
 	) {
 		// 기존 구매 완료 좌석 수 사전 검증 (Redis 캐시 기반, Order-Core DB 검증이 최종 방어)
 		long purchasedCount = userPurchasedSeatCountRepository.get(userId, matchId);
-		Preconditions.validate(
-			purchasedCount + requiredSeats <= MAX_TICKETS_PER_MATCH,
-			ErrorCode.EXCEEDED_MAX_TICKETS_PER_MATCH
-		);
+		if (purchasedCount + requiredSeats > MAX_TICKETS_PER_MATCH) {
+			seatMetricsService.increaseHoldAttempt(SeatHoldMode.RECOMMEND);
+			seatMetricsService.increaseHoldFail(SeatHoldMode.RECOMMEND, SeatHoldFailReason.VALIDATION);
+			throw new CustomException(ErrorCode.EXCEEDED_MAX_TICKETS_PER_MATCH);
+		}
 
 		cleanupExistingHolds(userId, matchId);
 
