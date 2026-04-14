@@ -114,13 +114,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 	@Query("""
 		SELECT o
 		FROM Order o
-		JOIN FETCH o.user u
-		JOIN FETCH o.match m
-		JOIN FETCH m.homeClub hc
-		JOIN FETCH m.awayClub ac
-		JOIN FETCH m.stadium s
 		WHERE o.id = :orderId
-		  AND u.id = :userId
+		  AND o.user.id = :userId
 		""")
 	Optional<Order> findByIdForUpdateAndUserId(@Param("orderId") Long orderId, @Param("userId") Long userId);
 
