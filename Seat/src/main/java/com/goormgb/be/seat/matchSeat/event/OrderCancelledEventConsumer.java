@@ -11,7 +11,6 @@ import com.goormgb.be.kafka.event.OrderCancelledEvent;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
-import com.goormgb.be.seat.matchSeat.repository.UserPurchasedSeatCountRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 public class OrderCancelledEventConsumer {
 
 	private final MatchSeatRepository matchSeatRepository;
-	private final UserPurchasedSeatCountRepository userPurchasedSeatCountRepository;
 
 	@KafkaListener(topics = EventTopic.ORDER_CANCELLED, groupId = "seat-service")
 	@Transactional
@@ -63,10 +61,5 @@ public class OrderCancelledEventConsumer {
 				unexpectedStateCount,
 				missingSeatCount
 		);
-
-		// 구매 완료 좌석 수 Redis 카운터 갱신 (SOLD → AVAILABLE 복원된 수만큼 감소)
-		if (updatedCount > 0) {
-			userPurchasedSeatCountRepository.decrement(event.getUserId(), event.getMatchId(), updatedCount);
-		}
 	}
 }
