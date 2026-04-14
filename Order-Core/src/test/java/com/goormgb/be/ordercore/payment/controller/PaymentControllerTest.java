@@ -157,16 +157,16 @@ class PaymentControllerTest extends WebMvcTestSupport {
 		}
 
 		@Test
-		@DisplayName("주문 소유권이 없으면 403을 반환한다")
-		void processPayment_소유권_없음_403() throws Exception {
+		@DisplayName("주문 소유권이 없으면 404를 반환한다")
+		void processPayment_소유권_없음_404() throws Exception {
 			given(paymentService.processPayment(any(), any(), any()))
-				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
+				.willThrow(new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
 			mockMvc.perform(post("/mypage/orders/1/payment")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(objectMapper.writeValueAsString(PaymentFixture.createTossPayRequest())))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("주문을 찾을 수 없습니다."));
 		}
 
 		@Test
@@ -277,16 +277,16 @@ class PaymentControllerTest extends WebMvcTestSupport {
 		}
 
 		@Test
-		@DisplayName("주문 소유권이 없으면 403을 반환한다")
-		void createCashReceipt_소유권_없음_403() throws Exception {
+		@DisplayName("주문 소유권이 없으면 404를 반환한다")
+		void createCashReceipt_소유권_없음_404() throws Exception {
 			given(paymentService.createCashReceipt(any(), any(), any()))
-				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
+				.willThrow(new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
 			mockMvc.perform(post("/mypage/orders/1/cash-receipt")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(objectMapper.writeValueAsString(PaymentFixture.createPersonalDeductionRequest())))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("주문을 찾을 수 없습니다."));
 		}
 
 		@Test
