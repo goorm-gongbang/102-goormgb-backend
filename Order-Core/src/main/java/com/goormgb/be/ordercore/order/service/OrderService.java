@@ -43,10 +43,7 @@ public class OrderService {
 
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 	private static final int BOOKING_FEE = 2000;
-	private static final int MAX_TICKETS_PER_MATCH = 8;
-	private static final List<OrderStatus> COUNTABLE_ORDER_STATUSES = List.of(
-			OrderStatus.PAYMENT_PENDING, OrderStatus.PAID, OrderStatus.UNDER_REVIEW
-	);
+	private static final int MAX_TICKETS_PER_ORDER = 8;
 	private static final List<OrderStatus> REMOVABLE_ORDER_SEAT_STATUSES = List.of(
 			OrderStatus.CANCELLED, OrderStatus.REFUND_COMPLETED
 	);
@@ -102,7 +99,7 @@ public class OrderService {
 
 		cancelExistingPendingOrders(userId, request.matchId());
 		cleanupReusableCancelledOrderSeats(request.matchSeatIds());
-		validateMaxTicketsPerMatch(userId, request.matchId(), request.matchSeatIds().size());
+		validateMaxTicketsPerOrder(request.matchSeatIds().size());
 
 		User user = userRepository.findByIdOrThrow(userId, ErrorCode.USER_NOT_FOUND);
 		Match match = matchRepository.findDetailByIdOrThrow(request.matchId());
@@ -206,16 +203,12 @@ public class OrderService {
 	}
 
 	/**
-	 * 경기당 1인 최대 예매 수량(8매)을 초과하는지 검증한다.
-	 * 유효 주문(PAYMENT_PENDING, PAID, UNDER_REVIEW) 좌석 수 + 신규 좌석 수가 8을 초과하면 예외를 발생시킨다.
+	 * 주문당 최대 예매 수량(8매)을 초과하는지 검증한다.
 	 */
-	private void validateMaxTicketsPerMatch(Long userId, Long matchId, int newSeatCount) {
-		long existingSeatCount = orderSeatRepository.countByUserIdAndMatchIdAndStatuses(
-				userId, matchId, COUNTABLE_ORDER_STATUSES);
-
+	private void validateMaxTicketsPerOrder(int newSeatCount) {
 		Preconditions.validate(
-				existingSeatCount + newSeatCount <= MAX_TICKETS_PER_MATCH,
-				ErrorCode.EXCEEDED_MAX_TICKETS_PER_MATCH
+				newSeatCount <= MAX_TICKETS_PER_ORDER,
+				ErrorCode.EXCEEDED_MAX_TICKETS_PER_ORDER
 		);
 	}
 
