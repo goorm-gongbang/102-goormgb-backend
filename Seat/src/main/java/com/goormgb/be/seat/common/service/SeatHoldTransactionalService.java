@@ -146,8 +146,8 @@ public class SeatHoldTransactionalService {
 		}
 
 		List<Long> matchSeatIds = userActiveHolds.stream().map(SeatHold::getMatchSeatId).toList();
-		List<MatchSeat> seatsToRelease = matchSeatRepository.findAllById(matchSeatIds);
-		seatsToRelease.forEach(MatchSeat::markAvailable);
+		// SOLD 좌석이 실수로 AVAILABLE로 되돌아가지 않도록 BLOCKED 상태만 조건부로 AVAILABLE 전환
+		matchSeatRepository.markAvailableIfBlockedInBatch(matchSeatIds);
 		seatHoldRepository.deleteAllByMatchSeatIdIn(matchSeatIds);
 		seatHoldRepository.flush();
 	}
