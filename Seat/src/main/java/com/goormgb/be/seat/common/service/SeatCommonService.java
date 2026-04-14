@@ -1,6 +1,8 @@
 package com.goormgb.be.seat.common.service;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,7 +31,9 @@ import com.goormgb.be.seat.section.entity.Section;
 import com.goormgb.be.seat.section.repository.SectionRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SeatCommonService {
@@ -43,6 +47,8 @@ public class SeatCommonService {
 
 	@Transactional(readOnly = true)
 	public SeatGroupsEntryResponse getSeatGroupsEntry(Long matchId, Long userId) {
+		long totalStart = System.currentTimeMillis();
+
 		var match = matchRepository.findDetailByIdOrThrow(matchId);
 		var bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
 		var seatSession = SeatSession.from(bookingOptions);
@@ -52,6 +58,9 @@ public class SeatCommonService {
 
 		Map<Long, List<Long>> blockIdsBySectionId = createBlockIdsBySectionId(sectionIds);
 		Map<Long, Long> remainingSeatCountBySectionId = createRemainingSeatCountBySectionId(matchId);
+
+		log.info("[SeatCommonService#getSeatGroupsEntry] at={}, matchId={}, total={}ms",
+			LocalDateTime.now(ZoneId.of("Asia/Seoul")), matchId, System.currentTimeMillis() - totalStart);
 
 		Map<Long, SeatGroupAccumulator> groupMap = new LinkedHashMap<>();
 		for (Section section : sections) {
@@ -142,19 +151,29 @@ public class SeatCommonService {
 			return Map.of();
 		}
 
+		long start = System.currentTimeMillis();
+		List<Block> blocks = blockRepository.findBySectionIdInOrderBySectionIdAscBlockCodeAsc(sectionIds);
+		log.info("[SeatCommonService#createBlockIdsBySectionId] at={}, sectionIds.size={}, blocks.size={}, blockQueryElapsed={}ms",
+			LocalDateTime.now(ZoneId.of("Asia/Seoul")), sectionIds.size(), blocks.size(), System.currentTimeMillis() - start);
+
 		Map<Long, List<Long>> blockIdsBySectionId = new LinkedHashMap<>();
-		for (Block block : blockRepository.findBySectionIdInOrderBySectionIdAscBlockCodeAsc(sectionIds)) {
+		for (Block block : blocks) {
 			blockIdsBySectionId.computeIfAbsent(block.getSection().getId(), ignored -> new ArrayList<>())
 				.add(block.getBlockNum());
 		}
+		log.info("[SeatCommonService#createBlockIdsBySectionId] at={}, mapping elapsed={}ms (including getSection() calls)",
+			LocalDateTime.now(ZoneId.of("Asia/Seoul")), System.currentTimeMillis() - start);
 		return blockIdsBySectionId;
 	}
 
 	private Map<Long, Long> createRemainingSeatCountBySectionId(Long matchId) {
+		long start = System.currentTimeMillis();
 		Map<Long, Long> remainingSeatCountBySectionId = new LinkedHashMap<>();
 		matchSeatRepository.countRemainingSeatsByMatchIdAndSaleStatusGroupBySectionId(matchId,
 				MatchSeatSaleStatus.AVAILABLE)
 			.forEach(it -> remainingSeatCountBySectionId.put(it.getSectionId(), it.getRemainingSeatCount()));
+		log.info("[SeatCommonService#createRemainingSeatCountBySectionId] at={}, matchId={}, elapsed={}ms",
+			LocalDateTime.now(ZoneId.of("Asia/Seoul")), matchId, System.currentTimeMillis() - start);
 		return remainingSeatCountBySectionId;
 	}
 
