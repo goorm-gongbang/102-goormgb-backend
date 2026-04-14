@@ -36,27 +36,30 @@ public class OrderCancelledEventConsumer {
 			if (seat.getSaleStatus() == MatchSeatSaleStatus.SOLD) {
 				seat.markAvailable();
 				updatedCount++;
-					log.debug("[Kafka] 주문취소 좌석복원 - orderId={}, matchSeatId={}, currentStatus={}, action=update, targetStatus=AVAILABLE",
+				log.debug(
+						"[Kafka] 주문취소 경기장 좌석복원 - orderId={}, matchSeatId={}, currentStatus={}, action=update, targetStatus=AVAILABLE",
 						event.getOrderId(), seat.getId(), MatchSeatSaleStatus.SOLD);
 			} else if (seat.getSaleStatus() == MatchSeatSaleStatus.AVAILABLE) {
 				alreadyTargetStateCount++;
-					log.debug("[Kafka] 주문취소 처리스킵 - orderId={}, matchSeatId={}, currentStatus={}, action=skip, reason=already_available",
+				log.debug(
+						"[Kafka] 주문취소 처리스킵 - orderId={}, matchSeatId={}, currentStatus={}, action=skip, reason=already_available",
 						event.getOrderId(), seat.getId(), seat.getSaleStatus());
 			} else {
 				unexpectedStateCount++;
-					log.warn("[Kafka] 주문취소 비정상상태 - orderId={}, matchSeatId={}, currentStatus={}, action=skip, reason=unexpected_state",
+				log.warn(
+						"[Kafka] 주문취소 비정상상태 - orderId={}, matchSeatId={}, currentStatus={}, action=skip, reason=unexpected_state",
 						event.getOrderId(), seat.getId(), seat.getSaleStatus());
 			}
 		}
 
 		log.info(
-			"[Kafka] 주문 취소 이벤트 처리 요약: orderId={}, requestedCount={}, updatedCount={}, alreadyTargetStateCount={}, unexpectedStateCount={}, missingSeatCount={}",
-			event.getOrderId(),
-			requestedIds.size(),
-			updatedCount,
-			alreadyTargetStateCount,
-			unexpectedStateCount,
-			missingSeatCount
+				"[Kafka] 주문 취소 이벤트 처리 요약: orderId={}, requestedCount={}, updatedCount={}, alreadyTargetStateCount={}, unexpectedStateCount={}, missingSeatCount={}",
+				event.getOrderId(),
+				requestedIds.size(),
+				updatedCount,
+				alreadyTargetStateCount,
+				unexpectedStateCount,
+				missingSeatCount
 		);
 	}
 }

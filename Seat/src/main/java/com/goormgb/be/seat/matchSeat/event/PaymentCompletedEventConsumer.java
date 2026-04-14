@@ -36,27 +36,30 @@ public class PaymentCompletedEventConsumer {
 			if (seat.getSaleStatus() == MatchSeatSaleStatus.BLOCKED) {
 				seat.markSold();
 				updatedCount++;
-					log.debug("[Kafka] 결제완료 좌석상태변경 - orderId={}, matchSeatId={}, currentStatus={}, action=update, targetStatus=SOLD",
+				log.debug(
+						"[Kafka] 결제완료 경기 좌석상태변경 - orderId={}, matchSeatId={}, currentStatus={}, action=update, targetStatus=SOLD",
 						event.getOrderId(), seat.getId(), MatchSeatSaleStatus.BLOCKED);
 			} else if (seat.getSaleStatus() == MatchSeatSaleStatus.SOLD) {
 				alreadyTargetStateCount++;
-					log.debug("[Kafka] 결제완료 처리스킵 - orderId={}, matchSeatId={}, currentStatus={}, action=skip, reason=already_sold",
+				log.debug(
+						"[Kafka] 결제완료 처리스킵 - orderId={}, matchSeatId={}, currentStatus={}, action=skip, reason=already_sold",
 						event.getOrderId(), seat.getId(), seat.getSaleStatus());
 			} else {
 				unexpectedStateCount++;
-					log.warn("[Kafka] 결제완료 비정상상태 - orderId={}, matchSeatId={}, currentStatus={}, action=skip, reason=unexpected_state",
+				log.warn(
+						"[Kafka] 결제완료 비정상상태 - orderId={}, matchSeatId={}, currentStatus={}, action=skip, reason=unexpected_state",
 						event.getOrderId(), seat.getId(), seat.getSaleStatus());
 			}
 		}
 
 		log.info(
-			"[Kafka] 결제 이벤트 처리 요약: orderId={}, requestedCount={}, updatedCount={}, alreadyTargetStateCount={}, unexpectedStateCount={}, missingSeatCount={}",
-			event.getOrderId(),
-			requestedIds.size(),
-			updatedCount,
-			alreadyTargetStateCount,
-			unexpectedStateCount,
-			missingSeatCount
+				"[Kafka] 결제 이벤트 처리 요약: orderId={}, requestedCount={}, updatedCount={}, alreadyTargetStateCount={}, unexpectedStateCount={}, missingSeatCount={}",
+				event.getOrderId(),
+				requestedIds.size(),
+				updatedCount,
+				alreadyTargetStateCount,
+				unexpectedStateCount,
+				missingSeatCount
 		);
 	}
 }

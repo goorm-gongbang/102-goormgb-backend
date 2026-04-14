@@ -89,7 +89,7 @@ public enum ErrorCode {
 	INVALID_ORDER_STATUS(HttpStatus.BAD_REQUEST, "주문 상태가 올바르지 않습니다."),
 	ORDER_SEAT_EMPTY(HttpStatus.BAD_REQUEST, "주문 좌석 정보가 없습니다."),
 	ORDER_TOTAL_PRICE_MISMATCH(HttpStatus.BAD_REQUEST, "주문 금액이 유효하지 않습니다. 다시 시도해주세요."),
-	EXCEEDED_MAX_TICKETS_PER_MATCH(HttpStatus.CONFLICT, "경기당 최대 8매까지만 예매 가능합니다."),
+	EXCEEDED_MAX_TICKETS_PER_ORDER(HttpStatus.CONFLICT, "주문당 최대 8매까지만 예매 가능합니다."),
 
 	// Section
 	SECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "섹션을 찾을 수 없습니다."),
