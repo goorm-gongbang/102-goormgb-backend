@@ -15,6 +15,18 @@ spring:
               uri: ${AUTH_GUARD_URL}
               predicates:
                 - Path=/auth/**
+            - id: queue-enter-rate-limited
+              uri: ${QUEUE_URL}
+              predicates:
+                - Path=/queue/matches/*/enter
+                - Method=POST
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userOrIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: ${RATE_LIMIT_QUEUE_ENTER_REPLENISH:3}
+                    redis-rate-limiter.burstCapacity: ${RATE_LIMIT_QUEUE_ENTER_BURST:10}
+                    redis-rate-limiter.requestedTokens: ${RATE_LIMIT_QUEUE_ENTER_REQUESTED_TOKENS:1}
             - id: queue
               uri: ${QUEUE_URL}
               predicates:

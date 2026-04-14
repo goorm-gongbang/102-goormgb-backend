@@ -16,6 +16,18 @@ spring:
               uri: http://localhost
               predicates:
                 - Path=/auth/**
+            - id: queue-enter-rate-limited
+              uri: http://localhost
+              predicates:
+                - Path=/queue/matches/*/enter
+                - Method=POST
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@userOrIpKeyResolver}"
+                    redis-rate-limiter.replenishRate: 3
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
             - id: queue
               uri: http://localhost
               predicates:
@@ -39,3 +51,5 @@ jwt:
   issuer: test-issuer
   access-token:
     audience: test-audience
+
+ALLOWED_ORIGINS: http://localhost
