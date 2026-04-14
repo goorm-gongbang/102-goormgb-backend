@@ -3,6 +3,7 @@ package com.goormgb.be.seat.matchSeat.service;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -31,21 +32,29 @@ public class MatchSeatCleanupService {
 	@Transactional
 	public void cleanupEndedMatchSeats() {
 		Instant cutoff = calculateCutoff();
+		log.info("[MatchSeatCleanupService] 클린업 시작. at={}, cutoff={}",
+			LocalDateTime.now(KST), cutoff);
+
+		long queryStart = System.currentTimeMillis();
 		List<Long> cleanupTargetMatchSeatIds = matchSeatRepository.findCleanupTargetMatchSeatIds(
 			SaleStatus.ENDED.name(),
 			cutoff
 		);
+		log.info("[MatchSeatCleanupService] findCleanupTargetIds 완료. at={}, targetCount={}, elapsed={}ms",
+			LocalDateTime.now(KST), cleanupTargetMatchSeatIds.size(), System.currentTimeMillis() - queryStart);
 
 		if (cleanupTargetMatchSeatIds.isEmpty()) {
 			log.info("[MatchSeatCleanupService] 삭제 대상 match_seat 없음. cutoff={}", cutoff);
 			return;
 		}
 
+		long deleteStart = System.currentTimeMillis();
 		int deletedCount = deleteInBatches(cleanupTargetMatchSeatIds);
 		log.info(
-			"[MatchSeatCleanupService] 종료 경기 match_seat 정리 완료. cutoff={}, deletedCount={}",
-			cutoff,
-			deletedCount
+			"[MatchSeatCleanupService] 종료 경기 match_seat 정리 완료. at={}, cutoff={}, deletedCount={}, deleteElapsed={}ms, totalElapsed={}ms",
+			LocalDateTime.now(KST), cutoff, deletedCount,
+			System.currentTimeMillis() - deleteStart,
+			System.currentTimeMillis() - queryStart
 		);
 	}
 
