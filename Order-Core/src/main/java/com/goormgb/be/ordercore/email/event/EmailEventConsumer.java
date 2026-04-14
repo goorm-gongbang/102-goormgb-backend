@@ -29,7 +29,7 @@ public class EmailEventConsumer {
 	public void handlePaymentCompleted(PaymentCompletedEvent event) {
 		if (emailDataQueryService.isOrderPaid(event.getOrderId())) {
 			Map<String, Object> bookingContext = emailDataQueryService
-				.buildBookingEmailContext(event.getOrderId())
+				.buildBookingEmailContext(event.getOrderId(), event)
 				.orElse(null);
 
 			if (bookingContext == null) {
