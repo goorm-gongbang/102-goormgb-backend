@@ -13,8 +13,8 @@ import reactor.core.publisher.Mono;
 @Configuration
 public class UserOrIpKeyResolverConfig {
 
-	private static final String HEADER_USER_ID = "X-User-Id";
 	private static final String HEADER_X_FORWARDED_FOR = "X-Forwarded-For";
+	public static final String ATTR_AUTH_USER_ID = "auth.userId";
 	public static final String ATTR_RATE_LIMIT_KEY = "rateLimit.resolvedKey";
 
 	@Bean("userOrIpKeyResolver")
@@ -27,9 +27,12 @@ public class UserOrIpKeyResolverConfig {
 	}
 
 	private String resolveKey(ServerWebExchange exchange) {
-		String userId = exchange.getRequest().getHeaders().getFirst(HEADER_USER_ID);
-		if (StringUtils.hasText(userId)) {
-			return "uid:" + userId.trim();
+		Object authenticatedUserId = exchange.getAttribute(ATTR_AUTH_USER_ID);
+		if (authenticatedUserId instanceof Number numberUserId) {
+			return "uid:" + numberUserId.longValue();
+		}
+		if (authenticatedUserId instanceof String stringUserId && StringUtils.hasText(stringUserId)) {
+			return "uid:" + stringUserId.trim();
 		}
 
 		String xForwardedFor = exchange.getRequest().getHeaders().getFirst(HEADER_X_FORWARDED_FOR);

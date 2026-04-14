@@ -16,14 +16,15 @@ class UserOrIpKeyResolverConfigTest {
 	private final KeyResolver keyResolver = config.userOrIpKeyResolver();
 
 	@Test
-	@DisplayName("X-User-Id가 있으면 uid 키를 사용한다")
-	void resolvesByUserId() {
+	@DisplayName("인증 필터가 주입한 userId attribute가 있으면 uid 키를 사용한다")
+	void resolvesByAuthenticatedUserIdAttribute() {
 		MockServerWebExchange exchange = MockServerWebExchange.from(
 			MockServerHttpRequest.post("/queue/matches/1/enter")
-				.header("X-User-Id", "42")
+				.header("X-User-Id", "999")
 				.header("X-Forwarded-For", "203.0.113.10")
 				.build()
 		);
+		exchange.getAttributes().put(UserOrIpKeyResolverConfig.ATTR_AUTH_USER_ID, 42L);
 
 		String key = keyResolver.resolve(exchange).block();
 
@@ -31,7 +32,7 @@ class UserOrIpKeyResolverConfigTest {
 	}
 
 	@Test
-	@DisplayName("X-User-Id가 없으면 X-Forwarded-For의 첫 번째 IP를 사용한다")
+	@DisplayName("인증 userId attribute가 없으면 X-Forwarded-For의 첫 번째 IP를 사용한다")
 	void resolvesByXForwardedFor() {
 		MockServerWebExchange exchange = MockServerWebExchange.from(
 			MockServerHttpRequest.post("/queue/matches/1/enter")
