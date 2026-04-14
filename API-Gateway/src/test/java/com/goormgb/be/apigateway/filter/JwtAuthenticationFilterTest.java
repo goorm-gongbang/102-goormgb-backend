@@ -84,12 +84,14 @@ class JwtAuthenticationFilterTest {
 
 		@ParameterizedTest
 		@CsvSource({
-				// 인증 엔드포인트 — POST 전용
-				"POST, /auth/kakao",
-				"POST, /auth/kakao/callback",
+				// 인증 엔드포인트 — 경로별 메서드 분리
+				"GET, /auth/kakao/login-url",
+				"POST, /auth/kakao/login",
 				"POST, /auth/token/refresh",
 				"POST, /auth/dev/auth",
 				"POST, /auth/dev/auth/login",
+				"POST, /auth/loadtest",
+				"POST, /auth/loadtest/users",
 				// Swagger / OpenAPI 문서 — GET 전용
 				"GET, /swagger-ui",
 				"GET, /swagger-ui/index.html",
@@ -135,8 +137,12 @@ class JwtAuthenticationFilterTest {
 				"POST, /seat/blocks",
 				"PUT, /seat/blocks",
 				"DELETE, /seat/blocks",
-				// POST 전용 엔드포인트에 GET → 401
-				"GET, /auth/kakao",
+				// 카카오 로그인 URL(GET 전용)에 쓰기 메서드 → 401
+				"POST, /auth/kakao/login-url",
+				"DELETE, /auth/kakao/login-url",
+				// 카카오 로그인(POST 전용)에 GET → 401
+				"GET, /auth/kakao/login",
+				// 토큰 갱신(POST 전용)에 GET → 401
 				"GET, /auth/token/refresh",
 				// Swagger 경로에 쓰기 메서드 → 401
 				"POST, /v3/api-docs",
@@ -147,6 +153,31 @@ class JwtAuthenticationFilterTest {
 		})
 		@DisplayName("화이트리스트 경로라도 허용되지 않은 메서드는 인증 우회가 차단된다")
 		void whitelistedPath_wrongMethod_isBlocked(HttpMethod method, String path) {
+			MockServerWebExchange exchange = createExchange(method, path);
+
+			StepVerifier.create(filter.filter(exchange, chain))
+					.verifyComplete();
+
+			assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+			verify(chain, never()).filter(any());
+			verify(blacklistRepository, never()).isBlacklisted(anyString());
+		}
+
+		@ParameterizedTest
+		@CsvSource({
+				// prefix 문자열만 겹치는 경로는 하위 경로로 취급하지 않는다
+				"POST, /auth/loadtestx",
+				"POST, /auth/loadtestx/users",
+				"GET, /order/clubsaurus",
+				"GET, /order/matches-evil",
+				"GET, /seat/blocksX",
+				"GET, /auth/kakao/login-url-malicious",
+				// 화이트리스트에 없는 상위 경로 자체도 통과하지 않는다
+				"GET, /auth/kakao",
+				"POST, /auth/kakao"
+		})
+		@DisplayName("화이트리스트 prefix 문자열 유사 경로는 통과시키지 않는다 (prefix-bleed 방지)")
+		void similarPrefix_isBlocked(HttpMethod method, String path) {
 			MockServerWebExchange exchange = createExchange(method, path);
 
 			StepVerifier.create(filter.filter(exchange, chain))

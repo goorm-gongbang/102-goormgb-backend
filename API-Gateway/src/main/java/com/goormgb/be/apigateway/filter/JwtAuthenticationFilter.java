@@ -39,8 +39,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 	private static final Set<HttpMethod> POST_ONLY = Set.of(HttpMethod.POST);
 
 	private static final List<WhitelistEntry> WHITELIST = List.of(
-			// 인증 엔드포인트 — POST 전용
-			new WhitelistEntry(POST_ONLY, "/auth/kakao"),
+			// 인증 엔드포인트 — 경로별 메서드 분리
+			new WhitelistEntry(GET_ONLY, "/auth/kakao/login-url"),
+			new WhitelistEntry(POST_ONLY, "/auth/kakao/login"),
 			new WhitelistEntry(POST_ONLY, "/auth/token/refresh"),
 			new WhitelistEntry(POST_ONLY, "/auth/dev/auth"),
 			new WhitelistEntry(POST_ONLY, "/auth/loadtest"),
@@ -143,8 +144,16 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 		if (method == null) {
 			return false;
 		}
-		return WHITELIST.stream()
-				.anyMatch(entry -> entry.methods().contains(method) && path.startsWith(entry.pathPrefix()));
+		for (WhitelistEntry entry : WHITELIST) {
+			if (!entry.methods().contains(method)) {
+				continue;
+			}
+			String prefix = entry.pathPrefix();
+			if (path.equals(prefix) || path.startsWith(prefix + "/")) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private String resolveToken(ServerHttpRequest request) {
