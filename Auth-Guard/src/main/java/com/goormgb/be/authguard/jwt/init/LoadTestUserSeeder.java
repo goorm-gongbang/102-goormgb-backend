@@ -35,11 +35,13 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@Profile({"local", "staging", "dev"})
+
+// TODO: 추후에 계정 생성할때는 staging 프로파일 추가해야함
+@Profile({"local", "dev"})
 @RequiredArgsConstructor
 public class LoadTestUserSeeder implements CommandLineRunner {
 
-	private static final int TOTAL_USERS = 15000;
+	private static final int TOTAL_USERS = 0;
 	private static final String PASSWORD = "1234";
 	private static final int BATCH_LOG_INTERVAL = 1000;
 	private static final int FLUSH_INTERVAL = 500;
