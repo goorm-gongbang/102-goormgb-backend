@@ -2,12 +2,10 @@ package com.goormgb.be.apigateway.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.time.Duration;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,11 +14,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
-import org.springframework.data.redis.core.ReactiveValueOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -29,8 +27,6 @@ class RateLimitingFilterTest {
 
 	@Mock
 	private ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
-	@Mock
-	private ReactiveValueOperations<String, String> valueOperations;
 	@Mock
 	private GatewayFilterChain chain;
 
@@ -44,10 +40,7 @@ class RateLimitingFilterTest {
 				.build()
 		);
 
-		when(reactiveRedisTemplate.opsForValue()).thenReturn(valueOperations);
-		when(valueOperations.increment("rate_limit:login:203.0.113.10")).thenReturn(Mono.just(1L));
-		when(reactiveRedisTemplate.expire("rate_limit:login:203.0.113.10", Duration.ofSeconds(60)))
-			.thenReturn(Mono.just(true));
+		when(reactiveRedisTemplate.execute(any(), anyList(), any(Object[].class))).thenReturn(Flux.just(1L));
 		when(chain.filter(any())).thenReturn(Mono.empty());
 
 		StepVerifier.create(filter.filter(exchange, chain))
@@ -67,8 +60,7 @@ class RateLimitingFilterTest {
 				.build()
 		);
 
-		when(reactiveRedisTemplate.opsForValue()).thenReturn(valueOperations);
-		when(valueOperations.increment("rate_limit:login:203.0.113.10")).thenReturn(Mono.just(11L));
+		when(reactiveRedisTemplate.execute(any(), anyList(), any(Object[].class))).thenReturn(Flux.just(11L));
 
 		StepVerifier.create(filter.filter(exchange, chain))
 			.verifyComplete();
@@ -88,8 +80,7 @@ class RateLimitingFilterTest {
 				.build()
 		);
 
-		when(reactiveRedisTemplate.opsForValue()).thenReturn(valueOperations);
-		when(valueOperations.increment("rate_limit:api:198.51.100.20")).thenReturn(Mono.just(101L));
+		when(reactiveRedisTemplate.execute(any(), anyList(), any(Object[].class))).thenReturn(Flux.just(101L));
 
 		StepVerifier.create(filter.filter(exchange, chain))
 			.verifyComplete();
@@ -108,8 +99,8 @@ class RateLimitingFilterTest {
 				.build()
 		);
 
-		when(reactiveRedisTemplate.opsForValue()).thenReturn(valueOperations);
-		when(valueOperations.increment(anyString())).thenReturn(Mono.error(new RuntimeException("redis down")));
+		when(reactiveRedisTemplate.execute(any(), anyList(), any(Object[].class)))
+			.thenReturn(Flux.error(new RuntimeException("redis down")));
 		when(chain.filter(any())).thenReturn(Mono.empty());
 
 		StepVerifier.create(filter.filter(exchange, chain))
