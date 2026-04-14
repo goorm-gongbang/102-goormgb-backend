@@ -59,9 +59,6 @@ public class SeatCommonService {
 		Map<Long, List<Long>> blockIdsBySectionId = createBlockIdsBySectionId(sectionIds);
 		Map<Long, Long> remainingSeatCountBySectionId = createRemainingSeatCountBySectionId(matchId);
 
-		log.info("[SeatCommonService#getSeatGroupsEntry] at={}, matchId={}, total={}ms",
-			LocalDateTime.now(ZoneId.of("Asia/Seoul")), matchId, System.currentTimeMillis() - totalStart);
-
 		Map<Long, SeatGroupAccumulator> groupMap = new LinkedHashMap<>();
 		for (Section section : sections) {
 			Long areaId = section.getArea().getId();
@@ -81,6 +78,9 @@ public class SeatCommonService {
 			.stream()
 			.map(it -> new SeatGroupsEntryResponse.SeatGroupInfo(it.areaId(), it.areaName(), it.sections()))
 			.toList();
+
+		log.info("[SeatCommonService#getSeatGroupsEntry] at={}, matchId={}, total={}ms",
+			LocalDateTime.now(ZoneId.of("Asia/Seoul")), matchId, System.currentTimeMillis() - totalStart);
 
 		return SeatGroupsEntryResponse.of(match, seatSession, seatGroups);
 	}
@@ -161,7 +161,7 @@ public class SeatCommonService {
 			blockIdsBySectionId.computeIfAbsent(block.getSection().getId(), ignored -> new ArrayList<>())
 				.add(block.getBlockNum());
 		}
-		log.info("[SeatCommonService#createBlockIdsBySectionId] at={}, mapping elapsed={}ms (including getSection() calls)",
+		log.info("[SeatCommonService#createBlockIdsBySectionId] at={}, total elapsed={}ms (query + mapping including getSection() calls)",
 			LocalDateTime.now(ZoneId.of("Asia/Seoul")), System.currentTimeMillis() - start);
 		return blockIdsBySectionId;
 	}
