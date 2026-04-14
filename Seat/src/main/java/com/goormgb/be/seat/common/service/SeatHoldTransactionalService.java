@@ -95,14 +95,16 @@ public class SeatHoldTransactionalService {
 				.collect(Collectors.toSet());
 			Set<Long> requestedSeatSet = new HashSet<>(seatIds);
 
+			List<Long> matchSeatIds = requestedSeats.stream().map(MatchSeat::getId).toList();
+
 			if (currentHeldSeatIds.equals(requestedSeatSet) && !userActiveHolds.isEmpty()) {
 				userActiveHolds.forEach(hold -> hold.extendHold(expiresAt));
-				requestedSeats.forEach(MatchSeat::markBlocked);
+				// AVAILABLE 좌석만 BLOCKED로 전환 (이미 BLOCKED인 경우 변경 없음)
+				matchSeatRepository.markBlockedIfAvailableInBatch(matchSeatIds);
 
 				// hold 성공 횟수 증가
 				seatMetricsService.increaseHoldSuccess(SeatHoldMode.MAP);
 
-				List<Long> matchSeatIds = requestedSeats.stream().map(MatchSeat::getId).toList();
 				return SeatHoldCreateResponse.of(matchId, matchSeatIds, expiresAt);
 			}
 
@@ -118,13 +120,14 @@ public class SeatHoldTransactionalService {
 					.build())
 				.toList();
 
-			requestedSeats.forEach(MatchSeat::markBlocked);
+			// releaseUserActiveHolds의 bulk UPDATE로 영속성 컨텍스트가 비워졌으므로
+			// requestedSeats(이제 detached)의 dirty checking에 의존하지 않고 직접 bulk UPDATE
+			matchSeatRepository.markBlockedIfAvailableInBatch(matchSeatIds);
 			seatHoldRepository.saveAll(newHolds);
 
 			// hold 성공 횟수 증가
 			seatMetricsService.increaseHoldSuccess(SeatHoldMode.MAP);
 
-			List<Long> matchSeatIds = requestedSeats.stream().map(MatchSeat::getId).toList();
 			return SeatHoldCreateResponse.of(matchId, matchSeatIds, expiresAt);
 		} catch (CustomException e) {
 			// hold 실패 횟수 증가
@@ -146,8 +149,8 @@ public class SeatHoldTransactionalService {
 		}
 
 		List<Long> matchSeatIds = userActiveHolds.stream().map(SeatHold::getMatchSeatId).toList();
-		List<MatchSeat> seatsToRelease = matchSeatRepository.findAllById(matchSeatIds);
-		seatsToRelease.forEach(MatchSeat::markAvailable);
+		// SOLD 좌석이 실수로 AVAILABLE로 되돌아가지 않도록 BLOCKED 상태만 조건부로 AVAILABLE 전환
+		matchSeatRepository.markAvailableIfBlockedInBatch(matchSeatIds);
 		seatHoldRepository.deleteAllByMatchSeatIdIn(matchSeatIds);
 		seatHoldRepository.flush();
 	}

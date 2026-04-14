@@ -106,7 +106,7 @@ public class EmailDataQueryService {
 	}
 
 	@Transactional(readOnly = true)
-	public Optional<Map<String, Object>> buildBookingEmailContext(Long orderId) {
+	public Optional<Map<String, Object>> buildBookingEmailContext(Long orderId, PaymentCompletedEvent event) {
 		Order order = orderRepository.findByIdWithMatchDetails(orderId).orElse(null);
 		if (order == null) {
 			return Optional.empty();
@@ -115,6 +115,8 @@ public class EmailDataQueryService {
 		Match match = order.getMatch();
 		List<OrderSeat> orderSeats = orderSeatRepository.findByOrderId(orderId);
 		List<SeatDisplayInfo> seats = buildSeatDisplayInfos(orderSeats);
+
+		boolean isBankTransfer = event != null && "BANK_TRANSFER".equals(event.getPaymentMethod());
 
 		Map<String, Object> ctx = new HashMap<>();
 		ctx.put("ordererName", order.getOrdererName());
@@ -133,11 +135,15 @@ public class EmailDataQueryService {
 		ctx.put("bookingFee", order.getBookingFee() != null ? order.getBookingFee() : 0);
 		ctx.put("cancelDeadline", formatInstant(match.getMatchAt()));
 
-		// 입금 기한: 주문일 + 1일 23:59 (KST)
-		Instant createdAt = order.getCreatedAt() != null ? order.getCreatedAt() : Instant.now();
-		LocalDate orderDate = createdAt.atZone(KST).toLocalDate();
-		ZonedDateTime deadline = ZonedDateTime.of(orderDate.plusDays(1), LocalTime.of(23, 59), KST);
-		ctx.put("paymentDeadline", deadline.format(DATE_FORMATTER));
+		ctx.put("isBankTransfer", isBankTransfer);
+
+		// 입금 기한은 무통장 입금일 때만 사용
+		if (isBankTransfer) {
+			Instant createdAt = order.getCreatedAt() != null ? order.getCreatedAt() : Instant.now();
+			LocalDate orderDate = createdAt.atZone(KST).toLocalDate();
+			ZonedDateTime deadline = ZonedDateTime.of(orderDate.plusDays(1), LocalTime.of(23, 59), KST);
+			ctx.put("paymentDeadline", deadline.format(DATE_FORMATTER));
+		}
 
 		ctx.put("ticketUrl", TICKET_URL);
 		return Optional.of(ctx);

@@ -32,7 +32,27 @@ public class AbstractErrorResponseStrategy implements ErrorResponseStrategy {
 
 	@Override
 	public String resolveCode(ErrorCode errorCode) {
-		return errorCode.getStatus().series().name();
+		return switch (errorCode) {
+			// Seat Hold (SEAT_HOLD_OWNERSHIP_DENIED 제외 — 권한 에러는 추상화 유지)
+			case INVALID_SEAT_HOLD_REQUEST, MATCH_SEAT_NOT_FOUND,
+				 SEAT_ALREADY_HELD_BY_OTHER, SEAT_ALREADY_SOLD,
+				 SEAT_HOLD_NOT_FOUND, SEAT_HOLD_EXPIRED,
+				 PRICE_POLICY_NOT_FOUND, SEAT_SESSION_NOT_FOUND,
+
+				 // Seat Assignment
+				 NO_CONSECUTIVE_SEAT_AVAILABLE, SEAT_LOCK_ACQUISITION_FAILED,
+
+				 // Order
+				 INVALID_ORDER_STATUS, ORDER_SEAT_EMPTY, ORDER_TOTAL_PRICE_MISMATCH,
+				 EXCEEDED_MAX_TICKETS_PER_ORDER, ORDER_NOT_FOUND,
+
+				 // Queue / PreQueue
+				 QUEUE_ALREADY_ENTERED, QUEUE_ENTRY_NOT_FOUND, ADMISSION_TOKEN_EXPIRED,
+				 PREQUEUE_OPTIONS_REQUIRED, PREQUEUE_MARKER_SYNC_FAILED,
+				 INVALID_TICKET_COUNT, INVALID_BOOKING_OPTIONS -> errorCode.name();
+
+			default -> errorCode.getStatus().series().name();
+		};
 	}
 
 	@Override
@@ -51,6 +71,7 @@ public class AbstractErrorResponseStrategy implements ErrorResponseStrategy {
 			case INTERNAL_SERVER_ERROR, OAUTH_PROVIDER_ERROR -> "서버 통신에 일시적 오류가 발생했습니다.";
 
 			case QUEUE_ALREADY_ENTERED, ADMISSION_TOKEN_EXPIRED, MATCH_NOT_AVAILABLE_FOR_QUEUE,
+				 PREQUEUE_OPTIONS_REQUIRED, PREQUEUE_MARKER_SYNC_FAILED,
 				 NO_AVAILABLE_BLOCK, NO_CONSECUTIVE_SEAT_AVAILABLE, SEAT_LOCK_ACQUISITION_FAILED,
 				 SEAT_ALREADY_HELD_BY_OTHER, SEAT_ALREADY_SOLD, SEAT_HOLD_EXPIRED,
 				 PAYMENT_ALREADY_COMPLETED, CASH_RECEIPT_ALREADY_EXISTS,
@@ -81,7 +102,7 @@ public class AbstractErrorResponseStrategy implements ErrorResponseStrategy {
 				 MATCH_SEAT_NOT_FOUND, SEAT_HOLD_NOT_FOUND, QUEUE_ENTRY_NOT_FOUND,
 
 				 USER_ALREADY_EXISTS, USER_ALREADY_BLOCKED, USER_ALREADY_ACTIVE,
-				 USER_NOT_FOUND, EXCEEDED_MAX_TICKETS_PER_MATCH, ORDER_TOTAL_PRICE_MISMATCH -> errorCode.getMessage();
+				 USER_NOT_FOUND, EXCEEDED_MAX_TICKETS_PER_ORDER, ORDER_TOTAL_PRICE_MISMATCH -> errorCode.getMessage();
 
 			default -> switch (errorCode.getStatus().series()) {
 				case SERVER_ERROR -> "서버 통신에 일시적 오류가 발생했습니다.";

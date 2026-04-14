@@ -164,15 +164,8 @@ public class PaymentService {
 	}
 
 	private Order findOrderAndValidateOwnership(Long userId, Long orderId) {
-		Order order = orderRepository.findById(orderId)
+		return orderRepository.findByIdAndUserId(orderId, userId)
 			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-
-		Preconditions.validate(
-			order.getUser().getId().equals(userId),
-			ErrorCode.ORDER_ACCESS_DENIED
-		);
-
-		return order;
 	}
 
 	private Payment buildPayment(Order order, PaymentMethod method) {

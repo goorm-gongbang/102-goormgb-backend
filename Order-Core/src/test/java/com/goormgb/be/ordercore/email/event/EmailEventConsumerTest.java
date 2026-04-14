@@ -42,7 +42,7 @@ class EmailEventConsumerTest {
 		Map<String, Object> paymentContext = new HashMap<>();
 
 		given(emailDataQueryService.isOrderPaid(1L)).willReturn(true);
-		given(emailDataQueryService.buildBookingEmailContext(1L)).willReturn(Optional.of(bookingContext));
+		given(emailDataQueryService.buildBookingEmailContext(1L, event)).willReturn(Optional.of(bookingContext));
 		given(emailDataQueryService.buildPaymentEmailContext(1L, event)).willReturn(Optional.of(paymentContext));
 
 		consumer.handlePaymentCompleted(event);

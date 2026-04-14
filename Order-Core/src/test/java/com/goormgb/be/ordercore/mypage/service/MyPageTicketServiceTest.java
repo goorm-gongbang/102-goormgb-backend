@@ -263,7 +263,7 @@ class MyPageTicketServiceTest {
 					.bookingFeeRefundable(false)
 					.build();
 
-			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.of(baseRow));
+			given(myPageQueryService.findTicketDetailBaseByOrderIdAndUserId(ticketId, userId)).willReturn(Optional.of(baseRow));
 			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId)).willReturn(seatRows);
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 
@@ -294,7 +294,7 @@ class MyPageTicketServiceTest {
 					.bookingFeeRefundable(true)
 					.build();
 
-			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.of(baseRow));
+			given(myPageQueryService.findTicketDetailBaseByOrderIdAndUserId(ticketId, userId)).willReturn(Optional.of(baseRow));
 			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId))
 					.willReturn(MyPageFixture.createTicketSeatDetailRows());
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
@@ -322,7 +322,7 @@ class MyPageTicketServiceTest {
 					.bookingFeeRefundable(false)
 					.build();
 
-			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.of(baseRow));
+			given(myPageQueryService.findTicketDetailBaseByOrderIdAndUserId(ticketId, userId)).willReturn(Optional.of(baseRow));
 			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId))
 					.willReturn(MyPageFixture.createTicketSeatDetailRows());
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
@@ -337,24 +337,25 @@ class MyPageTicketServiceTest {
 		@Test
 		@DisplayName("존재하지 않는 티켓이면 ORDER_NOT_FOUND 예외가 발생한다")
 		void getTicketDetail_주문없음_예외() {
+			Long userId = 1L;
 			Long ticketId = 999L;
-			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.empty());
+			given(myPageQueryService.findTicketDetailBaseByOrderIdAndUserId(ticketId, userId)).willReturn(Optional.empty());
 
-			assertThatThrownBy(() -> myPageService.getTicketDetail(1L, ticketId))
+			assertThatThrownBy(() -> myPageService.getTicketDetail(userId, ticketId))
 					.isInstanceOf(CustomException.class)
 					.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
 		}
 
 		@Test
-		@DisplayName("본인 소유가 아닌 티켓이면 ORDER_ACCESS_DENIED 예외가 발생한다")
+		@DisplayName("본인 소유가 아닌 티켓이면 ORDER_NOT_FOUND 예외가 발생한다")
 		void getTicketDetail_권한없음_예외() {
+			Long userId = 1L;
 			Long ticketId = 104L;
-			TicketDetailBaseRow baseRow = MyPageFixture.createTicketDetailBaseRow(2L, ticketId, OrderStatus.PAID);
-			given(myPageQueryService.findTicketDetailBaseByOrderId(ticketId)).willReturn(Optional.of(baseRow));
+			given(myPageQueryService.findTicketDetailBaseByOrderIdAndUserId(ticketId, userId)).willReturn(Optional.empty());
 
-			assertThatThrownBy(() -> myPageService.getTicketDetail(1L, ticketId))
+			assertThatThrownBy(() -> myPageService.getTicketDetail(userId, ticketId))
 					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
+					.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
 		}
 	}
 
@@ -395,7 +396,7 @@ class MyPageTicketServiceTest {
 					.expiresAt(Instant.now(clock).plus(2, ChronoUnit.MINUTES))
 					.build();
 
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 			given(qrTokenRepository.findByOrderIdAndExpiresAtAfter(eq(ticketId), any())).willReturn(
 					Optional.of(existing));
 			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId)).willReturn(seatRows);
@@ -416,7 +417,7 @@ class MyPageTicketServiceTest {
 					Instant.now(clock).plus(10, ChronoUnit.MINUTES));
 			List<TicketSeatDetailRow> seatRows = MyPageFixture.createTicketSeatDetailRows();
 
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 			given(qrTokenRepository.findByOrderIdAndExpiresAtAfter(eq(ticketId), any())).willReturn(Optional.empty());
 			given(qrTokenRepository.save(any(QrToken.class))).willAnswer(invocation -> invocation.getArgument(0));
 			given(myPageQueryService.findTicketSeatRowsByOrderId(ticketId)).willReturn(seatRows);
@@ -435,7 +436,7 @@ class MyPageTicketServiceTest {
 			Long ticketId = 101L;
 			Order order = createOrder(ticketId, 1L, OrderStatus.PAYMENT_PENDING,
 					Instant.now(clock).plus(10, ChronoUnit.MINUTES));
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(() -> myPageService.getTicketEntryQr(1L, ticketId))
 					.isInstanceOf(CustomException.class)
@@ -447,7 +448,7 @@ class MyPageTicketServiceTest {
 		void getTicketEntryQr_beforeEntryWindow_예외() {
 			Long ticketId = 101L;
 			Order order = createOrder(ticketId, 1L, OrderStatus.PAID, Instant.now(clock).plus(5, ChronoUnit.HOURS));
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(() -> myPageService.getTicketEntryQr(1L, ticketId))
 					.isInstanceOf(CustomException.class)
@@ -459,7 +460,7 @@ class MyPageTicketServiceTest {
 		void getTicketEntryQr_matchStarted_예외() {
 			Long ticketId = 101L;
 			Order order = createOrder(ticketId, 1L, OrderStatus.PAID, Instant.now(clock).minus(1, ChronoUnit.HOURS));
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(() -> myPageService.getTicketEntryQr(1L, ticketId))
 					.isInstanceOf(CustomException.class)
@@ -506,7 +507,7 @@ class MyPageTicketServiceTest {
 					.bookingFeeRefundable(false)
 					.build();
 
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
@@ -538,7 +539,7 @@ class MyPageTicketServiceTest {
 					.bookingFeeRefundable(true)
 					.build();
 
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
@@ -566,7 +567,7 @@ class MyPageTicketServiceTest {
 					.bookingFeeRefundable(true)
 					.build();
 
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
@@ -590,7 +591,7 @@ class MyPageTicketServiceTest {
 					.cancellable(true).ticketFeeRate(new BigDecimal("0.100")).bookingFeeRefundable(false)
 					.build();
 
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
@@ -615,7 +616,7 @@ class MyPageTicketServiceTest {
 					.cancellable(true).ticketFeeRate(new BigDecimal("0.100")).bookingFeeRefundable(false)
 					.build();
 
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
@@ -640,7 +641,7 @@ class MyPageTicketServiceTest {
 					.cancellable(true).ticketFeeRate(new BigDecimal("0.100")).bookingFeeRefundable(false)
 					.build();
 
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(List.of());
@@ -666,7 +667,7 @@ class MyPageTicketServiceTest {
 					.bookingFeeRefundable(false)
 					.build();
 
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 
 			assertThatThrownBy(() -> myPageService.requestTicketCancel(1L, ticketId))
@@ -679,7 +680,7 @@ class MyPageTicketServiceTest {
 		void requestTicketCancel_notPaid_예외() {
 			Long ticketId = 101L;
 			Order order = createOrder(ticketId, 1L, OrderStatus.CANCELLED, Instant.now(clock).plus(2, ChronoUnit.DAYS));
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(() -> myPageService.requestTicketCancel(1L, ticketId))
 					.isInstanceOf(CustomException.class)
@@ -687,15 +688,15 @@ class MyPageTicketServiceTest {
 		}
 
 		@Test
-		@DisplayName("본인 소유가 아니면 ORDER_ACCESS_DENIED 예외가 발생한다")
+		@DisplayName("본인 소유가 아니면 ORDER_NOT_FOUND 예외가 발생한다")
 		void requestTicketCancel_권한없음_예외() {
 			Long ticketId = 101L;
 			Order order = createOrder(ticketId, 2L, OrderStatus.PAID, Instant.now(clock).plus(2, ChronoUnit.DAYS));
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.empty());
 
 			assertThatThrownBy(() -> myPageService.requestTicketCancel(1L, ticketId))
 					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
+					.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
 		}
 
 		@Test
@@ -714,7 +715,7 @@ class MyPageTicketServiceTest {
 					.bookingFeeRefundable(false)
 					.build();
 
-			given(orderRepository.findByIdForUpdate(ticketId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdForUpdateAndUserId(ticketId, 1L)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(ticketId)).willReturn(Optional.of(payment));
 			given(cancellationFeePolicyRepository.findByDaysLeft(anyInt())).willReturn(Optional.of(policy));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(ticketId)).willReturn(matchSeatIds);

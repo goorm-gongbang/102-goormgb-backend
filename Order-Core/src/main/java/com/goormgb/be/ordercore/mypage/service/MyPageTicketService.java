@@ -188,9 +188,8 @@ public class MyPageTicketService {
 	}
 
 	public MyPageTicketDetailResponse getTicketDetail(Long userId, Long ticketId) {
-		TicketDetailBaseRow base = myPageQueryService.findTicketDetailBaseByOrderId(ticketId)
+		TicketDetailBaseRow base = myPageQueryService.findTicketDetailBaseByOrderIdAndUserId(ticketId, userId)
 				.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-		Preconditions.validate(base.userId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
 		List<TicketSeatDetailRow> seatRows = myPageQueryService.findTicketSeatRowsByOrderId(ticketId);
 
 		MyPageTicketDetailResponse.PaymentInfo payment = MyPageTicketDetailAssembler.toPaymentInfo(base);
@@ -214,9 +213,8 @@ public class MyPageTicketService {
 
 	@Transactional
 	public MyPageTicketQrResponse getTicketEntryQr(Long userId, Long ticketId) {
-		Order order = orderRepository.findByIdForUpdate(ticketId)
+		Order order = orderRepository.findByIdForUpdateAndUserId(ticketId, userId)
 				.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
 		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
 
 		Instant now = Instant.now(clock);
@@ -232,9 +230,8 @@ public class MyPageTicketService {
 	@Transactional
 	public MyPageTicketCancelResponse requestTicketCancel(Long userId, Long ticketId) {
 		Instant now = Instant.now(clock);
-		Order order = orderRepository.findByIdForUpdate(ticketId)
+		Order order = orderRepository.findByIdForUpdateAndUserId(ticketId, userId)
 				.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-		Preconditions.validate(order.getUser().getId().equals(userId), ErrorCode.ORDER_ACCESS_DENIED);
 		Preconditions.validate(order.getStatus() == OrderStatus.PAID, ErrorCode.INVALID_ORDER_STATUS);
 
 		CancellationFeePolicy policy = MyPageTicketCancellationCalculator.findCancellationPolicy(

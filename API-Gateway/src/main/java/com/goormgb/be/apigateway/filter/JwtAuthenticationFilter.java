@@ -1,10 +1,12 @@
 package com.goormgb.be.apigateway.filter;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -33,33 +35,47 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 	private static final String HEADER_SESSION_ID = "X-Session-Id";
 	private static final String HEADER_TOKEN_JTI = "X-Token-Jti";
 
-	// 인증 없이 통과시킬 경로 prefix 목록
-	private static final List<String> WHITELIST = List.of(
-			"/auth/kakao",
-			"/auth/token/refresh",
-			"/auth/dev/auth",
-			"/auth/loadtest",
-			"/swagger-ui",
-			"/v3/api-docs",
-			"/auth/v3/api-docs",
-			"/queue/v3/api-docs",
-			"/seat/v3/api-docs",
-			"/order/v3/api-docs",
-			"/recommendation/v3/api-docs",
-			"/actuator/health",
-			"/actuator/prometheus",
-			"/auth/actuator/health",
-			"/auth/actuator/prometheus",
-			"/queue/actuator/health",
-			"/queue/actuator/prometheus",
-			"/seat/actuator/health",
-			"/seat/actuator/prometheus",
-			"/order/actuator/health",
-			"/order/actuator/prometheus",
-			"/seat/blocks",
-			"/order/clubs",
-			"/order/matches"
+	// 인증 없이 통과시킬 (HTTP 메서드 + 경로 prefix) 쌍 목록
+	private static final Set<HttpMethod> GET_ONLY = Set.of(HttpMethod.GET);
+	private static final Set<HttpMethod> POST_ONLY = Set.of(HttpMethod.POST);
+
+	private static final List<WhitelistEntry> WHITELIST = List.of(
+			// 인증 엔드포인트 — 경로별 메서드 분리
+			new WhitelistEntry(GET_ONLY, "/auth/kakao/login-url"),
+			new WhitelistEntry(POST_ONLY, "/auth/kakao/login"),
+			new WhitelistEntry(POST_ONLY, "/auth/token/refresh"),
+			new WhitelistEntry(POST_ONLY, "/auth/dev/auth"),
+			new WhitelistEntry(POST_ONLY, "/auth/loadtest"),
+
+			// Swagger / OpenAPI 문서 — GET 전용
+			new WhitelistEntry(GET_ONLY, "/swagger-ui"),
+			new WhitelistEntry(GET_ONLY, "/v3/api-docs"),
+			new WhitelistEntry(GET_ONLY, "/auth/v3/api-docs"),
+			new WhitelistEntry(GET_ONLY, "/queue/v3/api-docs"),
+			new WhitelistEntry(GET_ONLY, "/seat/v3/api-docs"),
+			new WhitelistEntry(GET_ONLY, "/order/v3/api-docs"),
+			new WhitelistEntry(GET_ONLY, "/recommendation/v3/api-docs"),
+
+			// Actuator 공개 엔드포인트 — GET 전용
+			new WhitelistEntry(GET_ONLY, "/actuator/health"),
+			new WhitelistEntry(GET_ONLY, "/actuator/prometheus"),
+			new WhitelistEntry(GET_ONLY, "/auth/actuator/health"),
+			new WhitelistEntry(GET_ONLY, "/auth/actuator/prometheus"),
+			new WhitelistEntry(GET_ONLY, "/queue/actuator/health"),
+			new WhitelistEntry(GET_ONLY, "/queue/actuator/prometheus"),
+			new WhitelistEntry(GET_ONLY, "/seat/actuator/health"),
+			new WhitelistEntry(GET_ONLY, "/seat/actuator/prometheus"),
+			new WhitelistEntry(GET_ONLY, "/order/actuator/health"),
+			new WhitelistEntry(GET_ONLY, "/order/actuator/prometheus"),
+
+			// 공개 조회 API — GET 전용
+			new WhitelistEntry(GET_ONLY, "/seat/blocks"),
+			new WhitelistEntry(GET_ONLY, "/order/clubs"),
+			new WhitelistEntry(GET_ONLY, "/order/matches")
 	);
+
+	private record WhitelistEntry(Set<HttpMethod> methods, String pathPrefix) {
+	}
 
 	private final JwtTokenProvider jwtTokenProvider;
 	private final AccessTokenBlacklistRepository blacklistRepository;
@@ -67,8 +83,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 		String path = exchange.getRequest().getPath().value();
+		HttpMethod method = exchange.getRequest().getMethod();
 
-		if (isWhitelisted(path)) {
+		if (isWhitelisted(method, path)) {
 			return chain.filter(exchange);
 		}
 
@@ -132,8 +149,20 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 		return -1;
 	}
 
-	private boolean isWhitelisted(String path) {
-		return WHITELIST.stream().anyMatch(path::startsWith);
+	private boolean isWhitelisted(HttpMethod method, String path) {
+		if (method == null) {
+			return false;
+		}
+		for (WhitelistEntry entry : WHITELIST) {
+			if (!entry.methods().contains(method)) {
+				continue;
+			}
+			String prefix = entry.pathPrefix();
+			if (path.equals(prefix) || path.startsWith(prefix + "/")) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private String resolveToken(ServerHttpRequest request) {

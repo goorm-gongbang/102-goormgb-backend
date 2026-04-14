@@ -185,8 +185,7 @@ public class MyPageController {
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "조회 성공"),
 			@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
-			@ApiResponse(responseCode = "403", description = "본인 소유 티켓 아님", content = @Content),
-			@ApiResponse(responseCode = "404", description = "티켓(주문) 없음", content = @Content)
+			@ApiResponse(responseCode = "404", description = "티켓(주문) 없음 또는 접근 불가", content = @Content)
 	})
 	@GetMapping("/tickets/{ticketId}")
 	@ResponseStatus(HttpStatus.OK)
@@ -206,8 +205,7 @@ public class MyPageController {
 			@ApiResponse(responseCode = "200", description = "QR 발급 성공"),
 			@ApiResponse(responseCode = "400", description = "발급 불가 상태", content = @Content),
 			@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
-			@ApiResponse(responseCode = "403", description = "본인 소유 티켓 아님", content = @Content),
-			@ApiResponse(responseCode = "404", description = "티켓(주문) 없음", content = @Content)
+			@ApiResponse(responseCode = "404", description = "티켓(주문) 없음 또는 접근 불가", content = @Content)
 	})
 	@GetMapping("/tickets/{ticketId}/qr")
 	@ResponseStatus(HttpStatus.OK)
@@ -227,8 +225,7 @@ public class MyPageController {
 			@ApiResponse(responseCode = "200", description = "취소 요청 완료"),
 			@ApiResponse(responseCode = "400", description = "취소 불가 상태", content = @Content),
 			@ApiResponse(responseCode = "401", description = "인증 필요", content = @Content),
-			@ApiResponse(responseCode = "403", description = "본인 소유 티켓 아님", content = @Content),
-			@ApiResponse(responseCode = "404", description = "티켓(주문) 없음", content = @Content)
+			@ApiResponse(responseCode = "404", description = "티켓(주문) 없음 또는 접근 불가", content = @Content)
 	})
 	@PostMapping("/tickets/{ticketId}/cancel")
 	@ResponseStatus(HttpStatus.OK)
