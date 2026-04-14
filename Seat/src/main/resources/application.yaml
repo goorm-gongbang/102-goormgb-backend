@@ -23,6 +23,12 @@ spring:
         max-size: 50
         queue-capacity: 100
 
+  cache:
+    type: caffeine
+    cache-names: match-exists
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=10m,recordStats
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
