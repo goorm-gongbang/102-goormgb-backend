@@ -17,6 +17,8 @@ import jakarta.persistence.LockModeType;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
+	Optional<Order> findByIdAndUserId(Long id, Long userId);
+
 	boolean existsByIdAndStatus(Long id, OrderStatus status);
 
 	long countByUserId(Long userId);
@@ -107,6 +109,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 		WHERE o.id = :orderId
 		""")
 	Optional<Order> findByIdForUpdate(@Param("orderId") Long orderId);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("""
+		SELECT o
+		FROM Order o
+		WHERE o.id = :orderId
+		  AND o.user.id = :userId
+		""")
+	Optional<Order> findByIdForUpdateAndUserId(@Param("orderId") Long orderId, @Param("userId") Long userId);
 
 	@Query("""
 		SELECT o
