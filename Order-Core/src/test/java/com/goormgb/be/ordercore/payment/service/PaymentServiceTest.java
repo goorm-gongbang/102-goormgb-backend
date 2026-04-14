@@ -90,7 +90,7 @@ class PaymentServiceTest {
 			Order order = createOrderWithUser(orderId, userId);
 			PaymentProcessRequest request = PaymentFixture.createTossPayRequest();
 
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(orderId, userId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(java.util.List.of());
@@ -112,7 +112,7 @@ class PaymentServiceTest {
 			Order order = createOrderWithUser(orderId, userId);
 			PaymentProcessRequest request = PaymentFixture.createKakaoPayRequest();
 
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(orderId, userId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(java.util.List.of());
@@ -133,7 +133,7 @@ class PaymentServiceTest {
 			ReflectionTestUtils.setField(order, "id", orderId);
 			PaymentProcessRequest request = PaymentFixture.createBankTransferRequest();
 
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(orderId, userId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(List.of());
@@ -159,7 +159,7 @@ class PaymentServiceTest {
 			List<Long> matchSeatIds = List.of(101L, 102L);
 			PaymentProcessRequest request = PaymentFixture.createTossPayRequest();
 
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(orderId, userId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(matchSeatIds);
@@ -177,7 +177,7 @@ class PaymentServiceTest {
 			Order order = createOrderWithUser(orderId, userId);
 			PaymentProcessRequest request = PaymentFixture.createBankTransferRequest();
 
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(orderId, userId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 			given(paymentRepository.save(any(Payment.class))).willAnswer(inv -> inv.getArgument(0));
 			given(orderSeatRepository.findMatchSeatIdsByOrderId(orderId)).willReturn(List.of(101L));
@@ -203,7 +203,7 @@ class PaymentServiceTest {
 			Order order = createOrderWithUser(orderId, userId);
 			PaymentProcessRequest request = PaymentFixture.createBankTransferRequest();
 
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(orderId, userId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
@@ -216,7 +216,7 @@ class PaymentServiceTest {
 		@Test
 		@DisplayName("주문이 없으면 ORDER_NOT_FOUND 예외가 발생한다")
 		void processPayment_주문_미발견_예외() {
-			given(orderRepository.findById(99L)).willReturn(Optional.empty());
+			given(orderRepository.findByIdAndUserId(99L, 1L)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
 					() -> paymentService.processPayment(1L, 99L, PaymentFixture.createTossPayRequest())
@@ -226,19 +226,19 @@ class PaymentServiceTest {
 		}
 
 		@Test
-		@DisplayName("주문 소유자가 아니면 ORDER_ACCESS_DENIED 예외가 발생한다")
+		@DisplayName("주문 소유자가 아니면 ORDER_NOT_FOUND 예외가 발생한다")
 		void processPayment_소유권_없음_예외() {
 			Long actualOwnerId = 1L;
 			Long attackerId = 99L;
 			Order order = createOrderWithUser(1L, actualOwnerId);
 
-			given(orderRepository.findById(1L)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(1L, attackerId)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
 					() -> paymentService.processPayment(attackerId, 1L, PaymentFixture.createTossPayRequest())
 			)
 					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
+					.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
 		}
 
 		@Test
@@ -248,7 +248,7 @@ class PaymentServiceTest {
 			Order order = createOrderWithUser(1L, userId);
 			order.updateStatus(OrderStatus.PAID); // PAID 상태로 변경
 
-			given(orderRepository.findById(1L)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(1L, userId)).willReturn(Optional.of(order));
 
 			assertThatThrownBy(
 					() -> paymentService.processPayment(userId, 1L, PaymentFixture.createTossPayRequest())
@@ -265,7 +265,7 @@ class PaymentServiceTest {
 			Order order = createOrderWithUser(orderId, userId);
 			Payment existingPayment = PaymentFixture.createBankTransferPayment(order);
 
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(orderId, userId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.of(existingPayment));
 
 			assertThatThrownBy(
@@ -289,7 +289,7 @@ class PaymentServiceTest {
 			Payment payment = PaymentFixture.createCompletedTossPayPayment(order);
 			CashReceiptCreateRequest request = PaymentFixture.createPersonalDeductionRequest();
 
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(orderId, userId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.of(payment));
 			given(cashReceiptRepository.findByPaymentId(payment.getId())).willReturn(Optional.empty());
 			given(cashReceiptRepository.save(any(CashReceipt.class))).willAnswer(inv -> inv.getArgument(0));
@@ -310,7 +310,7 @@ class PaymentServiceTest {
 			Payment payment = PaymentFixture.createCompletedTossPayPayment(order);
 			CashReceiptCreateRequest request = PaymentFixture.createBusinessExpenseRequest();
 
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(orderId, userId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.of(payment));
 			given(cashReceiptRepository.findByPaymentId(payment.getId())).willReturn(Optional.empty());
 			given(cashReceiptRepository.save(any(CashReceipt.class))).willAnswer(inv -> inv.getArgument(0));
@@ -328,7 +328,7 @@ class PaymentServiceTest {
 			Long orderId = 1L;
 			Order order = createOrderWithUser(orderId, userId);
 
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(orderId, userId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
@@ -348,7 +348,7 @@ class PaymentServiceTest {
 			Payment payment = PaymentFixture.createCompletedTossPayPayment(order);
 			CashReceipt existing = PaymentFixture.createPersonalDeductionReceipt(payment);
 
-			given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(orderId, userId)).willReturn(Optional.of(order));
 			given(paymentRepository.findByOrderId(orderId)).willReturn(Optional.of(payment));
 			given(cashReceiptRepository.findByPaymentId(payment.getId())).willReturn(Optional.of(existing));
 
@@ -361,26 +361,26 @@ class PaymentServiceTest {
 		}
 
 		@Test
-		@DisplayName("주문 소유자가 아니면 ORDER_ACCESS_DENIED 예외가 발생한다")
+		@DisplayName("주문 소유자가 아니면 ORDER_NOT_FOUND 예외가 발생한다")
 		void createCashReceipt_소유권_없음_예외() {
 			Long actualOwnerId = 1L;
 			Long attackerId = 99L;
 			Order order = createOrderWithUser(1L, actualOwnerId);
 
-			given(orderRepository.findById(1L)).willReturn(Optional.of(order));
+			given(orderRepository.findByIdAndUserId(1L, attackerId)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
 					() -> paymentService.createCashReceipt(attackerId, 1L,
 							PaymentFixture.createPersonalDeductionRequest())
 			)
 					.isInstanceOf(CustomException.class)
-					.hasMessage(ErrorCode.ORDER_ACCESS_DENIED.getMessage());
+					.hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
 		}
 
 		@Test
 		@DisplayName("주문이 없으면 ORDER_NOT_FOUND 예외가 발생한다")
 		void createCashReceipt_주문_미발견_예외() {
-			given(orderRepository.findById(99L)).willReturn(Optional.empty());
+			given(orderRepository.findByIdAndUserId(99L, 1L)).willReturn(Optional.empty());
 
 			assertThatThrownBy(
 					() -> paymentService.createCashReceipt(1L, 99L, PaymentFixture.createPersonalDeductionRequest())

@@ -339,14 +339,14 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		}
 
 		@Test
-		@DisplayName("본인 소유가 아니면 403을 반환한다")
-		void getTicketDetail_권한없음_403() throws Exception {
+		@DisplayName("본인 소유가 아니면 404를 반환한다")
+		void getTicketDetail_권한없음_404() throws Exception {
 			given(myPageTicketService.getTicketDetail(1L, 101L))
-				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
+				.willThrow(new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
 			mockMvc.perform(get("/mypage/tickets/101"))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("주문을 찾을 수 없습니다."));
 		}
 	}
 
@@ -376,14 +376,14 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		}
 
 		@Test
-		@DisplayName("본인 소유가 아니면 403을 반환한다")
-		void getTicketEntryQr_권한없음_403() throws Exception {
+		@DisplayName("본인 소유가 아니면 404를 반환한다")
+		void getTicketEntryQr_권한없음_404() throws Exception {
 			given(myPageTicketService.getTicketEntryQr(1L, 101L))
-				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
+				.willThrow(new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
 			mockMvc.perform(get("/mypage/tickets/101/qr"))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("주문을 찾을 수 없습니다."));
 		}
 
 		@Test
@@ -436,14 +436,14 @@ class MyPageControllerTest extends WebMvcTestSupport {
 		}
 
 		@Test
-		@DisplayName("본인 소유가 아니면 403을 반환한다")
-		void requestTicketCancel_권한없음_403() throws Exception {
+		@DisplayName("본인 소유가 아니면 404를 반환한다")
+		void requestTicketCancel_권한없음_404() throws Exception {
 			given(myPageTicketService.requestTicketCancel(1L, 101L))
-				.willThrow(new CustomException(ErrorCode.ORDER_ACCESS_DENIED));
+				.willThrow(new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
 			mockMvc.perform(post("/mypage/tickets/101/cancel"))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.message").value("해당 주문에 접근할 권한이 없습니다."));
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.message").value("주문을 찾을 수 없습니다."));
 		}
 
 		@Test

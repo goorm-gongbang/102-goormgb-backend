@@ -45,7 +45,6 @@ import lombok.RequiredArgsConstructor;
 public class SeatHoldTransactionalService {
 
 	private static final Duration HOLD_TTL = Duration.ofMinutes(5);
-	private static final int MAX_TICKETS_PER_ORDER = 8;
 
 	private final SeatMetricsService seatMetricsService;
 
@@ -70,12 +69,6 @@ public class SeatHoldTransactionalService {
 		try {
 			// 일반 좌석 hold 횟수 증가
 			seatMetricsService.increaseHoldAttempt(SeatHoldMode.MAP);
-
-			// 주문당 최대 예매 수량 사전 검증 (Order-Core DB 검증이 최종 방어)
-			Preconditions.validate(
-				seatIds.size() <= MAX_TICKETS_PER_ORDER,
-				ErrorCode.EXCEEDED_MAX_TICKETS_PER_ORDER
-			);
 
 			Instant now = clock.instant();
 			Instant expiresAt = now.plus(HOLD_TTL);
@@ -102,14 +95,16 @@ public class SeatHoldTransactionalService {
 				.collect(Collectors.toSet());
 			Set<Long> requestedSeatSet = new HashSet<>(seatIds);
 
+			List<Long> matchSeatIds = requestedSeats.stream().map(MatchSeat::getId).toList();
+
 			if (currentHeldSeatIds.equals(requestedSeatSet) && !userActiveHolds.isEmpty()) {
 				userActiveHolds.forEach(hold -> hold.extendHold(expiresAt));
-				requestedSeats.forEach(MatchSeat::markBlocked);
+				// AVAILABLE 좌석만 BLOCKED로 전환 (이미 BLOCKED인 경우 변경 없음)
+				matchSeatRepository.markBlockedIfAvailableInBatch(matchSeatIds);
 
 				// hold 성공 횟수 증가
 				seatMetricsService.increaseHoldSuccess(SeatHoldMode.MAP);
 
-				List<Long> matchSeatIds = requestedSeats.stream().map(MatchSeat::getId).toList();
 				return SeatHoldCreateResponse.of(matchId, matchSeatIds, expiresAt);
 			}
 
@@ -125,13 +120,14 @@ public class SeatHoldTransactionalService {
 					.build())
 				.toList();
 
-			requestedSeats.forEach(MatchSeat::markBlocked);
+			// releaseUserActiveHolds의 bulk UPDATE로 영속성 컨텍스트가 비워졌으므로
+			// requestedSeats(이제 detached)의 dirty checking에 의존하지 않고 직접 bulk UPDATE
+			matchSeatRepository.markBlockedIfAvailableInBatch(matchSeatIds);
 			seatHoldRepository.saveAll(newHolds);
 
 			// hold 성공 횟수 증가
 			seatMetricsService.increaseHoldSuccess(SeatHoldMode.MAP);
 
-			List<Long> matchSeatIds = requestedSeats.stream().map(MatchSeat::getId).toList();
 			return SeatHoldCreateResponse.of(matchId, matchSeatIds, expiresAt);
 		} catch (CustomException e) {
 			// hold 실패 횟수 증가
@@ -153,15 +149,15 @@ public class SeatHoldTransactionalService {
 		}
 
 		List<Long> matchSeatIds = userActiveHolds.stream().map(SeatHold::getMatchSeatId).toList();
-		List<MatchSeat> seatsToRelease = matchSeatRepository.findAllById(matchSeatIds);
-		seatsToRelease.forEach(MatchSeat::markAvailable);
+		// SOLD 좌석이 실수로 AVAILABLE로 되돌아가지 않도록 BLOCKED 상태만 조건부로 AVAILABLE 전환
+		matchSeatRepository.markAvailableIfBlockedInBatch(matchSeatIds);
 		seatHoldRepository.deleteAllByMatchSeatIdIn(matchSeatIds);
 		seatHoldRepository.flush();
 	}
 
 	private SeatHoldFailReason mapFailReason(ErrorCode errorCode) {
 		return switch (errorCode) {
-			case MATCH_SEAT_NOT_FOUND, EXCEEDED_MAX_TICKETS_PER_ORDER -> SeatHoldFailReason.VALIDATION;
+			case MATCH_SEAT_NOT_FOUND -> SeatHoldFailReason.VALIDATION;
 			case SEAT_ALREADY_SOLD, SEAT_ALREADY_HELD_BY_OTHER -> SeatHoldFailReason.CONFLICT;
 			default -> SeatHoldFailReason.SYSTEM_ERROR;
 		};

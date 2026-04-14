@@ -127,7 +127,7 @@ public class MyPageQueryService {
 	/**
 	 * ticketId(orderId)에 해당하는 상세 기본 정보를 반환한다.
 	 */
-	public Optional<TicketDetailBaseRow> findTicketDetailBaseByOrderId(Long orderId) {
+	public Optional<TicketDetailBaseRow> findTicketDetailBaseByOrderIdAndUserId(Long orderId, Long userId) {
 		String sql = """
 				SELECT
 				    o.id             AS order_id,
@@ -163,10 +163,12 @@ public class MyPageQueryService {
 				LEFT JOIN payments p ON p.order_id = o.id
 				LEFT JOIN cash_receipts cr ON cr.payment_id = p.id
 				WHERE o.id = :orderId
+				  AND o.user_id = :userId
 				""";
 
 		var params = new MapSqlParameterSource()
-				.addValue("orderId", orderId);
+				.addValue("orderId", orderId)
+				.addValue("userId", userId);
 
 		List<TicketDetailBaseRow> rows = namedJdbc.query(sql, params, (rs, rowNum) -> {
 			String paymentMethod = rs.getString("payment_method");

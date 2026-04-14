@@ -84,6 +84,24 @@ public interface MatchSeatRepository extends JpaRepository<MatchSeat, Long> {
 		""")
 	int markAvailableIfBlockedInBatch(@Param("matchSeatIds") List<Long> matchSeatIds);
 
+	/**
+	 * AVAILABLE 상태인 좌석들을 일괄로 BLOCKED로 변경한다.
+	 *
+	 * <p>분산 락이 보장된 상태에서 직접 선택 Hold 시 사용한다.
+	 * bulk UPDATE이므로 영속성 컨텍스트의 dirty checking에 의존하지 않아
+	 * {@code clearAutomatically = true} 직후에도 안전하게 호출 가능하다.</p>
+	 *
+	 * @return 변경된 행 수
+	 */
+	@Modifying(clearAutomatically = true)
+	@Query("""
+		UPDATE MatchSeat ms
+		SET ms.saleStatus = com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus.BLOCKED
+		WHERE ms.id IN :matchSeatIds
+		  AND ms.saleStatus = com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus.AVAILABLE
+		""")
+	int markBlockedIfAvailableInBatch(@Param("matchSeatIds") List<Long> matchSeatIds);
+
 	@Query("""
 		SELECT ms.blockId AS blockId, COUNT(ms) AS remainingSeatCount
 		FROM MatchSeat ms

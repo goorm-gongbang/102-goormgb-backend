@@ -2,6 +2,12 @@ server:
   port: 8083
   servlet:
     context-path: /order
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    max-connections: 8192
+    accept-count: 100
 
 spring:
   application:
@@ -9,6 +15,13 @@ spring:
   jackson:
     time-zone: UTC
     data-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
+
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 50
+        queue-capacity: 100
 
   datasource:
     url: ${DB_URL}
