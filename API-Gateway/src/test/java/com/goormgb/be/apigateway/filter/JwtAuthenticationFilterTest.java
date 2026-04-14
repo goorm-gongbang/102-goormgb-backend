@@ -12,12 +12,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
@@ -59,6 +60,11 @@ class JwtAuthenticationFilterTest {
 				MockServerHttpRequest.get(path).build());
 	}
 
+	private MockServerWebExchange createExchange(HttpMethod method, String path) {
+		return MockServerWebExchange.from(
+				MockServerHttpRequest.method(method, path).build());
+	}
+
 	private MockServerWebExchange createExchangeWithToken(String path, String token) {
 		return MockServerWebExchange.from(
 				MockServerHttpRequest.get(path)
@@ -73,44 +79,81 @@ class JwtAuthenticationFilterTest {
 	}
 
 	@Nested
-	@DisplayName("화이트리스트 경로")
+	@DisplayName("화이트리스트 경로 + 허용 메서드")
 	class WhitelistedPaths {
 
 		@ParameterizedTest
-		@ValueSource(strings = {
-				"/auth/kakao",
-				"/auth/kakao/callback",
-				"/auth/token/refresh",
-				"/auth/dev/auth",
-				"/auth/dev/auth/login",
-				"/swagger-ui",
-				"/swagger-ui/index.html",
-				"/v3/api-docs",
-				"/v3/api-docs/swagger-config",
-				"/auth/v3/api-docs",
-				"/queue/v3/api-docs",
-				"/seat/v3/api-docs",
-				"/seat/blocks",
-				"/order/v3/api-docs",
-				"/recommendation/v3/api-docs",
-				"/actuator",
-				"/actuator/health",
-				"/actuator/prometheus",
-				"/order/clubs",
-				"/order/clubs/1",
-				"/order/clubs/1/matches",
-				"/order/matches",
-				"/order/matches/1"
+		@CsvSource({
+				// 인증 엔드포인트 — POST 전용
+				"POST, /auth/kakao",
+				"POST, /auth/kakao/callback",
+				"POST, /auth/token/refresh",
+				"POST, /auth/dev/auth",
+				"POST, /auth/dev/auth/login",
+				// Swagger / OpenAPI 문서 — GET 전용
+				"GET, /swagger-ui",
+				"GET, /swagger-ui/index.html",
+				"GET, /v3/api-docs",
+				"GET, /v3/api-docs/swagger-config",
+				"GET, /auth/v3/api-docs",
+				"GET, /queue/v3/api-docs",
+				"GET, /seat/v3/api-docs",
+				"GET, /order/v3/api-docs",
+				"GET, /recommendation/v3/api-docs",
+				// Actuator 공개 엔드포인트 — GET 전용
+				"GET, /actuator/health",
+				"GET, /actuator/prometheus",
+				// 공개 조회 API — GET 전용
+				"GET, /seat/blocks",
+				"GET, /order/clubs",
+				"GET, /order/clubs/1",
+				"GET, /order/clubs/1/matches",
+				"GET, /order/matches",
+				"GET, /order/matches/1"
 		})
-		@DisplayName("화이트리스트 경로는 인증 없이 통과한다")
-		void whitelistedPath_passesWithoutAuth(String path) {
-			MockServerWebExchange exchange = createExchange(path);
+		@DisplayName("허용 메서드 + 화이트리스트 경로는 인증 없이 통과한다")
+		void whitelistedPath_passesWithoutAuth(HttpMethod method, String path) {
+			MockServerWebExchange exchange = createExchange(method, path);
 			when(chain.filter(any())).thenReturn(Mono.empty());
 
 			StepVerifier.create(filter.filter(exchange, chain))
 					.verifyComplete();
 
 			verify(chain).filter(any());
+			verify(blacklistRepository, never()).isBlacklisted(anyString());
+		}
+
+		@ParameterizedTest
+		@CsvSource({
+				// 공개 조회 API에 쓰기 메서드 → 401
+				"POST, /order/clubs",
+				"PUT, /order/clubs",
+				"PATCH, /order/clubs",
+				"DELETE, /order/clubs",
+				"POST, /order/matches",
+				"DELETE, /order/matches",
+				"POST, /seat/blocks",
+				"PUT, /seat/blocks",
+				"DELETE, /seat/blocks",
+				// POST 전용 엔드포인트에 GET → 401
+				"GET, /auth/kakao",
+				"GET, /auth/token/refresh",
+				// Swagger 경로에 쓰기 메서드 → 401
+				"POST, /v3/api-docs",
+				"DELETE, /swagger-ui",
+				// Actuator health에 쓰기 메서드 → 401
+				"POST, /actuator/health",
+				"DELETE, /actuator/prometheus"
+		})
+		@DisplayName("화이트리스트 경로라도 허용되지 않은 메서드는 인증 우회가 차단된다")
+		void whitelistedPath_wrongMethod_isBlocked(HttpMethod method, String path) {
+			MockServerWebExchange exchange = createExchange(method, path);
+
+			StepVerifier.create(filter.filter(exchange, chain))
+					.verifyComplete();
+
+			assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+			verify(chain, never()).filter(any());
 			verify(blacklistRepository, never()).isBlacklisted(anyString());
 		}
 	}
