@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import com.goormgb.be.ordercore.email.config.FrontendUrlProvider;
 import com.goormgb.be.ordercore.email.dto.EmailMessage;
 
 import jakarta.mail.internet.MimeMessage;
@@ -23,6 +24,7 @@ public class EmailService {
 
 	private final JavaMailSender mailSender;
 	private final TemplateEngine templateEngine;
+	private final FrontendUrlProvider frontendUrlProvider;
 
 	@Value("${app.mail.from:no-reply@playball.one}")
 	private String mailFrom;
@@ -66,6 +68,7 @@ public class EmailService {
 	private Context buildContext(Map<String, Object> emailContext) {
 		Context context = new Context();
 		emailContext.forEach(context::setVariable);
+		context.setVariable("myTicketsUrl", frontendUrlProvider.getBaseUrl() + "/my/reservations");
 		return context;
 	}
 

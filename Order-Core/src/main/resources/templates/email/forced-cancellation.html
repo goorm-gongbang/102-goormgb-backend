@@ -12,8 +12,8 @@
     <tr>
         <td align="center" style="padding:40px 0;">
 
-            <table role="presentation" width="700" cellpadding="0" cellspacing="0"
-                   style="border-radius:10px; overflow:hidden;">
+            <table role="presentation" width="700" cellpadding="0" cellspacing="0" align="center"
+                   style="width:700px; max-width:100%; border-radius:10px; overflow:hidden;">
 
                 <!-- Header -->
                 <tr>
@@ -31,13 +31,13 @@
                                         님!
                                     </p>
                                     <p style="margin:0 0 20px; font-size:18px; font-weight:500; color:#292929; line-height:1.4;">
-                                        고객님의 티켓 예매 취소가 완료되었습니다.<br/>
-                                        취소 상세 내역을 Playball에서 확인해보세요!
+                                        비정상적인 예매 패턴이 감지되어 티켓 예매가 보류되었습니다.<br/>
+                                        자세한 내용은 Playball 고객센터로 문의해주세요.
                                     </p>
                                     <table role="presentation" cellpadding="0" cellspacing="0" align="right">
                                         <tr>
                                             <td style="background-color:#00c292; border-radius:6px;">
-                                                <a href="https://dev.goormgb.space/my/tickets"
+                                                <a th:href="${myTicketsUrl}"
                                                    target="_blank"
                                                    style="display:inline-block; padding:10px 16px; font-size:14px; font-weight:600; color:#ffffff; text-decoration:none; line-height:1.4;">
                                                     내 티켓 확인하기

@@ -67,7 +67,7 @@ spring:
 
 app:
   mail:
-    from: ${MAIL_FROM:grgbdev@gmail.com}
+    from: ${MAIL_FROM}
     from-name: ${MAIL_FROM_NAME:Playball}
 
 management:
