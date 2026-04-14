@@ -23,11 +23,9 @@ spring:
         max-size: 50
         queue-capacity: 100
 
+  # 캐시 인스턴스는 CacheConfig#cacheManager() 에서 캐시별 TTL/size 로 등록한다.
   cache:
     type: caffeine
-    cache-names: match-exists
-    caffeine:
-      spec: maximumSize=1000,expireAfterWrite=10m,recordStats
 
   datasource:
     url: ${DB_URL}

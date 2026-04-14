@@ -16,6 +16,7 @@ import com.goormgb.be.domain.ticket.enums.TicketType;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
+import com.goormgb.be.ordercore.match.service.MatchDetailCacheService;
 import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.metrics.enums.OrderDraftEntryPoint;
 import com.goormgb.be.ordercore.order.dto.request.OrderCreateRequest;
@@ -51,6 +52,7 @@ public class OrderService {
 	private static final PaymentStatus EXPIRED_PENDING_PAYMENT_STATUS = PaymentStatus.PENDING;
 
 	private final MatchRepository matchRepository;
+	private final MatchDetailCacheService matchDetailCacheService;
 	private final UserRepository userRepository;
 	private final OrderRepository orderRepository;
 	private final OrderSeatRepository orderSeatRepository;
@@ -71,7 +73,7 @@ public class OrderService {
 		orderMetricsService.increaseOrderDraftEnter(entryPoint);
 		Preconditions.validate(!matchSeatIds.isEmpty(), ErrorCode.ORDER_SEAT_EMPTY);
 
-		Match match = matchRepository.findDetailByIdOrThrow(matchId);
+		Match match = matchDetailCacheService.getDetail(matchId);
 
 		String dayType = determineDayType(match.getMatchAt());
 

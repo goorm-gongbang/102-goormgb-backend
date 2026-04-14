@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.enums.SaleStatus;
-import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.queue.config.QueueProperties;
@@ -25,7 +24,7 @@ import io.micrometer.core.instrument.Counter;
 @Service
 public class QueueService {
 
-	private final MatchRepository matchRepository;
+	private final MatchQueueCacheService matchQueueCacheService;
 	private final QueueRedisRepository queueRedisRepository;
 	private final QueueProperties queueProperties;
 	private final QueuePollingPolicy queuePollingPolicy;
@@ -33,14 +32,14 @@ public class QueueService {
 	private final PreQueueValidationService preQueueValidationService;
 
 	public QueueService(
-		MatchRepository matchRepository,
+		MatchQueueCacheService matchQueueCacheService,
 		QueueRedisRepository queueRedisRepository,
 		QueueProperties queueProperties,
 		QueuePollingPolicy queuePollingPolicy,
 		QueueMetricsService queueMetricsService,
 		PreQueueValidationService preQueueValidationService
 	) {
-		this.matchRepository = matchRepository;
+		this.matchQueueCacheService = matchQueueCacheService;
 		this.queueRedisRepository = queueRedisRepository;
 		this.queueProperties = queueProperties;
 		this.queuePollingPolicy = queuePollingPolicy;
@@ -53,7 +52,7 @@ public class QueueService {
 		requireAuthenticated(userId);
 		preQueueValidationService.validateBeforeEnter(matchId, userId);
 
-		Match match = matchRepository.findByIdOrThrow(matchId, ErrorCode.MATCH_NOT_FOUND);
+		Match match = matchQueueCacheService.getForQueue(matchId);
 		validateQueueOpen(match);
 
 		long enteredAtMillis = Instant.now().toEpochMilli();
