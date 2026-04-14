@@ -45,7 +45,6 @@ import lombok.RequiredArgsConstructor;
 public class SeatHoldTransactionalService {
 
 	private static final Duration HOLD_TTL = Duration.ofMinutes(5);
-	private static final int MAX_TICKETS_PER_ORDER = 8;
 
 	private final SeatMetricsService seatMetricsService;
 
@@ -70,12 +69,6 @@ public class SeatHoldTransactionalService {
 		try {
 			// 일반 좌석 hold 횟수 증가
 			seatMetricsService.increaseHoldAttempt(SeatHoldMode.MAP);
-
-			// 주문당 최대 예매 수량 사전 검증 (Order-Core DB 검증이 최종 방어)
-			Preconditions.validate(
-				seatIds.size() <= MAX_TICKETS_PER_ORDER,
-				ErrorCode.EXCEEDED_MAX_TICKETS_PER_ORDER
-			);
 
 			Instant now = clock.instant();
 			Instant expiresAt = now.plus(HOLD_TTL);
@@ -161,7 +154,7 @@ public class SeatHoldTransactionalService {
 
 	private SeatHoldFailReason mapFailReason(ErrorCode errorCode) {
 		return switch (errorCode) {
-			case MATCH_SEAT_NOT_FOUND, EXCEEDED_MAX_TICKETS_PER_ORDER -> SeatHoldFailReason.VALIDATION;
+			case MATCH_SEAT_NOT_FOUND -> SeatHoldFailReason.VALIDATION;
 			case SEAT_ALREADY_SOLD, SEAT_ALREADY_HELD_BY_OTHER -> SeatHoldFailReason.CONFLICT;
 			default -> SeatHoldFailReason.SYSTEM_ERROR;
 		};

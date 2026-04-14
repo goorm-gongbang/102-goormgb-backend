@@ -52,7 +52,6 @@ public class SeatAssignmentTransactionalService {
 
 	private static final Duration HOLD_TTL = Duration.ofMinutes(5);
 	private static final int MAX_RETRY = 3;
-	private static final int MAX_TICKETS_PER_ORDER = 8;
 
 	private final SeatMetricsService seatMetricsService;
 	private final MatchSeatRepository matchSeatRepository;
@@ -82,13 +81,6 @@ public class SeatAssignmentTransactionalService {
 		Long userId, Long matchId, Long blockId, Block block,
 		int requiredSeats, boolean nearAdjacentToggle
 	) {
-		// 주문당 최대 예매 수량 사전 검증 (Order-Core DB 검증이 최종 방어)
-		if (requiredSeats > MAX_TICKETS_PER_ORDER) {
-			seatMetricsService.increaseHoldAttempt(SeatHoldMode.RECOMMEND);
-			seatMetricsService.increaseHoldFail(SeatHoldMode.RECOMMEND, SeatHoldFailReason.VALIDATION);
-			throw new CustomException(ErrorCode.EXCEEDED_MAX_TICKETS_PER_ORDER);
-		}
-
 		cleanupExistingHolds(userId, matchId);
 
 		// 1. 진짜 연석 탐색 + 충돌 시 재탐색
