@@ -93,19 +93,24 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 	@Query(
 		value = """
 			UPDATE matches m
-			SET sale_status = 'SOLD_OUT'
+			SET sale_status = :soldOutStatus
 			WHERE m.id = :matchId
-			  AND m.sale_status = 'ON_SALE'
+			  AND m.sale_status = :onSaleStatus
 			  AND NOT EXISTS (
 					SELECT 1
 					FROM match_seats ms
 					WHERE ms.match_id = :matchId
-					  AND ms.sale_status <> 'SOLD'
+					  AND ms.sale_status <> :soldSeatStatus
 				)
 			""",
 		nativeQuery = true
 	)
-	int updateSoldOutIfAllSeatsSold(@Param("matchId") Long matchId);
+	int updateSoldOutIfAllSeatsSold(
+		@Param("matchId") Long matchId,
+		@Param("onSaleStatus") String onSaleStatus,
+		@Param("soldOutStatus") String soldOutStatus,
+		@Param("soldSeatStatus") String soldSeatStatus
+	);
 
 	/**
 	 * 경기 상태가 SOLD_OUT이고, 경기 시작 전이며, AVAILABLE 좌석이 1개 이상 존재할 때
@@ -115,18 +120,24 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 	@Query(
 		value = """
 			UPDATE matches m
-			SET sale_status = 'ON_SALE'
+			SET sale_status = :onSaleStatus
 			WHERE m.id = :matchId
-			  AND m.sale_status = 'SOLD_OUT'
+			  AND m.sale_status = :soldOutStatus
 			  AND m.match_at > :now
 			  AND EXISTS (
 					SELECT 1
 					FROM match_seats ms
 					WHERE ms.match_id = :matchId
-					  AND ms.sale_status = 'AVAILABLE'
+					  AND ms.sale_status = :availableSeatStatus
 				)
 			""",
 		nativeQuery = true
 	)
-	int updateOnSaleIfAnyAvailableSeat(@Param("matchId") Long matchId, @Param("now") Instant now);
+	int updateOnSaleIfAnyAvailableSeat(
+		@Param("matchId") Long matchId,
+		@Param("now") Instant now,
+		@Param("soldOutStatus") String soldOutStatus,
+		@Param("onSaleStatus") String onSaleStatus,
+		@Param("availableSeatStatus") String availableSeatStatus
+	);
 }

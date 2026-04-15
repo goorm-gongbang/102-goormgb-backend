@@ -7,6 +7,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.kafka.EventTopic;
 import com.goormgb.be.kafka.event.OrderCancelledEvent;
@@ -69,7 +70,13 @@ public class OrderCancelledEventConsumer {
 	}
 
 	private void updateMatchToOnSaleIfAnyAvailable(Long matchId, Long orderId) {
-		int updated = matchRepository.updateOnSaleIfAnyAvailableSeat(matchId, Instant.now());
+		int updated = matchRepository.updateOnSaleIfAnyAvailableSeat(
+			matchId,
+			Instant.now(),
+			SaleStatus.SOLD_OUT.name(),
+			SaleStatus.ON_SALE.name(),
+			MatchSeatSaleStatus.AVAILABLE.name()
+		);
 		if (updated > 0) {
 			log.info("[Kafka] 경기 상태 복귀 - orderId={}, matchId={}, action=update, from=SOLD_OUT, to=ON_SALE",
 				orderId, matchId);
