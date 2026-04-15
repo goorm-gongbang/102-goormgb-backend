@@ -54,6 +54,13 @@ jwt:
   access-token:
     audience: ${JWT_ACCESS_TOKEN_AUDIENCE}
 
+bot:
+  token:
+    # X-Bot-Token HMAC 서명 검증용 공유 시크릿.
+    # 프론트 NEXT_PUBLIC_BOT_TOKEN_SECRET 과 반드시 동일한 값.
+    # Secrets Manager {env}/services/jwt 의 BOT_TOKEN_SECRET 키와 매핑.
+    secret: ${BOT_TOKEN_SECRET:}
+
 springdoc:
   swagger-ui:
     enabled: false
