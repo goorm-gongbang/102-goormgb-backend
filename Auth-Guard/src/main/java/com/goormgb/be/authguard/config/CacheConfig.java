@@ -85,10 +85,7 @@ public class CacheConfig {
 	 */
 	private ObjectMapper cacheObjectMapper() {
 		PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
-			.allowIfSubType("com.goormgb.be")
-			.allowIfSubType("java.util")
-			.allowIfSubType("java.time")
-			.allowIfSubType("java.lang")
+			.allowIfBaseType(Object.class)
 			.build();
 
 		ObjectMapper mapper = new ObjectMapper();
