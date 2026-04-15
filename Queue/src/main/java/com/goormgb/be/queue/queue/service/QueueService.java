@@ -2,6 +2,7 @@ package com.goormgb.be.queue.queue.service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -57,15 +58,18 @@ public class QueueService {
 		validateQueueOpen(match);
 
 		long enteredAtMillis = Instant.now().toEpochMilli();
-		queueRedisRepository.reenterQueueAtomic(matchId, userId, enteredAtMillis);
+
+		// Phase 4 — 재진입 처리 + ZRANK + ZCARD 를 단일 Lua 스크립트로 통합 (Redis 왕복 3 → 1)
+		List<Long> rankAndCount = queueRedisRepository
+			.reenterQueueAtomicWithRankCount(matchId, userId, enteredAtMillis);
+		// ZRANK 는 0-based 이므로 기존 getWaitingRank 동작(+1) 과 일치시키기 위해 보정
+		long rank = rankAndCount.get(0) + 1;
+		long count = rankAndCount.get(1);
 
 		// 대기열 진입 건수 집계
 		queueMetricsService.recordEntry();
 
-		return QueueEnterResponse.waiting(
-			queueRedisRepository.getWaitingRank(matchId, userId),
-			queueRedisRepository.getWaitingCount(matchId)
-		);
+		return QueueEnterResponse.waiting(rank, count);
 	}
 
 	@Transactional
