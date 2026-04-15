@@ -5,8 +5,8 @@ server:
     context-path: /queue
   tomcat:
     threads:
-      max: 200
-      min-spare: 10
+      max: ${SERVER_TOMCAT_THREADS_MAX:200}
+      min-spare: ${SERVER_TOMCAT_THREADS_MIN_SPARE:10}
     max-connections: 8192
     accept-count: 100
 
@@ -33,6 +33,11 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: 30000
+      leak-detection-threshold: 10000
 
   jpa:
     hibernate:

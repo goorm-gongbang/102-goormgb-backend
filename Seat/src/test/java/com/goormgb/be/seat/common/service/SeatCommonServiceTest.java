@@ -16,6 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.goormgb.be.domain.match.repository.MatchRepository;
+import com.goormgb.be.seat.common.service.MatchDetailCacheService;
+import com.goormgb.be.seat.common.service.SeatGroupsResponseCacheService;
 import com.goormgb.be.seat.area.entity.Area;
 import com.goormgb.be.seat.area.enums.AreaCode;
 import com.goormgb.be.seat.block.entity.Block;
@@ -37,6 +39,10 @@ class SeatCommonServiceTest {
 
 	@Mock
 	private MatchRepository matchRepository;
+	@Mock
+	private MatchDetailCacheService matchDetailCacheService;
+	@Mock
+	private SeatGroupsResponseCacheService seatGroupsResponseCacheService;
 	@Mock
 	private BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	@Mock

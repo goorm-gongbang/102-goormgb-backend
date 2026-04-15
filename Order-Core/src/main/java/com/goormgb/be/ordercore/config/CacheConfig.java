@@ -52,6 +52,12 @@ public class CacheConfig {
 	 * 에서 발생해도 Auth-Guard 의 {@code /me} 응답이 즉시 갱신되도록 보장한다.</p>
 	 */
 	public static final String CACHE_AUTH_ME = "auth-me";
+	/**
+	 * Phase 3 — {@code GET /matches?date=...} 응답의 Redis 분산 캐시.
+	 *
+	 * <p>경기 목록은 자주 폴링되는 read-only 화면이며 동일 날짜 요청이 집중된다. TTL 30초로 캐싱한다.</p>
+	 */
+	public static final String CACHE_MATCHES_LIST_RESPONSE = "matches-list-response";
 
 	@Primary
 	@Bean
@@ -76,6 +82,7 @@ public class CacheConfig {
 		Map<String, RedisCacheConfiguration> configs = new HashMap<>();
 		configs.put(CACHE_USER_BY_ID, redisConfig(Duration.ofMinutes(10), valueSerializer));
 		configs.put(CACHE_AUTH_ME, redisConfig(Duration.ofSeconds(30), valueSerializer));
+		configs.put(CACHE_MATCHES_LIST_RESPONSE, redisConfig(Duration.ofSeconds(30), valueSerializer));
 
 		return RedisCacheManager.builder(connectionFactory)
 			.cacheDefaults(redisConfig(Duration.ofMinutes(10), valueSerializer))
@@ -100,7 +107,10 @@ public class CacheConfig {
 	 */
 	private ObjectMapper cacheObjectMapper() {
 		PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
-			.allowIfBaseType(Object.class)
+			.allowIfSubType("com.goormgb.be")
+			.allowIfSubType("java.util")
+			.allowIfSubType("java.time")
+			.allowIfSubType("java.lang")
 			.build();
 
 		ObjectMapper mapper = new ObjectMapper();
