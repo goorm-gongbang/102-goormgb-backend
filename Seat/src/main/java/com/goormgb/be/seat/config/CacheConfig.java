@@ -133,10 +133,16 @@ public class CacheConfig {
 	 * <p>{@link java.time.Instant} 등 JSR-310 타입 직렬화 지원을 위해 {@link JavaTimeModule} 을 등록하고,
 	 * {@code GenericJackson2JsonRedisSerializer} 가 요구하는 polymorphic typing 을
 	 * {@link BasicPolymorphicTypeValidator} 로 제한 활성화한다.</p>
+	 *
+	 * <p>역직렬화 대상 subtype 을 프로젝트/표준 JDK 패키지로 whitelist 하여,
+	 * Redis 값 조작을 통한 임의 클래스 역직렬화(RCE gadget chain) 를 차단한다.</p>
 	 */
 	private ObjectMapper cacheObjectMapper() {
 		PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
-			.allowIfBaseType(Object.class)
+			.allowIfSubType("com.goormgb.be")
+			.allowIfSubType("java.util")
+			.allowIfSubType("java.time")
+			.allowIfSubType("java.lang")
 			.build();
 
 		ObjectMapper mapper = new ObjectMapper();

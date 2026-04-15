@@ -50,8 +50,10 @@ public class SeatCommonService {
 	 * <p>유저에 독립적인 {@code match + seatGroups} 부분은
 	 * {@link SeatGroupsResponseCacheService#getPayload(Long)} 에서 Redis (TTL 5초) 로 제공된다.
 	 * 유저별 {@code seatSession} 은 매 요청 booking-options(Redis) 에서 조립한다.</p>
+	 *
+	 * <p>트랜잭션은 의도적으로 선언하지 않는다. 캐시 히트 시 DB 커넥션을 점유하지 않도록
+	 * 실제 DB 조회가 발생하는 {@code getPayload} 내부에서만 {@link Transactional} 이 열리도록 한다.</p>
 	 */
-	@Transactional(readOnly = true)
 	public SeatGroupsEntryResponse getSeatGroupsEntry(Long matchId, Long userId) {
 		long totalStart = System.currentTimeMillis();
 
