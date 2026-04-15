@@ -19,7 +19,7 @@ import com.goormgb.be.authguard.support.WebMvcTestSupport;
 import com.goormgb.be.global.environment.ErrorResponseStrategy;
 import com.goormgb.be.user.dto.response.UserInfoGetResponse;
 import com.goormgb.be.user.enums.UserStatus;
-import com.goormgb.be.user.service.UserService;
+import com.goormgb.be.authguard.auth.service.AuthMeService;
 
 @WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -27,7 +27,7 @@ import com.goormgb.be.user.service.UserService;
 class UserControllerTest extends WebMvcTestSupport {
 
 	@MockitoBean
-	private UserService userService;
+	private AuthMeService authMeService;
 
 	@MockitoBean
 	private ErrorResponseStrategy errorResponseStrategy;
@@ -48,7 +48,7 @@ class UserControllerTest extends WebMvcTestSupport {
 		UserInfoGetResponse response = new UserInfoGetResponse(
 			userId, UserStatus.ACTIVATE, "user@example.com", "홍길동", true
 		);
-		given(userService.getMyInfo(userId)).willReturn(response);
+		given(authMeService.getMyInfo(userId)).willReturn(response);
 
 		// when & then
 		mockMvc.perform(get("/me"))
@@ -71,7 +71,7 @@ class UserControllerTest extends WebMvcTestSupport {
 		UserInfoGetResponse response = new UserInfoGetResponse(
 			userId, UserStatus.ACTIVATE, "user@example.com", "홍길동", false
 		);
-		given(userService.getMyInfo(userId)).willReturn(response);
+		given(authMeService.getMyInfo(userId)).willReturn(response);
 
 		// when & then
 		mockMvc.perform(get("/me"))

@@ -53,6 +53,8 @@ public class AuthService {
 	private final WithdrawalRequestRepository withdrawalRequestRepository;
 	private final AuthMetricsService authMetricsService;
 	private final KafkaTemplate<String, Object> kafkaTemplate;
+	private final UserCacheService userCacheService;
+	private final AuthMeService authMeService;
 
 	/**
 	 * Refresh Token으로 새로운 Access Token과 Refresh Token을 발급한다. (RTR)
@@ -183,6 +185,10 @@ public class AuthService {
 		authMetricsService.increaseUserBlocked();
 		log.info("[User Block] userId={}, status={} -> {}", targetUserId, beforeStatus, user.getStatus());
 
+		// 캐시 무효화: 상태 변경이 Pod 간 즉시 전파되도록 user-by-id / auth-me 캐시 제거
+		userCacheService.evict(targetUserId);
+		authMeService.evict(targetUserId);
+
 		// 트랜잭션 커밋 성공 후 차단 유저의 주문 상태 변경 이벤트 발행
 		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
 			@Override
@@ -207,6 +213,10 @@ public class AuthService {
 		authMetricsService.increaseUserUnblocked();
 		log.info("[User Unblock] userId={}, status={} -> {}", targetUserId, beforeStatus, user.getStatus());
 
+		// 캐시 무효화: 상태 변경이 Pod 간 즉시 전파되도록 user-by-id / auth-me 캐시 제거
+		userCacheService.evict(targetUserId);
+		authMeService.evict(targetUserId);
+
 		return UserStatusChangeResponse.from(user);
 	}
 
@@ -230,6 +240,10 @@ public class AuthService {
 				.user(user)
 				.build();
 		withdrawalRequestRepository.save(withdrawalRequest);
+
+		// 5. 캐시 무효화: 탈퇴 직후 다른 Pod 에서 여전히 ACTIVATE 로 보이지 않도록 제거
+		userCacheService.evict(userId);
+		authMeService.evict(userId);
 
 		return WithdrawalResponse.from(withdrawalRequest);
 
