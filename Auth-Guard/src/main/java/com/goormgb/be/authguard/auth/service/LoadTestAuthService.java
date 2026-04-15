@@ -39,6 +39,7 @@ public class LoadTestAuthService {
 	private final JwtTokenProvider jwtTokenProvider;
 	private final JwtProperties jwtProperties;
 	private final RefreshTokenRepository refreshTokenRepository;
+	private final AccountLockService accountLockService;
 
 	@Transactional
 	public void signup(String loginId, String password) {
@@ -70,12 +71,20 @@ public class LoadTestAuthService {
 
 	@Transactional
 	public LoadTestLoginResult login(String loginId, String password, HttpServletRequest request) {
-		LoadTestUser loadTestUser = loadTestUserRepository.findByLoginId(loginId)
-				.orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
+		accountLockService.ensureNotLocked(loginId);
 
-		if (!passwordEncoder.matches(password, loadTestUser.getPasswordHash())) {
+		LoadTestUser loadTestUser = loadTestUserRepository.findByLoginId(loginId).orElse(null);
+		if (loadTestUser == null) {
+			accountLockService.recordFailure(loginId);
 			throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
 		}
+
+		if (!passwordEncoder.matches(password, loadTestUser.getPasswordHash())) {
+			accountLockService.recordFailure(loginId);
+			throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
+		}
+
+		accountLockService.resetOnSuccess(loginId);
 
 		User user = loadTestUser.getUser();
 

@@ -24,6 +24,8 @@ public enum ErrorCode {
 	USER_DEACTIVATED(HttpStatus.FORBIDDEN, "비활성화된 사용자입니다."),
 	USER_ALREADY_BLOCKED(HttpStatus.FORBIDDEN, "차단된 사용자입니다."),
 	USER_ALREADY_ACTIVE(HttpStatus.CONFLICT, "이미 활성 상태인 사용자입니다."),
+	ACCOUNT_TEMPORARILY_LOCKED(HttpStatus.TOO_MANY_REQUESTS, "로그인 실패 누적으로 계정이 일시 잠금되었습니다. 잠시 후 다시 시도해 주세요."),
+	ACCOUNT_PERMANENTLY_LOCKED(HttpStatus.FORBIDDEN, "로그인 실패 누적으로 계정이 잠금되었습니다. 관리자에게 문의해 주세요."),
 
 	// Onboarding
 	ONBOARDING_NOT_COMPLETED(HttpStatus.FORBIDDEN, "온보딩이 완료되지 않았습니다."),

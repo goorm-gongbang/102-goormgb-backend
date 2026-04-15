@@ -70,6 +70,7 @@ public class DevAuthService {
 	private final OnboardingPreferenceRepository onboardingPreferenceRepository;
 	private final OnboardingPreferredBlockRepository onboardingPreferredBlockRepository;
 	private final OnboardingViewpointPriorityRepository onboardingViewpointPriorityRepository;
+	private final AccountLockService accountLockService;
 
 	/**
 	 * 개발용 회원가입 — 온보딩 정보(응원 구단·응원석·뷰포인트·선호 블록)를 자동 생성하여
@@ -152,12 +153,23 @@ public class DevAuthService {
 
 	@Transactional
 	public DevLoginResult login(String loginId, String password, HttpServletRequest request) {
-		DevUser devUser = devUserRepository.findByLoginId(loginId)
-				.orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
+		// 1) 계정 잠금 상태 선 검증 (email/loginId 기준 크리덴셜 스터핑 방어)
+		accountLockService.ensureNotLocked(loginId);
 
-		if (!passwordEncoder.matches(password, devUser.getPasswordHash())) {
+		DevUser devUser = devUserRepository.findByLoginId(loginId).orElse(null);
+		if (devUser == null) {
+			// 존재하지 않는 계정도 실패로 카운트 → enumeration 공격 억제
+			accountLockService.recordFailure(loginId);
 			throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
 		}
+
+		if (!passwordEncoder.matches(password, devUser.getPasswordHash())) {
+			accountLockService.recordFailure(loginId);
+			throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
+		}
+
+		// 성공 시 단기 카운터/잠금 초기화
+		accountLockService.resetOnSuccess(loginId);
 
 		User user = devUser.getUser();
 
