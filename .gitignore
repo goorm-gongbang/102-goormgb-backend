@@ -94,5 +94,10 @@ Temporary Items
 
 ### 내부 작업 문서 (커밋 금지) ###
 docs/sprint5/
+docs/sptint4/
+docs/kafka/
+docs/api/
+docs/mypage/
 docs/트러블슈팅/
 docs/발표자료/
+pr_tmp/

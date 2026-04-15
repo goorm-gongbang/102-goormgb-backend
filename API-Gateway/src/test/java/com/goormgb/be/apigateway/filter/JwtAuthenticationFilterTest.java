@@ -24,6 +24,7 @@ import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
 import org.springframework.web.server.ServerWebExchange;
 
+import com.goormgb.be.apigateway.config.UserOrIpKeyResolverConfig;
 import com.goormgb.be.apigateway.fixture.JwtTokenFixture;
 import com.goormgb.be.apigateway.jwt.config.JwtProperties;
 import com.goormgb.be.apigateway.jwt.provider.JwtTokenProvider;
@@ -226,11 +227,16 @@ class JwtAuthenticationFilterTest {
 	class ValidAccessToken {
 
 		@Test
-		@DisplayName("유효한 토큰이면 X-User-Id, X-User-Role 헤더를 추가하고 통과한다")
-		void validToken_addsHeadersAndPasses() {
+		@DisplayName("유효한 토큰이면 내부 인증 헤더를 재주입하고 rate-limit용 userId attribute를 설정한다")
+		void validToken_addsHeadersAndAttributeAndPasses() {
 			String jti = UUID.randomUUID().toString();
 			String token = JwtTokenFixture.createAccessToken(42L, "ROLE_USER", jti);
-			MockServerWebExchange exchange = createExchangeWithToken("/order/onboarding/preferences", token);
+			MockServerWebExchange exchange = MockServerWebExchange.from(
+				MockServerHttpRequest.get("/order/onboarding/preferences")
+					.header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+					.header("X-User-Id", "999")
+					.build()
+			);
 
 			when(blacklistRepository.isBlacklisted(jti)).thenReturn(Mono.just(false));
 
@@ -244,6 +250,8 @@ class JwtAuthenticationFilterTest {
 			HttpHeaders headers = capturedExchange.getRequest().getHeaders();
 			assertThat(headers.getFirst("X-User-Id")).isEqualTo("42");
 			assertThat(headers.getFirst("X-User-Role")).isEqualTo("ROLE_USER");
+			Long authenticatedUserId = capturedExchange.getAttribute(UserOrIpKeyResolverConfig.ATTR_AUTH_USER_ID);
+			assertThat(authenticatedUserId).isEqualTo(42L);
 		}
 
 		@Test

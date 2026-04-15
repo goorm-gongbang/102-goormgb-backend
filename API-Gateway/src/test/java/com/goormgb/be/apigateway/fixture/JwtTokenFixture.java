@@ -28,6 +28,7 @@ public final class JwtTokenFixture {
 	public static final Long DEFAULT_USER_ID = 1L;
 	public static final String DEFAULT_ROLE = "ROLE_USER";
 	public static final String DEFAULT_JTI = "test-jti-123";
+	private static final String TEST_ISSUER = "test-issuer";
 
 	static {
 		try {
@@ -48,6 +49,7 @@ public final class JwtTokenFixture {
 
 	public static String createAccessToken(Long userId, String role, String jti) {
 		return Jwts.builder()
+				.issuer(TEST_ISSUER)
 				.subject(String.valueOf(userId))
 				.id(jti)
 				.claim("tokenType", TokenType.ACCESS.getValue())
@@ -68,6 +70,7 @@ public final class JwtTokenFixture {
 
 	public static String createRefreshToken(Long userId) {
 		return Jwts.builder()
+				.issuer(TEST_ISSUER)
 				.subject(String.valueOf(userId))
 				.id(UUID.randomUUID().toString())
 				.claim("tokenType", TokenType.REFRESH.getValue())
@@ -80,6 +83,7 @@ public final class JwtTokenFixture {
 
 	public static String createExpiredAccessToken() {
 		return Jwts.builder()
+				.issuer(TEST_ISSUER)
 				.subject(String.valueOf(DEFAULT_USER_ID))
 				.id(UUID.randomUUID().toString())
 				.claim("tokenType", TokenType.ACCESS.getValue())
@@ -93,6 +97,7 @@ public final class JwtTokenFixture {
 	/** 다른 RSA 키쌍으로 서명 → 검증 실패 시나리오 */
 	public static String createWrongSignatureToken() {
 		return Jwts.builder()
+				.issuer(TEST_ISSUER)
 				.subject(String.valueOf(DEFAULT_USER_ID))
 				.claim("tokenType", TokenType.ACCESS.getValue())
 				.claim("auth", DEFAULT_ROLE)
@@ -105,6 +110,7 @@ public final class JwtTokenFixture {
 	public static String createTokenWithCustomExpiration(Long userId, String role, TokenType tokenType,
 			String jti, Date expiration) {
 		return Jwts.builder()
+				.issuer(TEST_ISSUER)
 				.subject(String.valueOf(userId))
 				.id(jti)
 				.claim("tokenType", tokenType.getValue())

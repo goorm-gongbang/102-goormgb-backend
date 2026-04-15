@@ -27,6 +27,7 @@ import com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.entity.UserSns;
+import com.goormgb.be.ordercore.user.service.UserCacheService;
 import com.goormgb.be.user.enums.SocialProvider;
 import com.goormgb.be.user.repository.UserRepository;
 import com.goormgb.be.user.repository.UserSnsRepository;
@@ -41,6 +42,8 @@ class MyPageProfileServiceTest {
 	private UserSnsRepository userSnsRepository;
 	@Mock
 	private OrderRepository orderRepository;
+	@Mock
+	private UserCacheService userCacheService;
 
 	private MyPageProfileService myPageProfileService;
 	private Clock clock;
@@ -52,6 +55,7 @@ class MyPageProfileServiceTest {
 			userRepository,
 			userSnsRepository,
 			orderRepository,
+			userCacheService,
 			clock
 		);
 	}

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
 
+import com.goormgb.be.apigateway.config.UserOrIpKeyResolverConfig;
 import com.goormgb.be.apigateway.jwt.enums.TokenType;
 import com.goormgb.be.apigateway.jwt.provider.JwtTokenProvider;
 import com.goormgb.be.apigateway.jwt.repository.AccessTokenBlacklistRepository;
@@ -115,18 +116,26 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 						}
 
 						ServerHttpRequest.Builder requestBuilder = exchange.getRequest().mutate()
-								.header(HEADER_USER_ID, String.valueOf(userId))
-								.header(HEADER_USER_ROLE, authority)
-								.header(HEADER_TOKEN_JTI, jti);
+								.headers(headers -> {
+									headers.remove(HEADER_USER_ID);
+									headers.remove(HEADER_USER_ROLE);
+									headers.remove(HEADER_TOKEN_JTI);
+									headers.remove(HEADER_SESSION_ID);
+									headers.add(HEADER_USER_ID, String.valueOf(userId));
+									headers.add(HEADER_USER_ROLE, authority);
+									headers.add(HEADER_TOKEN_JTI, jti);
+								});
 
 						if (sid != null) {
 							requestBuilder.header(HEADER_SESSION_ID, sid);
 						}
 
 						ServerHttpRequest mutatedRequest = requestBuilder.build();
+						ServerWebExchange mutatedExchange = exchange.mutate().request(mutatedRequest).build();
+						mutatedExchange.getAttributes().put(UserOrIpKeyResolverConfig.ATTR_AUTH_USER_ID, userId);
 
 						log.debug("JWT authenticated - userId: {}, role: {}, sid: {}", userId, authority, sid);
-						return chain.filter(exchange.mutate().request(mutatedRequest).build());
+						return chain.filter(mutatedExchange);
 					});
 
 		} catch (Exception e) {
