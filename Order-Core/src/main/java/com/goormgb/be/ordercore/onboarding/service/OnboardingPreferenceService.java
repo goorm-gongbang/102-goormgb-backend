@@ -28,6 +28,7 @@ import com.goormgb.be.ordercore.onboarding.dto.request.OnboardingPreferenceUpdat
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingPreferenceCreateResponse;
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingPreferenceGetResponse;
 import com.goormgb.be.ordercore.onboarding.dto.response.OnboardingStatusGetResponse;
+import com.goormgb.be.ordercore.user.service.UserCacheService;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.repository.UserRepository;
 
@@ -42,6 +43,7 @@ public class OnboardingPreferenceService {
 	private final OnboardingPreferredBlockRepository preferredBlockRepository;
 	private final ClubRepository clubRepository;
 	private final UserRepository userRepository;
+	private final UserCacheService userCacheService;
 
 	@Transactional(readOnly = true)
 	public OnboardingStatusGetResponse getOnboardingStatus(Long userId) {
@@ -93,6 +95,10 @@ public class OnboardingPreferenceService {
 		// 온보딩 완료
 		user.completeOnboarding();
 
+		// onboardingCompleted 는 UserCacheDto 에 포함되어 Auth-Guard /me 에서 참조한다.
+		// 커밋 완료 후 공유 캐시(user-by-id, auth-me) 를 무효화해 stale 상태로 노출되지 않게 한다.
+		userCacheService.evictAfterCommit(userId);
+
 		return OnboardingPreferenceCreateResponse.from(user);
 	}
 
@@ -141,6 +147,9 @@ public class OnboardingPreferenceService {
 		savePreferredBlocks(user, request.preferredBlockIds());
 
 		user.completeOnboarding();
+
+		// 온보딩 갱신도 UserCacheDto 의 onboardingCompleted 에 반영되므로 공유 캐시 무효화.
+		userCacheService.evictAfterCommit(userId);
 	}
 
 	@Transactional
