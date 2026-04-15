@@ -50,6 +50,7 @@ public interface MatchSeatRepository extends JpaRepository<MatchSeat, Long> {
 	);
 
 	List<MatchSeat> findAllByMatchIdAndSeatIdIn(Long matchId, List<Long> seatIds);
+	boolean existsByMatchIdAndSaleStatusNot(Long matchId, MatchSeatSaleStatus saleStatus);
 
 	/**
 	 * 좌석이 AVAILABLE 상태일 때만 BLOCKED로 변경한다.
