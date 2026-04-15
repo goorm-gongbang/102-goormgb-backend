@@ -10,18 +10,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.domain.match.entity.Match;
-import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.domain.onboarding.entity.OnboardingPreference;
 import com.goormgb.be.domain.onboarding.entity.OnboardingViewpointPriority;
-import com.goormgb.be.domain.onboarding.repository.OnboardingPreferenceRepository;
-import com.goormgb.be.domain.onboarding.repository.OnboardingPreferredBlockRepository;
-import com.goormgb.be.domain.onboarding.repository.OnboardingViewpointPriorityRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.block.entity.Block;
-import com.goormgb.be.seat.block.repository.BlockRepository;
 import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
+import com.goormgb.be.seat.common.service.BlockLookupCacheService;
+import com.goormgb.be.seat.common.service.MatchDetailCacheService;
+import com.goormgb.be.seat.common.service.UserPreferenceCacheService;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.repository.BlockRemainingSeatProjection;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
@@ -39,20 +37,20 @@ public class SeatRecommendationService {
 
 	private static final int CONSECUTIVE_COUNT_THRESHOLD = 10;
 
-	private final MatchRepository matchRepository;
 	private final BookingOptionsRedisRepository bookingOptionsRedisRepository;
-	private final BlockRepository blockRepository;
 	private final MatchSeatRepository matchSeatRepository;
-	private final OnboardingPreferredBlockRepository onboardingPreferredBlockRepository;
-	private final OnboardingPreferenceRepository onboardingPreferenceRepository;
-	private final OnboardingViewpointPriorityRepository onboardingViewpointPriorityRepository;
 	private final ConsecutiveSeatCounter consecutiveSeatCounter;
 	private final SemiConsecutiveSeatCounter semiConsecutiveSeatCounter;
 	private final PreferenceScoreCalculator preferenceScoreCalculator;
 	private final SeatMetricsService seatMetricsService;
 
+	// Caffeine cache wrappers — 온보딩/정적 조회를 로컬 캐시로 흡수 (부하테스트 N+1 DB hit 완화)
+	private final MatchDetailCacheService matchDetailCacheService;
+	private final UserPreferenceCacheService userPreferenceCacheService;
+	private final BlockLookupCacheService blockLookupCacheService;
+
 	public SeatEntryResponse getRecommendationSeatEntry(Long matchId, Long userId) {
-		var match = matchRepository.findDetailByIdOrThrow(matchId);
+		var match = matchDetailCacheService.getDetail(matchId);
 		var bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
 		var seatSession = SeatSession.from(bookingOptions);
 
@@ -73,14 +71,13 @@ public class SeatRecommendationService {
 
 			SeatSession seatSession = SeatSession.from(bookingOptions);
 			int ticketCount = seatSession.getTicketCount();
-			List<Long> preferredBlockNums = onboardingPreferredBlockRepository.findBlockIdsByUserId(userId);
+			// 아래 5개 조회는 Caffeine local cache 로 흡수 — 동일 유저/블록조합 재조회 시 DB hit 0
+			List<Long> preferredBlockNums = userPreferenceCacheService.getPreferredBlockIds(userId);
 
-			Match match = matchRepository.findDetailByIdOrThrow(matchId);
-			List<Block> preferredBlocks = blockRepository.findAllByBlockNumInWithSectionAndArea(preferredBlockNums);
-			OnboardingPreference pref = onboardingPreferenceRepository.findByUserIdOrThrow(
-				userId, ErrorCode.PREFERENCE_NOT_FOUND);
-			List<OnboardingViewpointPriority> viewpoints =
-				onboardingViewpointPriorityRepository.findAllByUserIdOrderByPriorityAsc(userId);
+			Match match = matchDetailCacheService.getDetail(matchId);
+			List<Block> preferredBlocks = blockLookupCacheService.findAllByBlockNums(preferredBlockNums);
+			OnboardingPreference pref = userPreferenceCacheService.getPreference(userId);
+			List<OnboardingViewpointPriority> viewpoints = userPreferenceCacheService.getViewpointPriorities(userId);
 
 			boolean nearAdjacentToggle = seatSession.isNearAdjacentToggle();
 			List<BlockRecommendation> recommendations = buildRecommendations(
