@@ -22,6 +22,7 @@ import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
+import com.goormgb.be.ordercore.match.service.MatchDetailCacheService;
 import com.goormgb.be.ordercore.fixture.order.OrderFixture;
 import com.goormgb.be.ordercore.metrics.OrderMetricsService;
 import com.goormgb.be.ordercore.metrics.enums.OrderDraftEntryPoint;
@@ -44,6 +45,8 @@ class OrderServiceTest {
 	@Mock
 	private MatchRepository matchRepository;
 	@Mock
+	private MatchDetailCacheService matchDetailCacheService;
+	@Mock
 	private UserRepository userRepository;
 	@Mock
 	private OrderRepository orderRepository;
@@ -59,8 +62,8 @@ class OrderServiceTest {
 	@BeforeEach
 	void setUp() {
 		orderService = new OrderService(
-			matchRepository, userRepository, orderRepository, orderSeatRepository, seatInfoQueryService,
-			orderMetricsService
+			matchRepository, matchDetailCacheService, userRepository, orderRepository, orderSeatRepository,
+			seatInfoQueryService, orderMetricsService
 		);
 	}
 
@@ -77,7 +80,7 @@ class OrderServiceTest {
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 
-			given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
+			given(matchDetailCacheService.getDetail(matchId)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, seatIds)).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.findPrice(1L, "WEEKDAY", "ADULT")).willReturn(22000);
 
@@ -102,7 +105,7 @@ class OrderServiceTest {
 			Match weekendMatch = OrderFixture.createWeekendMatch();
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 
-			given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(weekendMatch);
+			given(matchDetailCacheService.getDetail(matchId)).willReturn(weekendMatch);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, seatIds)).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.findPrice(1L, "WEEKEND", "ADULT")).willReturn(24000);
 
@@ -128,7 +131,7 @@ class OrderServiceTest {
 				1L, "블루석", 10L, "BLUE_02", 6, 1
 			);
 
-			given(matchRepository.findDetailByIdOrThrow(matchId)).willReturn(match);
+			given(matchDetailCacheService.getDetail(matchId)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, seatIds)).willReturn(List.of(hold1, hold2));
 			given(seatInfoQueryService.findPrice(eq(1L), eq("WEEKDAY"), eq("ADULT"))).willReturn(22000);
 
@@ -155,7 +158,7 @@ class OrderServiceTest {
 		void getOrderSheet_선점_미발견_예외() {
 			Long userId = 1L;
 			Match match = OrderFixture.createWeekdayMatch();
-			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
+			given(matchDetailCacheService.getDetail(1L)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L, 102L)))
 				.willReturn(List.of(OrderFixture.createSeatHoldInfo(101L, userId))); // 1개만 반환
 
@@ -175,7 +178,7 @@ class OrderServiceTest {
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo expiredHold = OrderFixture.createExpiredSeatHoldInfo(101L, userId);
 
-			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
+			given(matchDetailCacheService.getDetail(1L)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(expiredHold));
 
 			assertThatThrownBy(
@@ -192,7 +195,7 @@ class OrderServiceTest {
 			Match match = OrderFixture.createWeekdayMatch();
 			SeatHoldInfo holdInfo = OrderFixture.createSeatHoldInfo(101L, userId);
 
-			given(matchRepository.findDetailByIdOrThrow(1L)).willReturn(match);
+			given(matchDetailCacheService.getDetail(1L)).willReturn(match);
 			given(seatInfoQueryService.findSeatHoldInfos(userId, List.of(101L))).willReturn(List.of(holdInfo));
 			given(seatInfoQueryService.findPrice(anyLong(), anyString(), anyString())).willReturn(null);
 

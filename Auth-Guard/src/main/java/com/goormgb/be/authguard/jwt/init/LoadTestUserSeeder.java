@@ -35,15 +35,17 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@Profile({"local", "staging", "dev"})
+
+// TODO: 추후에 계정 생성할때는 staging 프로파일 추가해야함
+@Profile({"local", "dev"})
 @RequiredArgsConstructor
 public class LoadTestUserSeeder implements CommandLineRunner {
 
-	private static final int TOTAL_USERS = 30;
+	private static final int TOTAL_USERS = 0;
 	private static final String PASSWORD = "1234";
-	private static final int BATCH_LOG_INTERVAL = 10;
-	private static final int FLUSH_INTERVAL = 10;
-	private static final int CLUB_COUNT = 10;
+	private static final int BATCH_LOG_INTERVAL = 1000;
+	private static final int FLUSH_INTERVAL = 500;
+	private static final int PREFERRED_BLOCK_COUNT = 10;
 
 	/**
 	 * 시드 데이터 기준 유효 블록 번호 (blockNum)
@@ -189,7 +191,7 @@ public class LoadTestUserSeeder implements CommandLineRunner {
 
 		// 5. 선호 블록: 랜덤 1~10개, 중복 없이 셔플
 		ThreadLocalRandom random = ThreadLocalRandom.current();
-		int blockCount = random.nextInt(1, 11);
+		int blockCount = PREFERRED_BLOCK_COUNT;
 		List<Long> shuffledBlocks = new ArrayList<>(VALID_BLOCK_NUMS);
 		Collections.shuffle(shuffledBlocks, random);
 		for (int b = 0; b < blockCount; b++) {
@@ -202,8 +204,6 @@ public class LoadTestUserSeeder implements CommandLineRunner {
 	}
 
 	private List<Club> loadClubs() {
-		return LongStream.rangeClosed(1, CLUB_COUNT)
-				.mapToObj(clubRepository::getReferenceById)
-				.toList();
+		return clubRepository.findAll();
 	}
 }

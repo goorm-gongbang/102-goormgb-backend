@@ -5,7 +5,6 @@ import java.time.Instant;
 import org.springframework.stereotype.Service;
 
 import com.goormgb.be.global.exception.CustomException;
-import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.booking.dto.request.BookingOptionsRequest;
@@ -23,12 +22,12 @@ public class BookingOptionsService {
 	private static final int MARK_RETRY_MAX_ATTEMPTS = 3;
 	private static final long MARK_RETRY_SLEEP_MILLIS = 50L;
 
-	private final MatchRepository matchRepository;
+	private final MatchExistenceValidator matchExistenceValidator;
 	private final BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	private final PreQueueBookingOptionMarkerRepository preQueueBookingOptionMarkerRepository;
 
 	public BookingOptionsResponse saveBookingOptions(Long matchId, Long userId, BookingOptionsRequest request) {
-		matchRepository.findByIdOrThrow(matchId, ErrorCode.MATCH_NOT_FOUND);
+		matchExistenceValidator.validateExists(matchId);
 
 		if (request.recommendationEnabled()) {
 			Preconditions.validate(request.ticketCount() != null, ErrorCode.INVALID_TICKET_COUNT);
