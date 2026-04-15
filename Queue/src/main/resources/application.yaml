@@ -40,6 +40,10 @@ spring:
       leak-detection-threshold: 10000
 
   jpa:
+    # OSIV 기본값(true) 은 컨트롤러 응답 종료 시점까지 DB 커넥션을 점유해
+    # HikariCP 회전율을 절반 이하로 떨어뜨린다. 본 서비스는 JPA lazy 연관을
+    # 컨트롤러 레이어에서 접근하지 않으므로 명시적으로 비활성화한다.
+    open-in-view: false
     hibernate:
       ddl-auto: update
     show-sql: false
