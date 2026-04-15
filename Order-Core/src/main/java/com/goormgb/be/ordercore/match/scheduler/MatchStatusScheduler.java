@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.domain.match.repository.MatchRepository;
-import com.goormgb.be.ordercore.match.utils.SalesOpenUtils;
+import com.goormgb.be.domain.match.support.SalesOpenUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,10 +27,18 @@ public class MatchStatusScheduler {
 	private final SalesOpenUtils salesOpenUtils;
 
 	/**
-	 * 매일 오전 11시: UPCOMING 경기 중 오늘 판매 오픈 대상인 경기를 ON_SALE로 전환한다.
-	 * 판매 오픈 조건: 경기 7일 전 오전 11시 (SalesOpenUtils 기준)
+	 * 매일 오전 10:59 (KST): UPCOMING 경기 중 오늘 판매 오픈 대상인 경기를 ON_SALE 로 전환한다.
+	 *
+	 * <p>판매 오픈 조건: 경기 7일 전 오전 11시 ({@link SalesOpenUtils} 기준).</p>
+	 *
+	 * <p>cron 을 {@code 0 59 10 * * *} 로 당겨둔 이유는 본 스케줄러가 11시 정각에 실행을
+	 * 시작할 경우 루프·트랜잭션 커밋 지연으로 DB {@code sale_status} 반영이 11:00:05~12
+	 * 사이까지 밀려 유저가 11시 정각 진입 시 409 를 받는 문제가 있었기 때문이다. 본 스케줄러는
+	 * 화면 표기(예매 가능/불가 라벨) 동기화를 담당하고, 실제 대기열 진입 허용 판정은
+	 * Queue 모듈의 Lazy 시간 비교({@code now >= openAt})가 담당한다. 따라서 본 스케줄러가
+	 * 실패·지연되어도 11시 정각 진입 자체는 영향받지 않는다.</p>
 	 */
-	@Scheduled(cron = "0 0 11 * * *", zone = "Asia/Seoul")
+	@Scheduled(cron = "0 59 10 * * *", zone = "Asia/Seoul")
 	@Transactional
 	public void openSales() {
 		Instant now = Instant.now();
