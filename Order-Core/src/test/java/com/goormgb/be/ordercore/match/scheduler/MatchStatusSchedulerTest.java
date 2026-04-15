@@ -22,7 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.domain.match.repository.MatchRepository;
-import com.goormgb.be.ordercore.match.utils.SalesOpenUtils;
+import com.goormgb.be.domain.match.support.SalesOpenUtils;
 
 @ExtendWith(MockitoExtension.class)
 class MatchStatusSchedulerTest {
