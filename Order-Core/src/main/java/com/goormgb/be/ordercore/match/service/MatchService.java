@@ -18,8 +18,8 @@ import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.ordercore.match.dto.response.ClubMonthlyMatchesResponse;
 import com.goormgb.be.ordercore.match.dto.response.MatchDetailGetResponse;
 import com.goormgb.be.ordercore.match.dto.response.MatchListByDateResponse;
+import com.goormgb.be.domain.match.support.SalesOpenUtils;
 import com.goormgb.be.ordercore.match.utils.MatchDisplayUtils;
-import com.goormgb.be.ordercore.match.utils.SalesOpenUtils;
 
 import lombok.RequiredArgsConstructor;
 

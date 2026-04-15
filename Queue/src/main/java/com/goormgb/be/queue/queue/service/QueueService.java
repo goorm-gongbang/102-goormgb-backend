@@ -8,8 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.domain.match.entity.Match;
-import com.goormgb.be.domain.match.enums.SaleStatus;
-import com.goormgb.be.domain.match.repository.MatchRepository;
+import com.goormgb.be.domain.match.support.SalesOpenUtils;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.queue.config.QueueProperties;
@@ -23,27 +22,30 @@ import com.goormgb.be.queue.queue.repository.QueueRedisRepository;
 @Service
 public class QueueService {
 
-	private final MatchRepository matchRepository;
+	private final MatchQueueCacheService matchQueueCacheService;
 	private final QueueRedisRepository queueRedisRepository;
 	private final QueueProperties queueProperties;
 	private final QueuePollingPolicy queuePollingPolicy;
 	private final QueueMetricsService queueMetricsService;
 	private final PreQueueValidationService preQueueValidationService;
+	private final SalesOpenUtils salesOpenUtils;
 
 	public QueueService(
-		MatchRepository matchRepository,
+		MatchQueueCacheService matchQueueCacheService,
 		QueueRedisRepository queueRedisRepository,
 		QueueProperties queueProperties,
 		QueuePollingPolicy queuePollingPolicy,
 		QueueMetricsService queueMetricsService,
-		PreQueueValidationService preQueueValidationService
+		PreQueueValidationService preQueueValidationService,
+		SalesOpenUtils salesOpenUtils
 	) {
-		this.matchRepository = matchRepository;
+		this.matchQueueCacheService = matchQueueCacheService;
 		this.queueRedisRepository = queueRedisRepository;
 		this.queueProperties = queueProperties;
 		this.queuePollingPolicy = queuePollingPolicy;
 		this.queueMetricsService = queueMetricsService;
 		this.preQueueValidationService = preQueueValidationService;
+		this.salesOpenUtils = salesOpenUtils;
 	}
 
 	@Transactional
@@ -51,7 +53,7 @@ public class QueueService {
 		requireAuthenticated(userId);
 		preQueueValidationService.validateBeforeEnter(matchId, userId);
 
-		Match match = matchRepository.findByIdOrThrow(matchId, ErrorCode.MATCH_NOT_FOUND);
+		Match match = matchQueueCacheService.getForQueue(matchId);
 		validateQueueOpen(match);
 
 		long enteredAtMillis = Instant.now().toEpochMilli();
@@ -114,8 +116,20 @@ public class QueueService {
 		queueMetricsService.recordAbandoned();
 	}
 
+	/**
+	 * 대기열 진입 가능 여부를 판정한다.
+	 *
+	 * <p>판정은 {@link SalesOpenUtils#isPurchasable(Match, Instant)} 로 위임하여
+	 * Order-Core 의 화면 표기 로직과 동일 기준(시간 기반 Lazy) 으로 운영된다.</p>
+	 *
+	 * <p>기존에는 DB {@code sale_status == ON_SALE} 단일 조건으로 판정했으나,
+	 * 상태 전환 스케줄러의 트랜잭션 커밋 지연과 로컬 캐시 TTL 로 인해 11시 정각
+	 * 오픈 시점 유저가 최대 1~2분간 {@code 409 MATCH_NOT_AVAILABLE_FOR_QUEUE} 를 겪는
+	 * 문제가 있었다. 시간 기반(Lazy) 판정으로 전환하여 스케줄러·캐시 지연과 무관하게
+	 * 11:00:00 시점 진입이 허용된다.</p>
+	 */
 	private void validateQueueOpen(Match match) {
-		Preconditions.validate(match.getSaleStatus() == SaleStatus.ON_SALE,
+		Preconditions.validate(salesOpenUtils.isPurchasable(match, Instant.now()),
 			ErrorCode.MATCH_NOT_AVAILABLE_FOR_QUEUE);
 	}
 

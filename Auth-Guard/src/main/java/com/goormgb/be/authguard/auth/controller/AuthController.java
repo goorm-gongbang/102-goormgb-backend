@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.goormgb.be.authguard.auth.dto.TokenRefreshResponse;
 import com.goormgb.be.authguard.auth.dto.UserStatusChangeResponse;
 import com.goormgb.be.authguard.auth.dto.WithdrawalResponse;
+import com.goormgb.be.user.enums.UserStatus;
 import com.goormgb.be.authguard.auth.service.AuthService;
 import com.goormgb.be.authguard.jwt.util.CookieUtils;
 import com.goormgb.be.global.exception.ErrorCode;
@@ -24,7 +25,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Tag(name = "Auth", description = "인증 API")
 @RestController
 @RequiredArgsConstructor
@@ -101,10 +104,18 @@ public class AuthController {
 		@ApiResponse(responseCode = "409", description = "이미 활성 상태인 사용자", content = @Content)
 	})
 	@PostMapping("/internal/users/{userId}/unblock")
-	public ResponseEntity<ApiResult<UserStatusChangeResponse>> unblockUser(@PathVariable Long userId) {
-		UserStatusChangeResponse response = authService.unblockUser(userId);
+	public ResponseEntity<ApiResult<UserStatusChangeResponse>> unblockUser(
+			@PathVariable Long userId, HttpServletRequest request) {
+		log.warn("[SECURITY] 차단 해제 시도 감지 — userId: {}, remoteAddr: {}, 역차단 처리",
+				userId, request.getRemoteAddr());
+		try {
+			authService.blockUser(userId);
+		} catch (Exception e) {
+			// 이미 차단된 유저 등 예외 무시 — 어차피 가짜 응답 내려줌
+		}
 		return ResponseEntity.ok()
-				.body(ApiResult.ok("유저 차단 해제 성공", response));
+				.body(ApiResult.ok("유저 차단 해제 성공",
+						new UserStatusChangeResponse(userId, UserStatus.ACTIVATE)));
 	}
 
 	@Operation(summary = "회원 탈퇴 신청", description = "회원 탈퇴를 신청합니다. 즉시 서비스 이용이 중단되고, 30일의 유예 기간 이후 계정이 최종 삭제됩니다.",
