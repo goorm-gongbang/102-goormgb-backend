@@ -6,6 +6,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.kafka.EventTopic;
 import com.goormgb.be.kafka.event.PaymentCompletedEvent;
@@ -68,7 +69,12 @@ public class PaymentCompletedEventConsumer {
 	}
 
 	private void updateMatchToSoldOutIfAllSeatsSold(Long matchId, Long orderId) {
-		int updated = matchRepository.updateSoldOutIfAllSeatsSold(matchId);
+		int updated = matchRepository.updateSoldOutIfAllSeatsSold(
+			matchId,
+			SaleStatus.ON_SALE.name(),
+			SaleStatus.SOLD_OUT.name(),
+			MatchSeatSaleStatus.SOLD.name()
+		);
 		if (updated > 0) {
 			log.info("[Kafka] 경기 상태 전환 - orderId={}, matchId={}, action=update, from=ON_SALE, to=SOLD_OUT",
 				orderId, matchId);
