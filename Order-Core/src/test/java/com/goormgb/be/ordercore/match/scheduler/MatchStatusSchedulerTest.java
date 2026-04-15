@@ -111,6 +111,22 @@ class MatchStatusSchedulerTest {
 			assertThat(shouldOpen.getSaleStatus()).isEqualTo(SaleStatus.ON_SALE);
 			assertThat(shouldStay.getSaleStatus()).isEqualTo(SaleStatus.UPCOMING);
 		}
+
+		@Test
+		@DisplayName("openDate 가 오늘(KST)이면 10:59 실행 시에도 ON_SALE 로 전환된다 (시각 비교 버그 회귀 방지)")
+		void opensWhenOpenDateIsTodayEvenIfBeforeOpenTime() {
+			// matchAt = (오늘 + 7일) 18:30 KST → openAt = 오늘 11:00 KST → openDate = 오늘
+			ZoneId kst = ZoneId.of("Asia/Seoul");
+			Instant matchAt = java.time.LocalDate.now(kst).plusDays(7).atTime(18, 30)
+				.atZone(kst).toInstant();
+			Match match = createMatch(matchAt, SaleStatus.UPCOMING);
+
+			when(matchRepository.findBySaleStatus(SaleStatus.UPCOMING)).thenReturn(List.of(match));
+
+			scheduler.openSales();
+
+			assertThat(match.getSaleStatus()).isEqualTo(SaleStatus.ON_SALE);
+		}
 	}
 
 	@Nested
