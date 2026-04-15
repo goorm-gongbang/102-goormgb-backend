@@ -108,9 +108,11 @@ class QueueServiceTest {
 		Match match = matchWith(matchAt, SaleStatus.UPCOMING);
 
 		when(matchQueueCacheService.getForQueue(anyLong())).thenReturn(match);
+		when(queueRedisRepository.reenterQueueAtomicWithRankCount(anyLong(), anyLong(), anyLong()))
+			.thenReturn(java.util.List.of(0L, 1L));
 
 		assertThatCode(() -> queueService.enter(1L, 1L)).doesNotThrowAnyException();
-		verify(queueRedisRepository).reenterQueueAtomic(anyLong(), anyLong(), anyLong());
+		verify(queueRedisRepository).reenterQueueAtomicWithRankCount(anyLong(), anyLong(), anyLong());
 	}
 
 	@Test
@@ -153,6 +155,8 @@ class QueueServiceTest {
 		Match match = matchWith(adjustedMatchAt, SaleStatus.UPCOMING);
 
 		when(matchQueueCacheService.getForQueue(anyLong())).thenReturn(match);
+		when(queueRedisRepository.reenterQueueAtomicWithRankCount(anyLong(), anyLong(), anyLong()))
+			.thenReturn(java.util.List.of(0L, 1L));
 
 		assertThatCode(() -> queueService.enter(1L, 1L)).doesNotThrowAnyException();
 	}

@@ -221,10 +221,27 @@ public class QueueRedisRepository {
 		);
 	}
 
-	// 재진입 시 기존 WAITING/READY/EXPIRED 상태를 모두 정리한 뒤,
-	// 동일 요청 안에서 새 대기열 score로 다시 등록.
-	// 삭제와 재등록을 Lua 스크립트로 묶어 중간 상태 노출과 경쟁 조건을 방지.
-	public void reenterQueueAtomic(Long matchId, Long userId, long enteredAtMillis) {
+	/**
+	 * 재진입 처리와 대기열 순번·총원 조회를 단일 Lua 스크립트로 통합 수행한다 (Phase 4).
+	 *
+	 * <p>기존 구조는 {@code reenterQueueAtomic} (Lua) → {@code getWaitingRank} (ZRANK) →
+	 * {@code getWaitingCount} (ZCARD) 3회의 Redis 왕복으로 이루어져 있었다. 진입과 조회에
+	 * 같은 key 를 사용하므로 write 뒤 read 를 분리할 이유가 없어, Lua 스크립트 말미에
+	 * ZRANK + ZCARD 를 추가해 {@code {rank, count}} 로 한 번에 반환한다.</p>
+	 *
+	 * <p>반환값 규약:
+	 * <ul>
+	 *   <li>{@code [0]} — 0-based ZRANK. 호출자가 필요 시 1-based 로 보정한다
+	 *       (기존 {@link #getWaitingRank(Long, Long)} 는 +1 보정 후 반환했다).</li>
+	 *   <li>{@code [1]} — ZCARD 값 (총 대기자 수).</li>
+	 * </ul>
+	 *
+	 * <p>삭제·재등록·조회의 원자성을 유지하므로 중간 상태 노출이나 rank/count 불일치가 발생하지 않는다.</p>
+	 *
+	 * @return {@code [rank, count]} List. ZRANK 결과가 없으면 [0] 은 null 일 수 있으나
+	 *         직전에 ZADD 를 수행했으므로 실제로는 항상 유효한 값이 반환된다.
+	 */
+	public List<Long> reenterQueueAtomicWithRankCount(Long matchId, Long userId, long enteredAtMillis) {
 		String script =
 			// 1. 기존 WAITING 순번 제거
 			"redis.call('ZREM', KEYS[1], ARGV[1]); " +
@@ -237,7 +254,12 @@ public class QueueRedisRepository {
 				// 5. 새 진입 시각으로 대기열 맨 뒤에 다시 등록
 				"redis.call('ZADD', KEYS[1], ARGV[2], ARGV[1]); " +
 				// 6. 활성 경기 목록에 현재 경기 보장
-				"redis.call('SADD', KEYS[5], ARGV[3]); ";
+				"redis.call('SADD', KEYS[5], ARGV[3]); " +
+				// 7. 현재 사용자 0-based rank 조회 (직전 ZADD 뒤라 항상 존재)
+				"local rank = redis.call('ZRANK', KEYS[1], ARGV[1]); " +
+				// 8. 현재 대기열 총원 조회
+				"local count = redis.call('ZCARD', KEYS[1]); " +
+				"return {rank, count};";
 
 		List<String> keys = List.of(
 			queueProperties.waitKey(matchId),
@@ -247,13 +269,16 @@ public class QueueRedisRepository {
 			queueProperties.activeMatchKey()
 		);
 
-		redisTemplate.execute(
-			new org.springframework.data.redis.core.script.DefaultRedisScript<>(script, Void.class),
+		@SuppressWarnings("unchecked")
+		List<Long> result = redisTemplate.execute(
+			new org.springframework.data.redis.core.script.DefaultRedisScript<>(script, List.class),
 			keys,
 			String.valueOf(userId),
 			String.valueOf(enteredAtMillis),
 			String.valueOf(matchId)
 		);
+
+		return result;
 	}
 
 }
