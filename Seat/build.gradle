@@ -24,6 +24,10 @@ dependencies {
     // Redis 분산 캐시 (Phase 3 — 응답 레벨 캐시: seat-groups-response)
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
+    // Resilience4j (Phase 4 — BookingOptions prequeue 마커 retry 비동기 전환)
+    // spring-boot3 starter 가 AOP 자동 구성까지 포함한다.
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
+
     // 필수: JSON 로깅
     implementation "net.logstash.logback:logstash-logback-encoder:7.4"
 

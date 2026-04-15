@@ -86,6 +86,18 @@ admission:
 encryption:
   db-key: ${DB_ENCRYPTION_KEY}
 
+# Phase 4 — BookingOptions prequeue 마커 동기화 재시도 (Thread.sleep 대체)
+# 짧은 지수 백오프(30ms → 45ms) 로 요청당 최대 대기 시간을 약 75ms 로 제한한다.
+resilience4j:
+  retry:
+    instances:
+      prequeueMark:
+        max-attempts: 3
+        wait-duration: 30ms
+        exponential-backoff-multiplier: 1.5
+        retry-exceptions:
+          - java.lang.RuntimeException
+
 management:
   endpoints:
     web:

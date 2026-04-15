@@ -11,7 +11,6 @@ import com.goormgb.be.seat.booking.dto.request.BookingOptionsRequest;
 import com.goormgb.be.seat.booking.dto.response.BookingOptionsResponse;
 import com.goormgb.be.seat.booking.model.BookingOptions;
 import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
-import com.goormgb.be.seat.booking.repository.PreQueueBookingOptionMarkerRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,12 +18,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BookingOptionsService {
 
-	private static final int MARK_RETRY_MAX_ATTEMPTS = 3;
-	private static final long MARK_RETRY_SLEEP_MILLIS = 50L;
-
 	private final MatchExistenceValidator matchExistenceValidator;
 	private final BookingOptionsRedisRepository bookingOptionsRedisRepository;
-	private final PreQueueBookingOptionMarkerRepository preQueueBookingOptionMarkerRepository;
+	private final PreQueueMarkerRetryService preQueueMarkerRetryService;
 
 	public BookingOptionsResponse saveBookingOptions(Long matchId, Long userId, BookingOptionsRequest request) {
 		matchExistenceValidator.validateExists(matchId);
@@ -56,44 +52,31 @@ public class BookingOptionsService {
 		);
 	}
 
+	/**
+	 * prequeue 마커 동기화. 실패 시 이미 저장된 bookingOptions 를 롤백한다.
+	 *
+	 * <p>재시도 자체는 {@link PreQueueMarkerRetryService} 가 Resilience4j 로 수행한다 (Phase 4).
+	 * 기존의 {@code Thread.sleep} 기반 동기 블로킹 재시도는 Tomcat worker 스레드를
+	 * 최대 300ms 점유하여 고부하 시 스레드 풀 고갈의 원인이 되었다.</p>
+	 */
 	private void syncPreQueueMarkerOrRollback(Long matchId, Long userId) {
-		RuntimeException lastException = null;
-
-		for (int attempt = 1; attempt <= MARK_RETRY_MAX_ATTEMPTS; attempt++) {
-			try {
-				preQueueBookingOptionMarkerRepository.mark(matchId, userId);
-				return;
-			} catch (RuntimeException e) {
-				lastException = e;
-				if (attempt < MARK_RETRY_MAX_ATTEMPTS) {
-					sleepBeforeRetry(attempt);
-				}
-			}
-		}
-
 		try {
-			bookingOptionsRedisRepository.delete(matchId, userId);
-		} catch (RuntimeException rollbackException) {
+			preQueueMarkerRetryService.mark(matchId, userId);
+		} catch (RuntimeException markException) {
+			try {
+				bookingOptionsRedisRepository.delete(matchId, userId);
+			} catch (RuntimeException rollbackException) {
+				throw new CustomException(
+					ErrorCode.PREQUEUE_MARKER_SYNC_FAILED,
+					"예매 옵션 저장 후 prequeue 마커 동기화 및 롤백에 실패했습니다.",
+					rollbackException
+				);
+			}
 			throw new CustomException(
 				ErrorCode.PREQUEUE_MARKER_SYNC_FAILED,
-				"예매 옵션 저장 후 prequeue 마커 동기화 및 롤백에 실패했습니다.",
-				rollbackException
+				"예매 옵션 저장 후 prequeue 마커 동기화에 실패하여 저장 내용을 롤백했습니다.",
+				markException
 			);
-		}
-
-		throw new CustomException(
-			ErrorCode.PREQUEUE_MARKER_SYNC_FAILED,
-			"예매 옵션 저장 후 prequeue 마커 동기화에 실패하여 저장 내용을 롤백했습니다.",
-			lastException
-		);
-	}
-
-	private void sleepBeforeRetry(int attempt) {
-		try {
-			Thread.sleep(MARK_RETRY_SLEEP_MILLIS * attempt);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "prequeue 마커 재시도 중 인터럽트가 발생했습니다.", e);
 		}
 	}
 }
