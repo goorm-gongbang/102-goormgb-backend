@@ -16,6 +16,14 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 /**
  * Auth-Guard 서비스 캐시 설정 (Phase 2: Redis 분산 캐시).
  *
@@ -44,21 +52,46 @@ public class CacheConfig {
 	@Primary
 	@Bean
 	public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+		GenericJackson2JsonRedisSerializer valueSerializer =
+			new GenericJackson2JsonRedisSerializer(cacheObjectMapper());
+
 		Map<String, RedisCacheConfiguration> configs = new HashMap<>();
-		configs.put(CACHE_USER_BY_ID, redisConfig(Duration.ofMinutes(10)));
-		configs.put(CACHE_AUTH_ME, redisConfig(Duration.ofSeconds(30)));
+		configs.put(CACHE_USER_BY_ID, redisConfig(Duration.ofMinutes(10), valueSerializer));
+		configs.put(CACHE_AUTH_ME, redisConfig(Duration.ofSeconds(30), valueSerializer));
 
 		return RedisCacheManager.builder(connectionFactory)
-			.cacheDefaults(redisConfig(Duration.ofMinutes(10)))
+			.cacheDefaults(redisConfig(Duration.ofMinutes(10), valueSerializer))
 			.withInitialCacheConfigurations(configs)
 			.build();
 	}
 
-	private RedisCacheConfiguration redisConfig(Duration ttl) {
+	private RedisCacheConfiguration redisConfig(Duration ttl, GenericJackson2JsonRedisSerializer serializer) {
 		return RedisCacheConfiguration.defaultCacheConfig()
 			.entryTtl(ttl)
 			.serializeKeysWith(SerializationPair.fromSerializer(new StringRedisSerializer()))
-			.serializeValuesWith(SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
+			.serializeValuesWith(SerializationPair.fromSerializer(serializer))
 			.disableCachingNullValues();
+	}
+
+	/**
+	 * Redis 캐시 값 직렬화에 사용할 전용 {@link ObjectMapper} 를 생성한다.
+	 *
+	 * <p>기본 {@code GenericJackson2JsonRedisSerializer} 는 {@link java.time.Instant} 등
+	 * JSR-310 타입을 직렬화하지 못해 런타임에 {@code Java 8 date/time type not supported}
+	 * 예외가 발생한다. 이를 방지하기 위해 {@link JavaTimeModule} 을 등록한 전용 매퍼를 사용한다.</p>
+	 *
+	 * <p>Polymorphic typing 은 {@code GenericJackson2JsonRedisSerializer} 동작에 필요하므로
+	 * {@link BasicPolymorphicTypeValidator} 로 도메인 패키지만 허용하도록 제한해 안전하게 활성화한다.</p>
+	 */
+	private ObjectMapper cacheObjectMapper() {
+		PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
+			.allowIfBaseType(Object.class)
+			.build();
+
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.registerModule(new JavaTimeModule());
+		mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+		mapper.activateDefaultTyping(typeValidator, ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+		return mapper;
 	}
 }

@@ -17,6 +17,13 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 /**
@@ -37,6 +44,14 @@ public class CacheConfig {
 
 	public static final String CACHE_MATCH_DETAIL = "match-detail";
 	public static final String CACHE_USER_BY_ID = "user-by-id";
+	/**
+	 * Auth-Guard 가 소유한 {@code /auth/me} 응답 캐시의 키 스페이스.
+	 *
+	 * <p>Order-Core 는 해당 캐시에 값을 <b>저장하지 않고</b>, 사용자 프로필·온보딩 변경 시 동일
+	 * Redis 인스턴스에서 키를 삭제하기 위한 용도로만 등록한다. 같은 사용자에 대한 쓰기가 Order-Core
+	 * 에서 발생해도 Auth-Guard 의 {@code /me} 응답이 즉시 갱신되도록 보장한다.</p>
+	 */
+	public static final String CACHE_AUTH_ME = "auth-me";
 
 	@Primary
 	@Bean
@@ -55,20 +70,43 @@ public class CacheConfig {
 
 	@Bean(name = "redisCacheManager")
 	public CacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
+		GenericJackson2JsonRedisSerializer valueSerializer =
+			new GenericJackson2JsonRedisSerializer(cacheObjectMapper());
+
 		Map<String, RedisCacheConfiguration> configs = new HashMap<>();
-		configs.put(CACHE_USER_BY_ID, redisConfig(Duration.ofMinutes(10)));
+		configs.put(CACHE_USER_BY_ID, redisConfig(Duration.ofMinutes(10), valueSerializer));
+		configs.put(CACHE_AUTH_ME, redisConfig(Duration.ofSeconds(30), valueSerializer));
 
 		return RedisCacheManager.builder(connectionFactory)
-			.cacheDefaults(redisConfig(Duration.ofMinutes(10)))
+			.cacheDefaults(redisConfig(Duration.ofMinutes(10), valueSerializer))
 			.withInitialCacheConfigurations(configs)
 			.build();
 	}
 
-	private RedisCacheConfiguration redisConfig(Duration ttl) {
+	private RedisCacheConfiguration redisConfig(Duration ttl, GenericJackson2JsonRedisSerializer serializer) {
 		return RedisCacheConfiguration.defaultCacheConfig()
 			.entryTtl(ttl)
 			.serializeKeysWith(SerializationPair.fromSerializer(new StringRedisSerializer()))
-			.serializeValuesWith(SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
+			.serializeValuesWith(SerializationPair.fromSerializer(serializer))
 			.disableCachingNullValues();
+	}
+
+	/**
+	 * Redis 캐시 값 직렬화 전용 {@link ObjectMapper}.
+	 *
+	 * <p>{@link java.time.Instant} 등 JSR-310 타입 직렬화 지원을 위해 {@link JavaTimeModule} 을 등록하고,
+	 * {@code GenericJackson2JsonRedisSerializer} 가 요구하는 polymorphic typing 을
+	 * {@link BasicPolymorphicTypeValidator} 로 제한 활성화한다.</p>
+	 */
+	private ObjectMapper cacheObjectMapper() {
+		PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
+			.allowIfBaseType(Object.class)
+			.build();
+
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.registerModule(new JavaTimeModule());
+		mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+		mapper.activateDefaultTyping(typeValidator, ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+		return mapper;
 	}
 }
