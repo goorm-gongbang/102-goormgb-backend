@@ -6,6 +6,7 @@ import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.List;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
+import com.goormgb.be.ordercore.config.CacheConfig;
 import com.goormgb.be.ordercore.match.dto.response.ClubMonthlyMatchesResponse;
 import com.goormgb.be.ordercore.match.dto.response.MatchDetailGetResponse;
 import com.goormgb.be.ordercore.match.dto.response.MatchListByDateResponse;
@@ -39,6 +41,19 @@ public class MatchService {
 		return MatchDetailGetResponse.of(match, matchGuide);
 	}
 
+	/**
+	 * 날짜별 경기 목록을 반환한다 (Phase 3 Redis 응답 캐시 적용).
+	 *
+	 * <p>자주 폴링되는 read-only 엔드포인트로, 동일 날짜 요청을 Redis 캐시(TTL 30초) 로 흡수한다.
+	 * 캐시 키는 요청 {@code date} 이며, 결과 DTO 가 직렬화 대상이다.</p>
+	 */
+	@Cacheable(
+		cacheNames = CacheConfig.CACHE_MATCHES_LIST_RESPONSE,
+		cacheManager = "redisCacheManager",
+		key = "#date.toString()",
+		unless = "#result == null"
+	)
+	@Transactional(readOnly = true)
 	public MatchListByDateResponse getMatchesByDate(LocalDate date) {
 		Instant start = date.atStartOfDay(ZoneOffset.UTC).toInstant();
 		Instant end = date.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
