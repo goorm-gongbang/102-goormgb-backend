@@ -58,7 +58,7 @@ prequeue:
 admission:
   jwt:
     public-key: ${ADMISSION_PUBLIC_KEY}
-    issuer: ${ADMISSION_TOKEN_ISSUER:queue-service}
+    issuer: ${ADMISSION_JWT_ISSUER:queue-service}
 
 management:
   endpoints:
