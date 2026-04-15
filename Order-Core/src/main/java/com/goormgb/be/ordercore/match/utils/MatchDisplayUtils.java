@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.enums.PurchaseStatus;
-import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.domain.match.support.SalesOpenUtils;
 import com.goormgb.be.ordercore.match.dto.MatchGuideDto;
 
@@ -75,22 +74,15 @@ public class MatchDisplayUtils {
 	/**
 	 * 화면 표기용 구매 가능 여부를 반환한다.
 	 *
-	 * <p>Queue 의 진입 판정과 기준을 일치시키기 위해 시간 기반(Lazy) 로 평가한다.
-	 * 즉 {@code now >= openAt} 이고 {@link SaleStatus#ENDED} / {@link SaleStatus#SOLD_OUT}
-	 * 이 아니면 {@link PurchaseStatus#PURCHASABLE}.</p>
-	 *
-	 * <p>{@code sale_status} 스케줄러 반영이 지연되더라도 화면과 대기열 판정이
+	 * <p>Queue 의 진입 판정과 기준을 일치시키기 위해
+	 * {@link SalesOpenUtils#isPurchasable(Match, Instant)} 에 판정을 위임한다.
+	 * {@code sale_status} 스케줄러 반영이 지연되더라도 화면과 대기열 판정이
 	 * 일관되게 유지되도록 한다.</p>
 	 */
 	public PurchaseStatus createPurchaseStatus(Match match) {
-		Instant now = Instant.now();
-		Instant openAt = salesOpenUtils.calculateSalesOpenAt(match);
-
-		boolean purchasable = !now.isBefore(openAt)
-			&& match.getSaleStatus() != SaleStatus.ENDED
-			&& match.getSaleStatus() != SaleStatus.SOLD_OUT;
-
-		return purchasable ? PurchaseStatus.PURCHASABLE : PurchaseStatus.NOT_PURCHASABLE;
+		return salesOpenUtils.isPurchasable(match, Instant.now())
+			? PurchaseStatus.PURCHASABLE
+			: PurchaseStatus.NOT_PURCHASABLE;
 	}
 
 	public String createMatchDdayLabel(Match match, LocalDate today) {

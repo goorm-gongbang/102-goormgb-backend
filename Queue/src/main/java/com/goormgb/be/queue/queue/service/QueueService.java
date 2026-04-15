@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.domain.match.entity.Match;
-import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.domain.match.support.SalesOpenUtils;
 import com.goormgb.be.global.exception.ErrorCode;
@@ -121,12 +120,8 @@ public class QueueService {
 	/**
 	 * 대기열 진입 가능 여부를 판정한다.
 	 *
-	 * <p>판정 기준:
-	 * <ul>
-	 *   <li>오픈 여부 — {@link SalesOpenUtils#calculateSalesOpenAt(Match)} 로 계산한
-	 *       openAt 과 현재 시각을 직접 비교 ({@code now >= openAt}).</li>
-	 *   <li>종료/매진 — {@link SaleStatus#ENDED}, {@link SaleStatus#SOLD_OUT} 는 진입 차단.</li>
-	 * </ul>
+	 * <p>판정은 {@link SalesOpenUtils#isPurchasable(Match, Instant)} 로 위임하여
+	 * Order-Core 의 화면 표기 로직과 동일 기준(시간 기반 Lazy) 으로 운영된다.</p>
 	 *
 	 * <p>기존에는 DB {@code sale_status == ON_SALE} 단일 조건으로 판정했으나,
 	 * 상태 전환 스케줄러의 트랜잭션 커밋 지연과 로컬 캐시 TTL 로 인해 11시 정각
@@ -135,14 +130,8 @@ public class QueueService {
 	 * 11:00:00 시점 진입이 허용된다.</p>
 	 */
 	private void validateQueueOpen(Match match) {
-		Instant now = Instant.now();
-		Instant openAt = salesOpenUtils.calculateSalesOpenAt(match);
-
-		boolean openable = !now.isBefore(openAt)
-			&& match.getSaleStatus() != SaleStatus.ENDED
-			&& match.getSaleStatus() != SaleStatus.SOLD_OUT;
-
-		Preconditions.validate(openable, ErrorCode.MATCH_NOT_AVAILABLE_FOR_QUEUE);
+		Preconditions.validate(salesOpenUtils.isPurchasable(match, Instant.now()),
+			ErrorCode.MATCH_NOT_AVAILABLE_FOR_QUEUE);
 	}
 
 	private void requireAuthenticated(Long userId) {

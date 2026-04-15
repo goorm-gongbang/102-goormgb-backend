@@ -6,6 +6,7 @@ import java.time.ZoneId;
 import org.springframework.stereotype.Component;
 
 import com.goormgb.be.domain.match.entity.Match;
+import com.goormgb.be.domain.match.enums.SaleStatus;
 
 /**
  * 경기 판매 오픈 시각(openAt) 을 계산하는 도메인 유틸.
@@ -39,5 +40,28 @@ public class SalesOpenUtils {
 			.withSecond(0)
 			.withNano(0)
 			.toInstant();
+	}
+
+	/**
+	 * 주어진 시각 기준으로 경기가 구매/대기열 진입 가능 상태인지 판정한다.
+	 *
+	 * <p>판정 기준:
+	 * <ul>
+	 *   <li>{@code now >= openAt} — 판매 오픈 시각이 도래했는지</li>
+	 *   <li>{@link SaleStatus#ENDED} / {@link SaleStatus#SOLD_OUT} 은 불가</li>
+	 * </ul>
+	 *
+	 * <p>본 메서드는 Queue 의 대기열 진입 판정과 Order-Core 의 화면 표기 판정
+	 * 양쪽에서 동일 기준으로 사용되어 프론트·백엔드 간 판정 불일치를 방지한다.</p>
+	 *
+	 * @param match 대상 경기
+	 * @param now 판정 기준 시각
+	 * @return 구매 가능이면 true
+	 */
+	public boolean isPurchasable(Match match, Instant now) {
+		Instant openAt = calculateSalesOpenAt(match);
+		return !now.isBefore(openAt)
+			&& match.getSaleStatus() != SaleStatus.ENDED
+			&& match.getSaleStatus() != SaleStatus.SOLD_OUT;
 	}
 }

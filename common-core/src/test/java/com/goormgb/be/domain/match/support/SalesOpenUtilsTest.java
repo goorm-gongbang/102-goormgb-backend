@@ -65,4 +65,40 @@ class SalesOpenUtilsTest {
 
 		assertThat(a).isEqualTo(b);
 	}
+
+	@Test
+	@DisplayName("isPurchasable — openAt 이전이면 false")
+	void notPurchasableBeforeOpenAt() {
+		Instant matchAt = Instant.now().plusSeconds(60L * 60 * 24 * 8); // openAt = now + 1일
+		Match match = Match.builder().matchAt(matchAt).saleStatus(SaleStatus.UPCOMING).build();
+
+		assertThat(salesOpenUtils.isPurchasable(match, Instant.now())).isFalse();
+	}
+
+	@Test
+	@DisplayName("isPurchasable — openAt 지났고 UPCOMING 이어도 true (Lazy 판정)")
+	void purchasableWhenOpenAtPassedEvenIfUpcoming() {
+		Instant matchAt = Instant.now().plusSeconds(60L * 60 * 24 * 6); // openAt = now - 1일
+		Match match = Match.builder().matchAt(matchAt).saleStatus(SaleStatus.UPCOMING).build();
+
+		assertThat(salesOpenUtils.isPurchasable(match, Instant.now())).isTrue();
+	}
+
+	@Test
+	@DisplayName("isPurchasable — SOLD_OUT 은 openAt 과 무관하게 false")
+	void notPurchasableWhenSoldOut() {
+		Instant matchAt = Instant.now().plusSeconds(60L * 60 * 24 * 6);
+		Match match = Match.builder().matchAt(matchAt).saleStatus(SaleStatus.SOLD_OUT).build();
+
+		assertThat(salesOpenUtils.isPurchasable(match, Instant.now())).isFalse();
+	}
+
+	@Test
+	@DisplayName("isPurchasable — ENDED 는 openAt 과 무관하게 false")
+	void notPurchasableWhenEnded() {
+		Instant matchAt = Instant.now().plusSeconds(60L * 60 * 24 * 6);
+		Match match = Match.builder().matchAt(matchAt).saleStatus(SaleStatus.ENDED).build();
+
+		assertThat(salesOpenUtils.isPurchasable(match, Instant.now())).isFalse();
+	}
 }
