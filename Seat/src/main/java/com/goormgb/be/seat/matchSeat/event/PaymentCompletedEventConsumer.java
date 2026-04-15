@@ -6,7 +6,6 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.goormgb.be.domain.match.enums.SaleStatus;
 import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.kafka.EventTopic;
 import com.goormgb.be.kafka.event.PaymentCompletedEvent;
@@ -69,21 +68,14 @@ public class PaymentCompletedEventConsumer {
 	}
 
 	private void updateMatchToSoldOutIfAllSeatsSold(Long matchId, Long orderId) {
-		boolean hasNonSoldSeat = matchSeatRepository.existsByMatchIdAndSaleStatusNot(matchId, MatchSeatSaleStatus.SOLD);
-		if (hasNonSoldSeat) {
+		int updated = matchRepository.updateSoldOutIfAllSeatsSold(matchId);
+		if (updated > 0) {
+			log.info("[Kafka] 경기 상태 전환 - orderId={}, matchId={}, action=update, from=ON_SALE, to=SOLD_OUT",
+				orderId, matchId);
 			return;
 		}
 
-		matchRepository.findById(matchId).ifPresent(match -> {
-			if (match.getSaleStatus() == SaleStatus.ON_SALE) {
-				match.updateSaleStatus(SaleStatus.SOLD_OUT);
-				log.info("[Kafka] 경기 상태 전환 - orderId={}, matchId={}, action=update, from=ON_SALE, to=SOLD_OUT",
-					orderId, matchId);
-				return;
-			}
-
-			log.debug("[Kafka] 경기 상태 전환 스킵 - orderId={}, matchId={}, action=skip, currentStatus={}",
-				orderId, matchId, match.getSaleStatus());
-		});
+		log.debug("[Kafka] 경기 상태 전환 스킵 - orderId={}, matchId={}, action=skip, reason=not_all_sold_or_not_on_sale",
+			orderId, matchId);
 	}
 }

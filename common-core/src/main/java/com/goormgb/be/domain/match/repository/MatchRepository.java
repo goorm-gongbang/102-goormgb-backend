@@ -85,4 +85,25 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 		@Param("onSale") SaleStatus onSale,
 		@Param("soldOut") SaleStatus soldOut
 	);
+
+	/**
+	 * 경기의 모든 좌석이 SOLD 상태일 때만 ON_SALE -> SOLD_OUT으로 원자적 전환한다.
+	 */
+	@Modifying
+	@Query(
+		value = """
+			UPDATE matches m
+			SET sale_status = 'SOLD_OUT'
+			WHERE m.id = :matchId
+			  AND m.sale_status = 'ON_SALE'
+			  AND NOT EXISTS (
+					SELECT 1
+					FROM match_seats ms
+					WHERE ms.match_id = :matchId
+					  AND ms.sale_status <> 'SOLD'
+				)
+			""",
+		nativeQuery = true
+	)
+	int updateSoldOutIfAllSeatsSold(@Param("matchId") Long matchId);
 }
