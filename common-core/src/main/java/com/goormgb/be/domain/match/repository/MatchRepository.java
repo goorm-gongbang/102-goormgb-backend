@@ -106,4 +106,27 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 		nativeQuery = true
 	)
 	int updateSoldOutIfAllSeatsSold(@Param("matchId") Long matchId);
+
+	/**
+	 * 경기 상태가 SOLD_OUT이고, 경기 시작 전이며, AVAILABLE 좌석이 1개 이상 존재할 때
+	 * SOLD_OUT -> ON_SALE로 원자적 복귀한다.
+	 */
+	@Modifying
+	@Query(
+		value = """
+			UPDATE matches m
+			SET sale_status = 'ON_SALE'
+			WHERE m.id = :matchId
+			  AND m.sale_status = 'SOLD_OUT'
+			  AND m.match_at > :now
+			  AND EXISTS (
+					SELECT 1
+					FROM match_seats ms
+					WHERE ms.match_id = :matchId
+					  AND ms.sale_status = 'AVAILABLE'
+				)
+			""",
+		nativeQuery = true
+	)
+	int updateOnSaleIfAnyAvailableSeat(@Param("matchId") Long matchId, @Param("now") Instant now);
 }

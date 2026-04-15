@@ -1,11 +1,13 @@
 package com.goormgb.be.seat.matchSeat.event;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.kafka.EventTopic;
 import com.goormgb.be.kafka.event.OrderCancelledEvent;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
@@ -21,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 public class OrderCancelledEventConsumer {
 
 	private final MatchSeatRepository matchSeatRepository;
+	private final MatchRepository matchRepository;
 
 	@KafkaListener(topics = EventTopic.ORDER_CANCELLED, groupId = "seat-service")
 	@Transactional
@@ -61,5 +64,19 @@ public class OrderCancelledEventConsumer {
 				unexpectedStateCount,
 				missingSeatCount
 		);
+
+		updateMatchToOnSaleIfAnyAvailable(event.getMatchId(), event.getOrderId());
+	}
+
+	private void updateMatchToOnSaleIfAnyAvailable(Long matchId, Long orderId) {
+		int updated = matchRepository.updateOnSaleIfAnyAvailableSeat(matchId, Instant.now());
+		if (updated > 0) {
+			log.info("[Kafka] 경기 상태 복귀 - orderId={}, matchId={}, action=update, from=SOLD_OUT, to=ON_SALE",
+				orderId, matchId);
+			return;
+		}
+
+		log.debug("[Kafka] 경기 상태 복귀 스킵 - orderId={}, matchId={}, action=skip, reason=no_available_or_not_sold_out_or_started",
+			orderId, matchId);
 	}
 }
