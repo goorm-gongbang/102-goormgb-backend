@@ -91,3 +91,13 @@ Temporary Items
 .codex/
 
 .logs
+
+### 강슬기 내부 작업 문서 ###
+docs/sprint5/
+docs/sptint4/
+docs/kafka/
+docs/api/
+docs/mypage/
+docs/트러블슈팅/
+docs/발표자료/
+pr_tmp/
