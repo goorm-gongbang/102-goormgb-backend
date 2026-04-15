@@ -59,6 +59,17 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
 
 	private static final String HEADER_X_FORWARDED_FOR = "X-Forwarded-For";
 	private static final Duration WINDOW_TTL = Duration.ofSeconds(60);
+	private static final Duration BACKOFF_COUNTER_TTL = Duration.ofHours(24);
+	private static final String BACKOFF_COUNT_PREFIX = "rate_limit:backoff:count:";
+	private static final String BACKOFF_BLOCK_PREFIX = "rate_limit:backoff:block:";
+
+	/** 지수 백오프 단계별 차단 시간. 첨자 = 누적 위반 횟수 - 1. */
+	private static final long[] BACKOFF_BLOCK_SECONDS = {
+		60,       // 1차: 1분
+		300,      // 2차: 5분
+		1800,     // 3차: 30분
+		86400     // 4차+: 24시간
+	};
 
 	/** 카테고리 정의. 순서대로 첫 매칭 사용. */
 	private enum Category {
@@ -109,15 +120,23 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
 
 		Category category = Category.resolve(request.getMethod(), request.getPath().value());
 		String rateLimitKey = category.keyPrefix + clientIp;
+		String blockKey = BACKOFF_BLOCK_PREFIX + category.name() + ":" + clientIp;
 		String ttlSeconds = String.valueOf(WINDOW_TTL.getSeconds());
 
-		return reactiveRedisTemplate.execute(
-				INCR_WITH_EXPIRE_SCRIPT,
-				List.of(rateLimitKey),
-				ttlSeconds
-			)
-			.next()
-			.flatMap(currentCount -> applyLimit(exchange, chain, category, rateLimitKey, currentCount, clientIp))
+		// 1) 현재 차단 상태인지 먼저 확인 (지수 백오프 유지 중)
+		return reactiveRedisTemplate.opsForValue().get(blockKey)
+			.flatMap(blockUntil -> rejectBlocked(exchange, category, blockKey, blockUntil))
+			.switchIfEmpty(Mono.defer(() ->
+				// 2) 윈도우 카운터 증가 + 한도 검사
+				reactiveRedisTemplate.execute(
+						INCR_WITH_EXPIRE_SCRIPT,
+						List.of(rateLimitKey),
+						ttlSeconds
+					)
+					.next()
+					.flatMap(currentCount -> applyLimit(exchange, chain, category,
+						rateLimitKey, currentCount, clientIp, blockKey))
+			))
 			.onErrorResume(ex -> {
 				// Redis 장애 시 가용성 우선: fail-open
 				log.error("Rate limit check failed. path={}, clientIp={}, category={}, error={}",
@@ -132,18 +151,61 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
 		Category category,
 		String rateLimitKey,
 		Long currentCount,
-		String clientIp
+		String clientIp,
+		String blockKey
 	) {
 		if (currentCount != null && currentCount > category.limitPerMinute) {
-			log.warn("Rate limit exceeded. category={}, key={}, clientIp={}, count={}, limit={}",
-				category, rateLimitKey, clientIp, currentCount, category.limitPerMinute);
-			exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
-			exchange.getResponse().getHeaders().set(HttpHeaders.RETRY_AFTER, "60");
-			exchange.getResponse().getHeaders().set("X-RateLimit-Category", category.name());
-			exchange.getResponse().getHeaders().set("X-RateLimit-Limit", String.valueOf(category.limitPerMinute));
-			return exchange.getResponse().setComplete();
+			// 누적 위반 횟수 증가 + 지수 백오프 차단 적용
+			String countKey = BACKOFF_COUNT_PREFIX + category.name() + ":" + clientIp;
+			return reactiveRedisTemplate.execute(
+					INCR_WITH_EXPIRE_SCRIPT,
+					List.of(countKey),
+					String.valueOf(BACKOFF_COUNTER_TTL.getSeconds())
+				)
+				.next()
+				.flatMap(violations -> {
+					long v = violations == null ? 1L : violations;
+					int idx = (int) Math.min(v - 1, BACKOFF_BLOCK_SECONDS.length - 1);
+					long blockSeconds = BACKOFF_BLOCK_SECONDS[idx];
+					String retryAfter = String.valueOf(blockSeconds);
+
+					log.warn("Rate limit exceeded. category={}, key={}, clientIp={}, count={}, limit={}, violations={}, block={}s",
+						category, rateLimitKey, clientIp, currentCount, category.limitPerMinute, v, blockSeconds);
+
+					return reactiveRedisTemplate.opsForValue()
+						.set(blockKey, String.valueOf(System.currentTimeMillis() + blockSeconds * 1000),
+							Duration.ofSeconds(blockSeconds))
+						.then(Mono.fromRunnable(() -> {
+							exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
+							exchange.getResponse().getHeaders().set(HttpHeaders.RETRY_AFTER, retryAfter);
+							exchange.getResponse().getHeaders().set("X-RateLimit-Category", category.name());
+							exchange.getResponse().getHeaders().set("X-RateLimit-Limit", String.valueOf(category.limitPerMinute));
+							exchange.getResponse().getHeaders().set("X-RateLimit-Violations", String.valueOf(v));
+						}))
+						.then(exchange.getResponse().setComplete());
+				});
 		}
 		return chain.filter(exchange);
+	}
+
+	/** 지수 백오프 차단 상태 — 차단 만료 전이면 즉시 429 반환. */
+	private Mono<Void> rejectBlocked(
+		ServerWebExchange exchange,
+		Category category,
+		String blockKey,
+		String blockUntil
+	) {
+		return reactiveRedisTemplate.getExpire(blockKey)
+			.flatMap(ttl -> {
+				long retry = (ttl != null && ttl.getSeconds() > 0) ? ttl.getSeconds() : 60L;
+				log.warn("Request blocked by exponential backoff. category={}, key={}, retryAfter={}s",
+					category, blockKey, retry);
+				exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
+				exchange.getResponse().getHeaders().set(HttpHeaders.RETRY_AFTER, String.valueOf(retry));
+				exchange.getResponse().getHeaders().set("X-RateLimit-Category", category.name());
+				exchange.getResponse().getHeaders().set("X-RateLimit-Backoff", "active");
+				return exchange.getResponse().setComplete();
+			});
 	}
 
 	@Override
