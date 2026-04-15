@@ -18,6 +18,15 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
 
 	List<Block> findBySectionIdInOrderBySectionIdAscBlockCodeAsc(List<Long> sectionIds);
 
+	@Query("""
+		SELECT b FROM Block b
+		JOIN FETCH b.section s
+		WHERE s.id IN :sectionIds
+		ORDER BY s.id ASC, b.blockCode ASC
+		""")
+	List<Block> findBySectionIdInWithSectionOrderBySectionIdAscBlockCodeAsc(
+		@Param("sectionIds") List<Long> sectionIds);
+
 	List<Block> findBySectionIdOrderByBlockCodeAsc(Long sectionId);
 
 	@Query("SELECT b FROM Block b JOIN FETCH b.section s JOIN FETCH b.area a WHERE b.id IN :blockIds")

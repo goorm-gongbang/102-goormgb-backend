@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.area.enums.AreaCode;
 import com.goormgb.be.seat.block.entity.Block;
@@ -38,7 +37,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SeatCommonService {
 
-	private final MatchRepository matchRepository;
+	private final MatchDetailCacheService matchDetailCacheService;
+	private final SectionLookupCacheService sectionLookupCacheService;
 	private final BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	private final SectionRepository sectionRepository;
 	private final BlockRepository blockRepository;
@@ -49,11 +49,11 @@ public class SeatCommonService {
 	public SeatGroupsEntryResponse getSeatGroupsEntry(Long matchId, Long userId) {
 		long totalStart = System.currentTimeMillis();
 
-		var match = matchRepository.findDetailByIdOrThrow(matchId);
+		var match = matchDetailCacheService.getDetail(matchId);
 		var bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
 		var seatSession = SeatSession.from(bookingOptions);
 
-		List<Section> sections = sectionRepository.findAllWithAreaOrderByAreaIdAscSectionIdAsc();
+		List<Section> sections = sectionLookupCacheService.findAllSectionsWithArea();
 		List<Long> sectionIds = sections.stream().map(Section::getId).toList();
 
 		Map<Long, List<Long>> blockIdsBySectionId = createBlockIdsBySectionId(sectionIds);
@@ -87,7 +87,7 @@ public class SeatCommonService {
 
 	@Transactional(readOnly = true)
 	public SectionBlocksResponse getSectionBlocks(Long matchId, Long sectionId, Long userId) {
-		matchRepository.findDetailByIdOrThrow(matchId);
+		matchDetailCacheService.getDetail(matchId);
 		bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
 		sectionRepository.findByIdOrThrow(sectionId, ErrorCode.SECTION_NOT_FOUND);
 
@@ -152,7 +152,7 @@ public class SeatCommonService {
 		}
 
 		long start = System.currentTimeMillis();
-		List<Block> blocks = blockRepository.findBySectionIdInOrderBySectionIdAscBlockCodeAsc(sectionIds);
+		List<Block> blocks = sectionLookupCacheService.findBlocksBySectionIds(sectionIds);
 		log.info("[SeatCommonService#createBlockIdsBySectionId] at={}, sectionIds.size={}, blocks.size={}, blockQueryElapsed={}ms",
 			LocalDateTime.now(ZoneId.of("Asia/Seoul")), sectionIds.size(), blocks.size(), System.currentTimeMillis() - start);
 

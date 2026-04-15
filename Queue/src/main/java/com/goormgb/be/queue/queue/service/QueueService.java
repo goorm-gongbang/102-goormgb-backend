@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.domain.match.entity.Match;
-import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.domain.match.support.SalesOpenUtils;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.global.support.Preconditions;
@@ -23,7 +22,7 @@ import com.goormgb.be.queue.queue.repository.QueueRedisRepository;
 @Service
 public class QueueService {
 
-	private final MatchRepository matchRepository;
+	private final MatchQueueCacheService matchQueueCacheService;
 	private final QueueRedisRepository queueRedisRepository;
 	private final QueueProperties queueProperties;
 	private final QueuePollingPolicy queuePollingPolicy;
@@ -32,7 +31,7 @@ public class QueueService {
 	private final SalesOpenUtils salesOpenUtils;
 
 	public QueueService(
-		MatchRepository matchRepository,
+		MatchQueueCacheService matchQueueCacheService,
 		QueueRedisRepository queueRedisRepository,
 		QueueProperties queueProperties,
 		QueuePollingPolicy queuePollingPolicy,
@@ -40,7 +39,7 @@ public class QueueService {
 		PreQueueValidationService preQueueValidationService,
 		SalesOpenUtils salesOpenUtils
 	) {
-		this.matchRepository = matchRepository;
+		this.matchQueueCacheService = matchQueueCacheService;
 		this.queueRedisRepository = queueRedisRepository;
 		this.queueProperties = queueProperties;
 		this.queuePollingPolicy = queuePollingPolicy;
@@ -54,7 +53,7 @@ public class QueueService {
 		requireAuthenticated(userId);
 		preQueueValidationService.validateBeforeEnter(matchId, userId);
 
-		Match match = matchRepository.findByIdOrThrow(matchId, ErrorCode.MATCH_NOT_FOUND);
+		Match match = matchQueueCacheService.getForQueue(matchId);
 		validateQueueOpen(match);
 
 		long enteredAtMillis = Instant.now().toEpochMilli();

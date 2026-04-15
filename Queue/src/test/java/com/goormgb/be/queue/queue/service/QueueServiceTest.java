@@ -21,7 +21,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.goormgb.be.domain.match.entity.Match;
 import com.goormgb.be.domain.match.enums.SaleStatus;
-import com.goormgb.be.domain.match.repository.MatchRepository;
 import com.goormgb.be.domain.match.support.SalesOpenUtils;
 import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
@@ -42,7 +41,7 @@ class QueueServiceTest {
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
 	@Mock
-	private MatchRepository matchRepository;
+	private MatchQueueCacheService matchQueueCacheService;
 	@Mock
 	private QueueRedisRepository queueRedisRepository;
 	@Mock
@@ -60,7 +59,7 @@ class QueueServiceTest {
 	@BeforeEach
 	void setUp() {
 		queueService = new QueueService(
-			matchRepository,
+			matchQueueCacheService,
 			queueRedisRepository,
 			queueProperties,
 			queuePollingPolicy,
@@ -94,7 +93,7 @@ class QueueServiceTest {
 		Instant matchAt = Instant.now().plusSeconds(60L * 60 * 24 * 8);
 		Match match = matchWith(matchAt, SaleStatus.UPCOMING);
 
-		when(matchRepository.findByIdOrThrow(anyLong(), any())).thenReturn(match);
+		when(matchQueueCacheService.getForQueue(anyLong())).thenReturn(match);
 
 		assertThatThrownBy(() -> queueService.enter(1L, 1L))
 			.isInstanceOf(CustomException.class)
@@ -108,7 +107,7 @@ class QueueServiceTest {
 		Instant matchAt = Instant.now().plusSeconds(60L * 60 * 24 * 6);
 		Match match = matchWith(matchAt, SaleStatus.UPCOMING);
 
-		when(matchRepository.findByIdOrThrow(anyLong(), any())).thenReturn(match);
+		when(matchQueueCacheService.getForQueue(anyLong())).thenReturn(match);
 
 		assertThatCode(() -> queueService.enter(1L, 1L)).doesNotThrowAnyException();
 		verify(queueRedisRepository).reenterQueueAtomic(anyLong(), anyLong(), anyLong());
@@ -120,7 +119,7 @@ class QueueServiceTest {
 		Instant matchAt = Instant.now().plusSeconds(60L * 60 * 24 * 6);
 		Match match = matchWith(matchAt, SaleStatus.SOLD_OUT);
 
-		when(matchRepository.findByIdOrThrow(anyLong(), any())).thenReturn(match);
+		when(matchQueueCacheService.getForQueue(anyLong())).thenReturn(match);
 
 		assertThatThrownBy(() -> queueService.enter(1L, 1L))
 			.isInstanceOf(CustomException.class)
@@ -133,7 +132,7 @@ class QueueServiceTest {
 		Instant matchAt = Instant.now().plusSeconds(60L * 60 * 24 * 6);
 		Match match = matchWith(matchAt, SaleStatus.ENDED);
 
-		when(matchRepository.findByIdOrThrow(anyLong(), any())).thenReturn(match);
+		when(matchQueueCacheService.getForQueue(anyLong())).thenReturn(match);
 
 		assertThatThrownBy(() -> queueService.enter(1L, 1L))
 			.isInstanceOf(CustomException.class)
@@ -153,7 +152,7 @@ class QueueServiceTest {
 		Instant adjustedMatchAt = matchAtSample.plusSeconds(diffSeconds);
 		Match match = matchWith(adjustedMatchAt, SaleStatus.UPCOMING);
 
-		when(matchRepository.findByIdOrThrow(anyLong(), any())).thenReturn(match);
+		when(matchQueueCacheService.getForQueue(anyLong())).thenReturn(match);
 
 		assertThatCode(() -> queueService.enter(1L, 1L)).doesNotThrowAnyException();
 	}

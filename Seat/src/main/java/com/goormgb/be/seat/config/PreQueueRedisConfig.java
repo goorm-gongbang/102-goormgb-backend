@@ -35,7 +35,7 @@ public class PreQueueRedisConfig {
 			LettuceClientConfiguration.builder();
 
 		if (sslEnabled) {
-			clientConfigBuilder.useSsl().disablePeerVerification();
+			clientConfigBuilder.useSsl();
 		}
 
 		LettuceConnectionFactory factory = new LettuceConnectionFactory(config, clientConfigBuilder.build());
