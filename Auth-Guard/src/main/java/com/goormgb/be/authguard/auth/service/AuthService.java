@@ -53,6 +53,8 @@ public class AuthService {
 	private final WithdrawalRequestRepository withdrawalRequestRepository;
 	private final AuthMetricsService authMetricsService;
 	private final KafkaTemplate<String, Object> kafkaTemplate;
+	private final UserCacheService userCacheService;
+	private final AuthMeService authMeService;
 
 	/**
 	 * Refresh Token으로 새로운 Access Token과 Refresh Token을 발급한다. (RTR)
@@ -183,13 +185,8 @@ public class AuthService {
 		authMetricsService.increaseUserBlocked();
 		log.info("[User Block] userId={}, status={} -> {}", targetUserId, beforeStatus, user.getStatus());
 
-		// 트랜잭션 커밋 성공 후 차단 유저의 주문 상태 변경 이벤트 발행
-		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-			@Override
-			public void afterCommit() {
-				publishUserBlockedEvent(targetUserId);
-			}
-		});
+		// 캐시 무효화 + 차단 이벤트 발행은 트랜잭션 커밋 성공 후 수행 (pre-commit race 방지)
+		registerAfterCommitInvalidation(targetUserId, true);
 
 		return UserStatusChangeResponse.from(user);
 	}
@@ -206,6 +203,9 @@ public class AuthService {
 		// 사용자 차단 해제 건수 집계
 		authMetricsService.increaseUserUnblocked();
 		log.info("[User Unblock] userId={}, status={} -> {}", targetUserId, beforeStatus, user.getStatus());
+
+		// 캐시 무효화는 트랜잭션 커밋 성공 후에만 수행 (pre-commit race 방지)
+		registerAfterCommitInvalidation(targetUserId, false);
 
 		return UserStatusChangeResponse.from(user);
 	}
@@ -231,8 +231,34 @@ public class AuthService {
 				.build();
 		withdrawalRequestRepository.save(withdrawalRequest);
 
+		// 5. 캐시 무효화: 탈퇴 직후 다른 Pod 에서 여전히 ACTIVATE 로 보이지 않도록, 트랜잭션 커밋 후 제거
+		registerAfterCommitInvalidation(userId, false);
+
 		return WithdrawalResponse.from(withdrawalRequest);
 
+	}
+
+	/**
+	 * 사용자 상태 변경(차단/해제/탈퇴) 직후 트랜잭션이 커밋되고 나서 수행해야 할 후속 작업을 한 번에 등록한다.
+	 *
+	 * <p>쓰기 트랜잭션 중간에 {@code @CacheEvict} 가 실행되면, 같은 userId 로 들어온 다른 Pod 의
+	 * {@code /me} 조회가 아직 커밋 안 된 pre-commit 스냅샷을 읽어 Redis 캐시를 재채움하는 race 가
+	 * 가능하다. 이를 막기 위해 evict 와 Kafka 이벤트 발행을 모두 {@code afterCommit} 에 위임한다.</p>
+	 *
+	 * @param userId 대상 사용자
+	 * @param publishBlockedEvent {@code true} 이면 차단 이벤트({@code USER_BLOCKED}) 도 같이 발행
+	 */
+	private void registerAfterCommitInvalidation(Long userId, boolean publishBlockedEvent) {
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				userCacheService.evict(userId);
+				authMeService.evict(userId);
+				if (publishBlockedEvent) {
+					publishUserBlockedEvent(userId);
+				}
+			}
+		});
 	}
 
 	private void publishUserBlockedEvent(Long userId) {
