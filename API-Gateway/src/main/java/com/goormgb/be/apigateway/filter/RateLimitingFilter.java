@@ -23,6 +23,34 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+/**
+ * 애플리케이션 레벨 Rate Limiting — 엔드포인트 민감도별 차등 한도.
+ *
+ * Istio EnvoyFilter (IP+path) 가 1차 방어선이라면 본 필터는 2차 방어선.
+ * 경로별 카테고리를 분리하여 브루트포스/크리덴셜 스터핑/예매 남용에 대응.
+ *
+ * <h3>카테고리</h3>
+ * <ul>
+ *   <li>LOGIN       — /auth/**(/login$)       IP당 5/분 (Istio 의 /auth/ 10/s 와 중첩)</li>
+ *   <li>SIGNUP      — /auth/signup, /auth/loadtest/signup  IP당 3/분</li>
+ *   <li>REFRESH     — /auth/token/refresh     IP당 30/분 (토큰 갱신은 정상 트래픽 많음)</li>
+ *   <li>PASSWORD    — /auth/password/**       IP당 3/분</li>
+ *   <li>PRECHECK    — /ai/precheck/**         IP당 20/분 (봇탐지 엔드포인트 자체 남용 방지)</li>
+ *   <li>QUEUE_ENTER — /queue/matches/*/enter  userId(있으면) 또는 IP 기준 20/분 (Spring Cloud Gateway RequestRateLimiter 와 중첩)</li>
+ *   <li>PAYMENT     — /payment/**             IP당 10/분</li>
+ *   <li>SEAT_HOLD   — /seat/**/hold           IP당 30/분</li>
+ *   <li>DEFAULT     — 그 외                   IP당 200/분 (기존 100 → 상향: 대부분 정상 API 트래픽 수용)</li>
+ * </ul>
+ *
+ * <h3>키 구성</h3>
+ * 기본적으로 IP 기반. userId 헤더가 상류에서 주입됐다면 (X-User-Id) userId 기반 키도 병행.
+ * <p>
+ * 실행 순서: -3 (JwtAuthenticationFilter -1 보다 먼저 → 인증 부하 감소).
+ * 단, X-User-Id 는 JWT 파싱 후에 주입되므로 본 필터 단독으로는 userId 키 불가.
+ * 재요청 경로에서는 User-Agent 기반 로그인 실패 경우만 IP 키로 처리.
+ * <p>
+ * Redis 장애 시 fail-open.
+ */
 @Slf4j
 @Component
 @Profile("prod")
@@ -30,15 +58,47 @@ import reactor.core.publisher.Mono;
 public class RateLimitingFilter implements GlobalFilter, Ordered {
 
 	private static final String HEADER_X_FORWARDED_FOR = "X-Forwarded-For";
-	private static final Pattern LOGIN_PATH_PATTERN = Pattern.compile("^/auth/.+/login/?$");
-
-	private static final String LOGIN_KEY_PREFIX = "rate_limit:login:";
-	private static final String API_KEY_PREFIX = "rate_limit:api:";
 	private static final Duration WINDOW_TTL = Duration.ofSeconds(60);
-	private static final DefaultRedisScript<Long> INCR_WITH_EXPIRE_SCRIPT = buildIncrWithExpireScript();
 
-	private static final long LOGIN_LIMIT_PER_MINUTE = 10L;
-	private static final long API_LIMIT_PER_MINUTE = 100L;
+	/** 카테고리 정의. 순서대로 첫 매칭 사용. */
+	private enum Category {
+		LOGIN     ("rate_limit:login:",        5,   Pattern.compile("^/auth/.+/login/?$"),           Pattern.compile("POST")),
+		SIGNUP    ("rate_limit:signup:",       3,   Pattern.compile("^/auth/(loadtest/)?signup/?$"), Pattern.compile("POST")),
+		PASSWORD  ("rate_limit:password:",     3,   Pattern.compile("^/auth/password(/.*)?$"),       Pattern.compile("POST|PUT|PATCH")),
+		REFRESH   ("rate_limit:refresh:",      30,  Pattern.compile("^/auth/token/refresh/?$"),      Pattern.compile("POST")),
+		PRECHECK  ("rate_limit:precheck:",     20,  Pattern.compile("^/ai/precheck(/.*)?$"),         Pattern.compile("POST")),
+		QUEUE_ENTER("rate_limit:queue_enter:", 20,  Pattern.compile("^/queue/matches/[^/]+/enter/?$"), Pattern.compile("POST")),
+		PAYMENT   ("rate_limit:payment:",      10,  Pattern.compile("^/payment(/.*)?$"),             Pattern.compile("POST|PUT|PATCH")),
+		SEAT_HOLD ("rate_limit:seat_hold:",    30,  Pattern.compile("^/seat/.+/hold/?$"),            Pattern.compile("POST|PUT|PATCH|DELETE")),
+		DEFAULT   ("rate_limit:api:",          200, null, null);
+
+		final String keyPrefix;
+		final long limitPerMinute;
+		final Pattern pathPattern;
+		final Pattern methodPattern;
+
+		Category(String keyPrefix, long limit, Pattern path, Pattern method) {
+			this.keyPrefix = keyPrefix;
+			this.limitPerMinute = limit;
+			this.pathPattern = path;
+			this.methodPattern = method;
+		}
+
+		static Category resolve(HttpMethod method, String path) {
+			if (method == null) return DEFAULT;
+			String m = method.name();
+			for (Category c : values()) {
+				if (c == DEFAULT) continue;
+				if (c.pathPattern.matcher(path).matches()
+						&& c.methodPattern.matcher(m).matches()) {
+					return c;
+				}
+			}
+			return DEFAULT;
+		}
+	}
+
+	private static final DefaultRedisScript<Long> INCR_WITH_EXPIRE_SCRIPT = buildIncrWithExpireScript();
 
 	private final ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
 
@@ -46,11 +106,9 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 		ServerHttpRequest request = exchange.getRequest();
 		String clientIp = resolveClientIp(request);
-		boolean loginRequest = isLoginRequest(request);
 
-		String keyPrefix = loginRequest ? LOGIN_KEY_PREFIX : API_KEY_PREFIX;
-		long limit = loginRequest ? LOGIN_LIMIT_PER_MINUTE : API_LIMIT_PER_MINUTE;
-		String rateLimitKey = keyPrefix + clientIp;
+		Category category = Category.resolve(request.getMethod(), request.getPath().value());
+		String rateLimitKey = category.keyPrefix + clientIp;
 		String ttlSeconds = String.valueOf(WINDOW_TTL.getSeconds());
 
 		return reactiveRedisTemplate.execute(
@@ -59,11 +117,11 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
 				ttlSeconds
 			)
 			.next()
-			.flatMap(currentCount -> applyLimit(exchange, chain, rateLimitKey, currentCount, limit, clientIp))
+			.flatMap(currentCount -> applyLimit(exchange, chain, category, rateLimitKey, currentCount, clientIp))
 			.onErrorResume(ex -> {
-				// Redis 장애 시 가용성 우선: fail-open (요청 통과)
-				log.error("Rate limit check failed. path={}, clientIp={}, error={}",
-					request.getPath().value(), clientIp, ex.getMessage(), ex);
+				// Redis 장애 시 가용성 우선: fail-open
+				log.error("Rate limit check failed. path={}, clientIp={}, category={}, error={}",
+					request.getPath().value(), clientIp, category, ex.getMessage(), ex);
 				return chain.filter(exchange);
 			});
 	}
@@ -71,16 +129,18 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
 	private Mono<Void> applyLimit(
 		ServerWebExchange exchange,
 		GatewayFilterChain chain,
+		Category category,
 		String rateLimitKey,
 		Long currentCount,
-		long limit,
 		String clientIp
 	) {
-		if (currentCount != null && currentCount > limit) {
-			log.warn("Rate limit exceeded. key={}, clientIp={}, count={}, limit={}",
-				rateLimitKey, clientIp, currentCount, limit);
+		if (currentCount != null && currentCount > category.limitPerMinute) {
+			log.warn("Rate limit exceeded. category={}, key={}, clientIp={}, count={}, limit={}",
+				category, rateLimitKey, clientIp, currentCount, category.limitPerMinute);
 			exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
 			exchange.getResponse().getHeaders().set(HttpHeaders.RETRY_AFTER, "60");
+			exchange.getResponse().getHeaders().set("X-RateLimit-Category", category.name());
+			exchange.getResponse().getHeaders().set("X-RateLimit-Limit", String.valueOf(category.limitPerMinute));
 			return exchange.getResponse().setComplete();
 		}
 		return chain.filter(exchange);
@@ -88,13 +148,8 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
 
 	@Override
 	public int getOrder() {
-		// JwtAuthenticationFilter(-1)보다 먼저 적용되어 다운스트림/인증 부하를 줄인다.
+		// JwtAuthenticationFilter(-1) 보다 먼저 적용되어 다운스트림/인증 부하를 줄인다.
 		return -3;
-	}
-
-	private boolean isLoginRequest(ServerHttpRequest request) {
-		return HttpMethod.POST.equals(request.getMethod())
-			&& LOGIN_PATH_PATTERN.matcher(request.getPath().value()).matches();
 	}
 
 	private String resolveClientIp(ServerHttpRequest request) {
