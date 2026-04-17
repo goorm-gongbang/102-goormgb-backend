@@ -24,6 +24,9 @@ public enum ErrorCode {
 	USER_DEACTIVATED(HttpStatus.FORBIDDEN, "비활성화된 사용자입니다."),
 	USER_ALREADY_BLOCKED(HttpStatus.FORBIDDEN, "차단된 사용자입니다."),
 	USER_ALREADY_ACTIVE(HttpStatus.CONFLICT, "이미 활성 상태인 사용자입니다."),
+	USER_WITHDRAWAL_BLOCKED_BY_VALID_TICKET(HttpStatus.CONFLICT, "결제 완료 유효 티켓을 보유 중이라 탈퇴할 수 없습니다."),
+	USER_WITHDRAWAL_BLOCKED_BY_REFUND_PROCESSING(HttpStatus.CONFLICT, "환불 처리 진행 중인 주문이 있어 탈퇴할 수 없습니다."),
+	USER_WITHDRAWAL_BLOCKED_BY_ONGOING_TRANSACTION(HttpStatus.CONFLICT, "진행 중인 거래/정산 건이 있어 탈퇴할 수 없습니다."),
 
 	// Onboarding
 	ONBOARDING_NOT_COMPLETED(HttpStatus.FORBIDDEN, "온보딩이 완료되지 않았습니다."),

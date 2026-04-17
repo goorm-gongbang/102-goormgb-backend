@@ -220,12 +220,28 @@ public class AuthService {
 		// 1. 이미 탈퇴 처리된 유저인지 확인
 		Preconditions.validate(user.getStatus() != UserStatus.DEACTIVATE, ErrorCode.USER_DEACTIVATED);
 
-		// 2. 진행 중인 거래/정산 여부 확인 (추후에 추가)
+		// 2. 결제 완료 유효 티켓 보유 여부 확인
+		Preconditions.validate(
+				!userRepository.existsValidPaidTicketForWithdrawal(userId),
+				ErrorCode.USER_WITHDRAWAL_BLOCKED_BY_VALID_TICKET
+		);
 
-		// 3. User 상태 변경 (Soft Delete)
+		// 3. 환불 처리 진행 중 여부 확인
+		Preconditions.validate(
+				!userRepository.existsRefundProcessingOrder(userId),
+				ErrorCode.USER_WITHDRAWAL_BLOCKED_BY_REFUND_PROCESSING
+		);
+
+		// 4. 진행 중인 거래/정산 여부 확인
+		Preconditions.validate(
+				!userRepository.existsOngoingTransactionOrSettlement(userId),
+				ErrorCode.USER_WITHDRAWAL_BLOCKED_BY_ONGOING_TRANSACTION
+		);
+
+		// 5. User 상태 변경 (Soft Delete)
 		user.deactivate();
 
-		// 4. 탈퇴 요청 데이터 생성 및 저장
+		// 6. 탈퇴 요청 데이터 생성 및 저장
 		WithdrawalRequest withdrawalRequest = WithdrawalRequest.builder()
 				.user(user)
 				.build();
