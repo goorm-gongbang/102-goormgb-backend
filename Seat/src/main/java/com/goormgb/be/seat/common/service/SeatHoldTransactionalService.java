@@ -17,6 +17,7 @@ import com.goormgb.be.global.support.Preconditions;
 import com.goormgb.be.seat.common.dto.response.SeatHoldCreateResponse;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
 import com.goormgb.be.seat.matchSeat.enums.MatchSeatSaleStatus;
+import com.goormgb.be.seat.matchSeat.event.SeatHoldEventPublisher;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.metrics.SeatMetricsService;
 import com.goormgb.be.seat.metrics.enums.SeatHoldFailReason;
@@ -50,6 +51,7 @@ public class SeatHoldTransactionalService {
 
 	private final MatchSeatRepository matchSeatRepository;
 	private final SeatHoldRepository seatHoldRepository;
+	private final SeatHoldEventPublisher seatHoldEventPublisher;
 	private final Clock clock;
 
 	/**
@@ -105,6 +107,9 @@ public class SeatHoldTransactionalService {
 				// hold 성공 횟수 증가
 				seatMetricsService.increaseHoldSuccess(SeatHoldMode.MAP);
 
+				// Queue READY 슬롯 회수 이벤트 발행 (AFTER_COMMIT 시점에 Kafka 전송)
+				seatHoldEventPublisher.publishSeatHoldCompleted(userId, matchId, matchSeatIds);
+
 				return SeatHoldCreateResponse.of(matchId, matchSeatIds, expiresAt);
 			}
 
@@ -127,6 +132,9 @@ public class SeatHoldTransactionalService {
 
 			// hold 성공 횟수 증가
 			seatMetricsService.increaseHoldSuccess(SeatHoldMode.MAP);
+
+			// Queue READY 슬롯 회수 이벤트 발행 (AFTER_COMMIT 시점에 Kafka 전송)
+			seatHoldEventPublisher.publishSeatHoldCompleted(userId, matchId, matchSeatIds);
 
 			return SeatHoldCreateResponse.of(matchId, matchSeatIds, expiresAt);
 		} catch (CustomException e) {

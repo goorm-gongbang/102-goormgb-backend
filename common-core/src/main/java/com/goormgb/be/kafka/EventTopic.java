@@ -6,6 +6,7 @@ public final class EventTopic {
     public static final String ORDER_CANCELLED = "order-cancelled";
     public static final String BANK_TRANSFER_EXPIRED = "bank-transfer-expired";
     public static final String USER_BLOCKED = "user-blocked";
+    public static final String SEAT_HOLD_COMPLETED = "seat-hold-completed";
 
     private EventTopic() {
     }

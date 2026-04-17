@@ -30,11 +30,25 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: ${KAFKA_PRODUCER_KEY_SERIALIZER}
+      value-serializer: ${KAFKA_PRODUCER_VALUE_SERIALIZER}
+      acks: ${KAFKA_PRODUCER_ACKS}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:queue-service}
+      key-deserializer: ${KAFKA_CONSUMER_KEY_DESERIALIZER}
+      value-deserializer: ${KAFKA_CONSUMER_VALUE_DESERIALIZER}
+      auto-offset-reset: ${KAFKA_CONSUMER_AUTO_OFFSET_RESET}
+      properties:
+        spring.json.trusted.packages: ${KAFKA_CONSUMER_TRUSTED_PACKAGES}
+
 queue:
   ready-ttl-seconds: 60
   admission-ttl-seconds: 900
   expired-marker-ttl-seconds: 300
-  promotion-batch-size: 100
+  promotion-batch-size: 1000
   promotion-interval-ms: 1000
   active-match-key: queue:match
   wait-key-prefix: queue:wait

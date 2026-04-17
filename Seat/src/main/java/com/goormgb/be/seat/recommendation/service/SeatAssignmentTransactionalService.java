@@ -14,6 +14,7 @@ import com.goormgb.be.global.exception.CustomException;
 import com.goormgb.be.global.exception.ErrorCode;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
+import com.goormgb.be.seat.matchSeat.event.SeatHoldEventPublisher;
 import com.goormgb.be.seat.matchSeat.repository.MatchSeatRepository;
 import com.goormgb.be.seat.metrics.SeatMetricsService;
 import com.goormgb.be.seat.metrics.enums.FallbackType;
@@ -58,6 +59,7 @@ public class SeatAssignmentTransactionalService {
 	private final SeatHoldRepository seatHoldRepository;
 	private final RealConsecutiveFinder realConsecutiveFinder;
 	private final SemiConsecutiveFinder semiConsecutiveFinder;
+	private final SeatHoldEventPublisher seatHoldEventPublisher;
 	private final Clock clock;
 
 	/**
@@ -177,6 +179,10 @@ public class SeatAssignmentTransactionalService {
 
 		// hold 성공 횟수 증가
 		seatMetricsService.increaseHoldSuccess(SeatHoldMode.RECOMMEND);
+
+		// Queue READY 슬롯 회수 이벤트 발행 (AFTER_COMMIT 시점에 Kafka 전송)
+		List<Long> matchSeatIds = seats.stream().map(MatchSeat::getId).toList();
+		seatHoldEventPublisher.publishSeatHoldCompleted(userId, matchId, matchSeatIds);
 
 		return Optional.of(SeatAssignmentResponse.of(matchId, block, seats, expiresAt, semiConsecutive));
 	}
