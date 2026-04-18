@@ -103,6 +103,7 @@ datasource:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
+      database: ${REDIS_DATABASE:4}
 
   servlet:
     multipart:

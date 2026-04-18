@@ -78,6 +78,7 @@ datasource:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
+      database: ${REDIS_DATABASE:0}
 
 queue:
   ready-ttl-seconds: 60
