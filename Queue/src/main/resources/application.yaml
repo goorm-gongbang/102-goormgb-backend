@@ -39,6 +39,28 @@ spring:
       connection-timeout: 30000
       leak-detection-threshold: 10000
 
+# Read Replica 라우팅 (datasource.routing.enabled=true 시 spring.datasource 대신 사용)
+datasource:
+  routing:
+    enabled: ${DB_ROUTING_ENABLED:false}
+    primary:
+      jdbc-url: ${DB_URL}
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
+      driver-class-name: org.postgresql.Driver
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: 30000
+    replica:
+      jdbc-url: ${DB_REPLICA_URL:${DB_URL}}
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
+      driver-class-name: org.postgresql.Driver
+      maximum-pool-size: ${DB_REPLICA_POOL_MAX:10}
+      minimum-idle: ${DB_REPLICA_POOL_MIN_IDLE:3}
+      connection-timeout: 30000
+      read-only: true
+
   jpa:
     # OSIV 기본값(true) 은 컨트롤러 응답 종료 시점까지 DB 커넥션을 점유해
     # HikariCP 회전율을 절반 이하로 떨어뜨린다. 본 서비스는 JPA lazy 연관을
