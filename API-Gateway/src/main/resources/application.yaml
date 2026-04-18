@@ -47,7 +47,7 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
-      database: ${REDIS_DATABASE:3}
+      database: ${REDIS_DATABASE:0}
 
 jwt:
   public-key: ${JWT_PUBLIC_KEY}

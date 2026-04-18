@@ -88,7 +88,7 @@ datasource:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
-      database: ${REDIS_DATABASE:4}
+      database: ${REDIS_DATABASE:3}
 
 booking:
   options-key-prefix: seat:booking-options

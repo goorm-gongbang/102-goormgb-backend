@@ -76,7 +76,7 @@ datasource:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
-      database: ${REDIS_DATABASE:3}
+      database: ${REDIS_DATABASE:1}
 
 jwt:
   private-key: ${JWT_PRIVATE_KEY}
