@@ -55,6 +55,9 @@ goormgb-backend
 >
 > 🔒 **보안 현황 문서**: [PlayBall 보안 방어 체계 현황](docs/구름공방-백엔드-보안상황.md)
 > — JWT RSA256 · Admission Token · AES-256-GCM 필드 암호화 · 침투테스트 6건 대응 (2026-04-18 머지 완료) · Phase 1~4 최적화 반영
+>
+> 📊 **부하테스트 정리 문서**: [부하테스트 3일차 통합](docs/부하테스트-정리/README.md)
+> — Phase 0 → Phase 4 최적화 타임라인 · 503 트러블슈팅 스토리 · 테스트 시나리오 Flow · 기술 용어 해설 · Before/Middle/After 시각화 비교 (이미지 81장 포함)
 
 ### 프로젝트 아키텍처 (Project Architecture)
 
