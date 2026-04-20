@@ -1,4 +1,4 @@
-# GoormGB Backend — MSA 아키텍처 (현재 코드 기반)
+# 구름공방 Playball Backend — MSA 아키텍처 (현재 코드 기반)
 
 > 실제 레포지토리 코드(`/102-goormgb-backend`) 를 직접 탐색하여 확인한 **현재 구현 상태** 기준 문서입니다.
 > 추측이 들어간 항목은 `(추정)` 으로 표기하였으며, 릴리즈 노트·과거 설계서의 미구현 계획은 포함하지 않았습니다.
@@ -25,8 +25,8 @@
                                   ▼
                         ┌───────────────────┐
                         │   API-Gateway     │  :8085  WebFlux
-                        │  - JWT 검증       │
-                        │  - X-User-Id 주입 │
+                        │  - JWT 검증        │
+                        │  - X-User-Id 주입  │
                         │  - Rate Limiter   │
                         └─┬───┬───┬───┬─────┘
                           │   │   │   │
@@ -37,19 +37,19 @@
        │  :8080   │    │  :8081   │  │  :8082   │  │    :8083     │
        │ WebMVC   │    │ WebMVC   │  │ WebMVC   │  │   WebMVC     │
        └────┬─────┘    └────┬─────┘  └────┬─────┘  └──────┬───────┘
-            │               │             │                │
-            │  (공유 라이브러리: `:common-core`)                │
-            └───────────────┴─────────────┴────────────────┘
+            │               │             │               │
+            │  (공유 라이브러리: `:common-core`)              │
+            └───────────────┴─────────────┴───────────────┘
                                   │
-   ┌──────────────────────────────┼──────────────────────────────┐
-   ▼                              ▼                              ▼
-┌─────────────────┐     ┌──────────────────┐         ┌────────────────────┐
-│ PostgreSQL 16   │     │  Redis 7 (공용)    │         │   Kafka 3.7.1       │
+        ┌─────────────────────────┼──────────────────────────────┐
+        ▼                         ▼                              ▼
+┌─────────────────┐     ┌──────────────────┐         ┌─────────────────────┐
+│ PostgreSQL 16   │     │  Redis 7 (공용)   │         │   Kafka 3.7.1       │
 │  `goormgb`      │     │   6379  — 캐시/   │         │  - 4 topics + DLT   │
-│  (5개 서비스 공유)│     │         세션/락   │         │  - 3 partitions     │
-│                 │     │  6380  — Queue   │         │  - retention 72h     │
-│  27 entities    │     │         전용 대기열│         │                     │
-└─────────────────┘     └──────────────────┘         └────────────────────┘
+│  (5개 서비스 공유) │     │         세션/락    │         │  - 3 partitions     │
+│                 │     │  6380  — Queue   │         │  - retention 72h    │
+│  27 entities    │     │        전용 대기열  │         │                     │
+└─────────────────┘     └──────────────────┘         └─────────────────────┘
         ▲                        ▲
         │                        │
         └────── 서비스 간 데이터는 직접 호출(REST) 이 아닌,
@@ -75,18 +75,18 @@
     │
     ▼
  ┌───────────────────────────────────────────────────────────┐
- │ Controller  (@RestController, @RequestMapping)              │
- │   - DTO Request → Service 호출 → ApiResult<T> 반환         │
+ │ Controller  (@RestController, @RequestMapping)            │
+ │   - DTO Request → Service 호출 → ApiResult<T> 반환          │
  └──────────────────────────┬────────────────────────────────┘
                             ▼
  ┌───────────────────────────────────────────────────────────┐
- │ Service     (@Service, @Transactional)                     │
- │   - 도메인 규칙, 트랜잭션 경계                              │
+ │ Service     (@Service, @Transactional)                    │
+ │   - 도메인 규칙, 트랜잭션 경계                                  │
  │   - Repository / Kafka Publisher / Redis 호출              │
  └──────────────────────────┬────────────────────────────────┘
                             ▼
  ┌───────────────────────────────────────────────────────────┐
- │ Repository  (Spring Data JPA, Redis Template)              │
+ │ Repository  (Spring Data JPA, Redis Template)             │
  │   - PostgreSQL 접근, JPQL / Native                         │
  └──────────────────────────┬────────────────────────────────┘
                             ▼
@@ -381,7 +381,7 @@ sequenceDiagram
 
 | Bounded Context | 소유 서비스 (쓰기) | 읽기 공유 서비스 |
 |---|---|---|
-| `users`, `user_sns`, `dev_user`, `load_test_user`, `withdrawal_request` | Auth-Guard | Order-Core (join 용 read) |
+| `사용자`, `user_sns`, `dev_user`, `load_test_user`, `withdrawal_request` | Auth-Guard | Order-Core (join 용 read) |
 | `club`, `match`, `stadium`, `team_season_stats`, `onboarding_*` | Order-Core / Queue (도메인 master 구분 없이 read 중심) | Seat, Queue |
 | `match_seat`, `seat`, `section`, `area`, `block`, `price_policy`, `seat_hold` | Seat | **Order-Core 가 read 용도로 직접 조회** |
 | `order`, `order_seat`, `payment`, `cash_receipt`, `qr_token`, `inquiry`, `inquiry_answer`, `cancellation_fee_policy` | Order-Core | — |
