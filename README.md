@@ -9,6 +9,7 @@
 - [PR 승인 규칙](#pr-승인-규칙)
 - [브랜치 전략](#브랜치-전략)
 - [브랜치 보호 규칙](#브랜치-보호-규칙)
+- [프로젝트 개요 및 개발 가이드](#프로젝트-개요-및-개발-가이드)
 
 ---
 
@@ -256,3 +257,219 @@ feat/fix/docs (작업 브랜치)
 | 금지       | main 직접 푸시 / force push            |
 | Merge 방식 | Squash only (Hotfix는 Merge Commit) |
 | 자동 병합    | 보호 규칙 성립 + PR 승인 후 자동 Squash 병합    |
+
+---
+
+## 프로젝트 개요 및 개발 가이드
+
+`goormgb-backend`는 야구 경기 예매 서비스의 백엔드 시스템을 구성하는 멀티 모듈 레포지토리입니다.  
+API Gateway를 단일 진입점으로 두고, 인증(`Auth-Guard`)·대기열(`Queue`)·좌석(`Seat`)·주문/결제(`Order-Core`)를 서비스 책임 단위로 분리해 운영합니다.
+
+핵심 사용자 흐름은 `로그인 → 대기열 진입 → 좌석 선택/선점 → 주문 생성 → 결제/예매 확정`이며, 각 단계는 토큰 검증과 도메인 상태 검증으로 연결됩니다.  
+또한 공통 모듈(`common-core`)에서 예외 응답 포맷, 공통 도메인, 보안/관측 설정을 공유해 서비스 간 일관성을 유지합니다.
+
+### 빠른 시작
+
+#### 1) 사전 준비
+
+- JDK 21
+- Docker Desktop
+- 프로젝트 루트 `.env` 파일 준비
+
+#### 2) Docker로 전체 실행
+
+```bash
+cd docker
+docker compose --env-file ../.env -f docker-compose.yml -f docker-compose.local.yml up --build -d
+```
+
+#### 3) 상태 확인
+
+```bash
+docker compose ps
+docker compose logs -f api-gateway
+```
+
+#### 4) 종료
+
+```bash
+docker compose down
+```
+
+### 시스템 구성
+
+#### 기술 스택
+
+- Java 21
+- Spring Boot 4.0.2
+- Gradle 멀티모듈
+- PostgreSQL
+- Redis
+- Kafka
+- Spring Security, Spring Data JPA
+- Spring Cloud Gateway(WebFlux)
+- SpringDoc(OpenAPI)
+- Actuator + Prometheus(Micrometer)
+
+#### 서비스 요청 흐름
+
+```mermaid
+flowchart LR
+    C["Client"] --> G["API-Gateway :8085"]
+    G --> A["Auth-Guard :8080/auth"]
+    G --> Q["Queue :8081/queue"]
+    G --> S["Seat :8082/seat"]
+    G --> O["Order-Core :8083/order"]
+
+    Q -. "admissionToken 발급" .-> C
+    C -. "admissionToken 포함" .-> S
+```
+
+#### 모듈 구성
+
+| 모듈          | 역할                               | 기본 포트 | Context Path |
+|-------------|----------------------------------|------:|--------------|
+| API-Gateway | 진입점, 라우팅, CORS, Rate Limiting    |  8085 | -            |
+| Auth-Guard  | 인증/인가, 토큰 발급/재발급, 사용자 상태         |  8080 | `/auth`      |
+| Queue       | 대기열 진입/상태 조회, Admission Token 발급 |  8081 | `/queue`     |
+| Seat        | 좌석 조회/선점/추천                      |  8082 | `/seat`      |
+| Order-Core  | 경기/주문/결제/마이페이지                   |  8083 | `/order`     |
+| common-core | 공통 도메인/보안/예외/설정 라이브러리            |     - | -            |
+
+### 모듈별 핵심 서비스 상세
+
+#### API-Gateway
+
+| 항목     | 내용                                                                                                                              |
+|--------|---------------------------------------------------------------------------------------------------------------------------------|
+| 핵심 책임  | 외부 진입점, 라우팅, CORS, JWT 검증, 요청 제한                                                                                                |
+| 주요 기능  | 서비스 라우팅(`/auth/**`, `/queue/**`, `/seat/**`, `/order/**`), 대기열 진입 API Rate Limiting(`/queue/matches/*/enter`), 전역 필터 기반 보안/모니터링 |
+| 의존 인프라 | Redis(요청 제한), JWT 공개키 검증                                                                                                        |
+| 대표 경로  | `POST /queue/matches/{matchId}/enter`(제한 적용), `GET /swagger-ui/index.html`                                                      |
+
+#### Auth-Guard
+
+| 항목       | 내용                                                                                                                                    |
+|----------|---------------------------------------------------------------------------------------------------------------------------------------|
+| 핵심 책임    | 인증/인가, 토큰 라이프사이클 관리, 사용자 상태 관리                                                                                                        |
+| 주요 기능    | 카카오 OAuth 로그인/회원가입, Access/Refresh 토큰 발급·재발급, 로그아웃(블랙리스트/쿠키 처리), 내 정보 조회, 사용자 차단/해제(내부 API)                                           |
+| 의존 인프라   | PostgreSQL(유저), Redis(세션/토큰), Kafka(이벤트), JWT 키쌍                                                                                      |
+| 대표 엔드포인트 | `POST /auth/kakao/login`, `POST /auth/token/refresh`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/internal/users/{userId}/block` |
+
+#### Queue
+
+| 항목       | 내용                                                                           |
+|----------|------------------------------------------------------------------------------|
+| 핵심 책임    | 경기별 대기열 상태 관리 및 입장 토큰(Admission Token) 발급                                    |
+| 주요 기능    | 대기열 진입, 순번/상태 조회, READY 전환 시 admissionToken 쿠키 발급, 대기열 승급 스케줄링               |
+| 의존 인프라   | Redis(대기열 핵심 저장소), PostgreSQL(보조 조회), Admission JWT 키쌍                       |
+| 대표 엔드포인트 | `POST /queue/matches/{matchId}/enter`, `GET /queue/matches/{matchId}/status` |
+
+#### Seat
+
+| 항목       | 내용                                                                                                                                              |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| 핵심 책임    | 좌석 조회/선점/추천 및 좌석 가용 상태 관리                                                                                                                       |
+| 주요 기능    | 좌석 그룹 초기 조회, 섹션-블록 좌석 현황 조회, 좌석 선점(Hold), 선호 기반 좌석 추천/배정, 선점 만료 정리 스케줄러                                                                         |
+| 의존 인프라   | PostgreSQL(좌석/경기), Redis(캐시·세션), Redis Queue(대기열 연계), Kafka(결제/취소 이벤트), Redisson(분산락)                                                           |
+| 대표 엔드포인트 | `GET /seat/matches/{matchId}/seat-groups`, `POST /seat/matches/{matchId}/seat-holds`, `GET /seat/matches/{matchId}/sections/{sectionId}/blocks` |
+
+#### Order-Core
+
+| 항목       | 내용                                                                                                                                           |
+|----------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| 핵심 책임    | 경기/구단 조회, 주문/결제 처리, 마이페이지 및 온보딩 선호도 관리                                                                                                       |
+| 주요 기능    | 경기/구단 조회 API, 주문 생성/조회, 결제 및 입금만료 처리, 마이페이지(티켓/문의/계정), 온보딩 선호도 CRUD                                                                          |
+| 의존 인프라   | PostgreSQL(주문/결제/도메인), Redis(캐시), Kafka(주문/결제 이벤트), Mail(SMTP)                                                                               |
+| 대표 엔드포인트 | `GET /order/matches`, `POST /order/orders`, `POST /order/payments/process`, `GET /order/mypage/profile`, `GET /order/onboarding/preferences` |
+
+#### common-core
+
+| 항목     | 내용                                                                                                      |
+|--------|---------------------------------------------------------------------------------------------------------|
+| 핵심 책임  | 공통 도메인 모델/리포지토리, 예외/응답 포맷, 보안/설정 공통화                                                                    |
+| 주요 기능  | `ApiResult` 표준 응답, `GlobalExceptionHandler`, 공통 엔티티(User/Match/Club 등), Kafka 이벤트 모델, 보안/관측 공통 설정       |
+| 의존 인프라 | 각 모듈에서 전이되어 함께 사용됨(JPA/Security/Redis/Kafka/Validation)                                                 |
+| 대표 패키지 | `com.goormgb.be.global.*`, `com.goormgb.be.domain.*`, `com.goormgb.be.user.*`, `com.goormgb.be.kafka.*` |
+
+### 데이터/인프라 의존성 표
+
+| 모듈          | PostgreSQL             | Redis                       | Kafka                         |
+|-------------|------------------------|-----------------------------|-------------------------------|
+| API-Gateway | 미사용                    | Rate Limiter 저장소로 사용        | 미사용                           |
+| Auth-Guard  | 사용자/인증 관련 영속 데이터 저장    | 세션/토큰(블랙리스트 포함) 관리          | 사용자 상태 변경 등 이벤트 발행/소비 연계      |
+| Queue       | 대기열 진입 전 유효성 보조 조회     | 대기열 순번/상태/READY 토큰의 핵심 저장소  | 미사용                           |
+| Seat        | 좌석/경기/선점 데이터 저장        | 응답 캐시/세션 및 대기열 연계용 Redis 사용 | 결제완료/주문취소 등 이벤트 소비로 좌석 상태 동기화 |
+| Order-Core  | 주문/결제/마이페이지/온보딩 데이터 저장 | 조회 성능용 캐시                   | 결제/주문 도메인 이벤트 발행 및 후속 처리 소비   |
+| common-core | 공통 엔티티/리포지토리 모델 제공     | 공통 설정/유틸 제공                 | 공통 이벤트 모델/토픽 정의 제공            |
+
+### 보안/인증 규칙 요약
+
+#### 토큰 역할
+
+| 항목             | 역할                     | 저장 위치                      | 주요 발급 주체   |
+|----------------|------------------------|----------------------------|------------|
+| Access Token   | 사용자 인증(인가 헤더)          | 클라이언트 메모리/스토리지(프론트 정책에 따름) | Auth-Guard |
+| Refresh Token  | Access Token 재발급       | HttpOnly Cookie            | Auth-Guard |
+| admissionToken | 좌석 선택 진입 권한(대기열 통과 증명) | HttpOnly Cookie            | Queue      |
+
+#### 검증 지점
+
+- Access Token
+    - API-Gateway에서 JWT 검증 후 downstream으로 전달됩니다.
+    - 각 서비스의 보안 컨텍스트에서 `@AuthenticationPrincipal` 사용 API는 유효 사용자 전제를 가집니다.
+- Refresh Token
+    - `Auth-Guard`의 토큰 재발급/로그아웃 API에서 쿠키를 추출해 검증합니다.
+    - 재발급 성공 시 새 Refresh Token 쿠키를 다시 내려줍니다.
+- admissionToken
+    - `Queue` 상태 조회에서 READY 상태일 때 쿠키로 발급됩니다.
+    - `Seat`의 주요 API(좌석 그룹 조회/선점/섹션 블록 조회)에서 `AdmissionTokenValidator`로 검증합니다.
+
+#### API 호출 전제조건
+
+- 보호 API 호출 시 `Authorization: Bearer <access-token>` 필요
+- 좌석 API 호출 시 `admissionToken` 쿠키 필요(대기열 통과 이후)
+- 토큰 만료/위조/불일치 시 401 또는 도메인 오류 응답
+
+### 실행/개발 가이드
+
+#### Swagger UI
+
+- 통합(게이트웨이): `http://localhost:8085/swagger-ui/index.html`
+
+#### 로컬 실행 (서비스별)
+
+```bash
+./gradlew :Auth-Guard:bootRun --args='--spring.profiles.active=local'
+./gradlew :Queue:bootRun --args='--spring.profiles.active=local'
+./gradlew :Seat:bootRun --args='--spring.profiles.active=local'
+./gradlew :Order-Core:bootRun --args='--spring.profiles.active=local'
+./gradlew :API-Gateway:bootRun --args='--spring.profiles.active=local'
+```
+
+#### 빌드/테스트 명령어
+
+```bash
+./gradlew clean build
+./gradlew test
+./gradlew :Seat:test
+./gradlew :Queue:test
+```
+
+#### 환경 변수 가이드
+
+로컬/도커 실행 시 `.env`를 통해 아래 항목을 주입합니다.
+
+- 공통: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `REDIS_HOST`, `REDIS_PORT`
+- 인증: `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY`, `JWT_ISSUER`, `JWT_ACCESS_TOKEN_AUDIENCE`
+- 대기열: `ADMISSION_PRIVATE_KEY`, `ADMISSION_PUBLIC_KEY`
+- 카프카: `KAFKA_BOOTSTRAP_SERVERS` 및 producer/consumer 관련 키
+- 메일(Order-Core): `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`, `MAIL_FROM_NAME`
+- Gateway 라우팅: `AUTH_GUARD_URL`, `QUEUE_URL`, `SEAT_URL`, `ORDER_CORE_URL`
+
+### 운영/관측
+
+- 각 서비스에 Actuator 활성화
+- 메트릭 수집: Prometheus(Micrometer)
+- JSON 로그 인코더 사용
+
