@@ -27,7 +27,7 @@
 |                                        백엔드                                        |                                        백엔드                                        |                                       풀스택                                       |
 |:---------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------:|
 | <img height="280" src="https://avatars.githubusercontent.com/u/117719441?v=4"  /> | <img height="280" src="https://avatars.githubusercontent.com/u/101779861?v=4"  /> | <img height="280" src="https://avatars.githubusercontent.com/u/64884565?v=4" /> |
-|                 강슬기 <br/> [@son2304](https://github.com/son2304)                  |                유의진 <br/> [@youngyii](https://github.com/youngyii)                 |           황시연 <br/> [@Kimmingi1127](https://github.com/Kimmingi1127)            |
+|                 강슬기 <br/> [@SeulGi0117](https://github.com/SeulGi0117)                  |                유의진 <br/> [@ejinn1](https://github.com/ejinn1)                 |           황시연 <br/> [@siyeon13](https://github.com/siyeon13)            |
 
 ## 서비스 구조
 
