@@ -14,6 +14,7 @@ import com.goormgb.be.ordercore.mypage.dto.response.MyPageProfileResponse;
 import com.goormgb.be.ordercore.order.enums.OrderStatus;
 import com.goormgb.be.ordercore.order.repository.OrderMyPageSummaryCounts;
 import com.goormgb.be.ordercore.order.repository.OrderRepository;
+import com.goormgb.be.ordercore.user.service.UserCacheService;
 import com.goormgb.be.user.entity.User;
 import com.goormgb.be.user.entity.UserSns;
 import com.goormgb.be.user.repository.UserRepository;
@@ -44,6 +45,7 @@ public class MyPageProfileService {
 	private final UserRepository userRepository;
 	private final UserSnsRepository userSnsRepository;
 	private final OrderRepository orderRepository;
+	private final UserCacheService userCacheService;
 	private final Clock clock;
 
 	private record UserInfo(User user, UserSns userSns) {
@@ -60,6 +62,8 @@ public class MyPageProfileService {
 		String nickname = request.nickname().trim();
 		UserInfo userInfo = findUserInfo(userId);
 		userInfo.user().updateNickname(nickname);
+		// 닉네임 변경은 UserCacheDto 에 담긴 값이므로 커밋 후 전 서비스의 캐시를 무효화한다.
+		userCacheService.evictAfterCommit(userId);
 		return MyPageAccountResponse.of(userInfo.user(), userInfo.userSns());
 	}
 

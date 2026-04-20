@@ -1,4 +1,4 @@
-package com.goormgb.be.ordercore.config;
+package com.goormgb.be.authguard.config;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -6,7 +6,6 @@ import java.util.Map;
 
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -24,65 +23,41 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.github.benmanes.caffeine.cache.Caffeine;
 
 /**
- * Order-Core 서비스 캐시 설정.
+ * Auth-Guard 서비스 캐시 설정 (Phase 2: Redis 분산 캐시).
  *
- * <p>Phase 1 — Caffeine 로컬 캐시: 주문서 조회({@code OrderService#getOrderSheet}) 시 반복
- * 수행되던 경기 메타 조회를 흡수하기 위한 {@code match-detail} 캐시를 등록한다. 주문 생성
- * ({@code createOrder}) 의 {@code Match} 조회는 영속성 컨텍스트에 연결된 관리 엔티티가
- * 필요하므로 Caffeine 캐시를 사용하지 않는다.</p>
+ * <p>Auth-Guard 는 Phase 1 의 Caffeine 로컬 캐시 대상이 없었기 때문에 본 클래스가 최초
+ * {@code CacheManager} 빈 구성이다. 사용자 정보는 Pod 간 즉시 전파(닉네임/차단 상태 변경)가
+ * 필요하므로 로컬 캐시가 아닌 Redis 분산 캐시를 채택한다.</p>
  *
- * <p>Phase 2 — Redis 분산 캐시: 사용자 정보({@code user-by-id}) 를 Pod 간 공유 목적으로
- * Redis 에 캐시한다. {@code @Cacheable} 어노테이션에서 {@code cacheManager = "redisCacheManager"}
- * 로 명시해 Caffeine(Primary) 와 격리 운용한다.</p>
+ * <p>등록된 캐시:</p>
+ * <ul>
+ *   <li>{@value #CACHE_USER_BY_ID} — {@code UserRepository.findByIdOrThrow} 결과의 DTO 스냅샷. TTL 10분.</li>
+ *   <li>{@value #CACHE_AUTH_ME} — {@code /me} 응답 DTO. TTL 30초 (프론트 폴링 허용 범위).</li>
+ * </ul>
+ *
+ * <p>정합성 전략: 프로필/상태 변경 서비스 메서드에 {@code @CacheEvict} 를 걸어 즉시 무효화한다.
+ * Redis 장애 시 Spring Cache 기본 동작에 따라 캐시 미스로 fallback 되어 DB 직접 조회가 수행된다.</p>
+ *
+ * @see com.goormgb.be.user.dto.cache.UserCacheDto
  */
 @Configuration
 @EnableCaching
 public class CacheConfig {
 
-	public static final String CACHE_MATCH_DETAIL = "match-detail";
 	public static final String CACHE_USER_BY_ID = "user-by-id";
-	/**
-	 * Auth-Guard 가 소유한 {@code /auth/me} 응답 캐시의 키 스페이스.
-	 *
-	 * <p>Order-Core 는 해당 캐시에 값을 <b>저장하지 않고</b>, 사용자 프로필·온보딩 변경 시 동일
-	 * Redis 인스턴스에서 키를 삭제하기 위한 용도로만 등록한다. 같은 사용자에 대한 쓰기가 Order-Core
-	 * 에서 발생해도 Auth-Guard 의 {@code /me} 응답이 즉시 갱신되도록 보장한다.</p>
-	 */
 	public static final String CACHE_AUTH_ME = "auth-me";
-	/**
-	 * Phase 3 — {@code GET /matches?date=...} 응답의 Redis 분산 캐시.
-	 *
-	 * <p>경기 목록은 자주 폴링되는 read-only 화면이며 동일 날짜 요청이 집중된다. TTL 30초로 캐싱한다.</p>
-	 */
-	public static final String CACHE_MATCHES_LIST_RESPONSE = "matches-list-response";
 
 	@Primary
 	@Bean
-	public CacheManager cacheManager() {
-		CaffeineCacheManager manager = new CaffeineCacheManager();
-
-		manager.registerCustomCache(CACHE_MATCH_DETAIL,
-			Caffeine.newBuilder()
-				.maximumSize(1_000)
-				.expireAfterWrite(Duration.ofMinutes(10))
-				.recordStats()
-				.build());
-
-		return manager;
-	}
-
-	@Bean(name = "redisCacheManager")
-	public CacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
+	public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
 		GenericJackson2JsonRedisSerializer valueSerializer =
 			new GenericJackson2JsonRedisSerializer(cacheObjectMapper());
 
 		Map<String, RedisCacheConfiguration> configs = new HashMap<>();
 		configs.put(CACHE_USER_BY_ID, redisConfig(Duration.ofMinutes(10), valueSerializer));
 		configs.put(CACHE_AUTH_ME, redisConfig(Duration.ofSeconds(30), valueSerializer));
-		configs.put(CACHE_MATCHES_LIST_RESPONSE, redisConfig(Duration.ofSeconds(30), valueSerializer));
 
 		return RedisCacheManager.builder(connectionFactory)
 			.cacheDefaults(redisConfig(Duration.ofMinutes(10), valueSerializer))
@@ -99,11 +74,14 @@ public class CacheConfig {
 	}
 
 	/**
-	 * Redis 캐시 값 직렬화 전용 {@link ObjectMapper}.
+	 * Redis 캐시 값 직렬화에 사용할 전용 {@link ObjectMapper} 를 생성한다.
 	 *
-	 * <p>{@link java.time.Instant} 등 JSR-310 타입 직렬화 지원을 위해 {@link JavaTimeModule} 을 등록하고,
-	 * {@code GenericJackson2JsonRedisSerializer} 가 요구하는 polymorphic typing 을
-	 * {@link BasicPolymorphicTypeValidator} 로 제한 활성화한다.</p>
+	 * <p>기본 {@code GenericJackson2JsonRedisSerializer} 는 {@link java.time.Instant} 등
+	 * JSR-310 타입을 직렬화하지 못해 런타임에 {@code Java 8 date/time type not supported}
+	 * 예외가 발생한다. 이를 방지하기 위해 {@link JavaTimeModule} 을 등록한 전용 매퍼를 사용한다.</p>
+	 *
+	 * <p>Polymorphic typing 은 {@code GenericJackson2JsonRedisSerializer} 동작에 필요하므로
+	 * {@link BasicPolymorphicTypeValidator} 로 도메인 패키지만 허용하도록 제한해 안전하게 활성화한다.</p>
 	 */
 	private ObjectMapper cacheObjectMapper() {
 		PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()

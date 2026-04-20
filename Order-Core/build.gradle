@@ -16,6 +16,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'com.github.ben-manes.caffeine:caffeine'
 
+    // Redis 분산 캐시 (Phase 2 — 사용자 데이터 Pod 간 공유)
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
     // 필수: JSON 로깅
     implementation "net.logstash.logback:logstash-logback-encoder:7.4"
 

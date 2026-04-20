@@ -14,9 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.goormgb.be.global.exception.ErrorCode;
-import com.goormgb.be.seat.area.enums.AreaCode;
 import com.goormgb.be.seat.block.entity.Block;
 import com.goormgb.be.seat.block.repository.BlockRepository;
+import com.goormgb.be.seat.common.dto.cache.SeatGroupsCachePayload;
 import com.goormgb.be.seat.common.dto.response.SeatGroupsEntryResponse;
 import com.goormgb.be.seat.common.dto.response.SectionBlocksResponse;
 import com.goormgb.be.seat.matchSeat.entity.MatchSeat;
@@ -26,7 +26,6 @@ import com.goormgb.be.seat.booking.repository.BookingOptionsRedisRepository;
 import com.goormgb.be.seat.redis.SeatSession;
 import com.goormgb.be.seat.seatHold.entity.SeatHold;
 import com.goormgb.be.seat.seatHold.repository.SeatHoldRepository;
-import com.goormgb.be.seat.section.entity.Section;
 import com.goormgb.be.seat.section.repository.SectionRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -38,51 +37,38 @@ import lombok.extern.slf4j.Slf4j;
 public class SeatCommonService {
 
 	private final MatchDetailCacheService matchDetailCacheService;
-	private final SectionLookupCacheService sectionLookupCacheService;
+	private final SeatGroupsResponseCacheService seatGroupsResponseCacheService;
 	private final BookingOptionsRedisRepository bookingOptionsRedisRepository;
 	private final SectionRepository sectionRepository;
 	private final BlockRepository blockRepository;
 	private final MatchSeatRepository matchSeatRepository;
 	private final SeatHoldRepository seatHoldRepository;
 
-	@Transactional(readOnly = true)
+	/**
+	 * 좌석 선택 페이지 진입용 응답을 조립한다 (Phase 3 Redis 응답 캐시 적용).
+	 *
+	 * <p>유저에 독립적인 {@code match + seatGroups} 부분은
+	 * {@link SeatGroupsResponseCacheService#getPayload(Long)} 에서 Redis (TTL 5초) 로 제공된다.
+	 * 유저별 {@code seatSession} 은 매 요청 booking-options(Redis) 에서 조립한다.</p>
+	 *
+	 * <p>트랜잭션은 의도적으로 선언하지 않는다. 캐시 히트 시 DB 커넥션을 점유하지 않도록
+	 * 실제 DB 조회가 발생하는 {@code getPayload} 내부에서만 {@link Transactional} 이 열리도록 한다.</p>
+	 */
 	public SeatGroupsEntryResponse getSeatGroupsEntry(Long matchId, Long userId) {
 		long totalStart = System.currentTimeMillis();
 
-		var match = matchDetailCacheService.getDetail(matchId);
+		SeatGroupsCachePayload payload = seatGroupsResponseCacheService.getPayload(matchId);
 		var bookingOptions = bookingOptionsRedisRepository.getByUserIdAndMatchIdOrThrow(userId, matchId);
 		var seatSession = SeatSession.from(bookingOptions);
-
-		List<Section> sections = sectionLookupCacheService.findAllSectionsWithArea();
-		List<Long> sectionIds = sections.stream().map(Section::getId).toList();
-
-		Map<Long, List<Long>> blockIdsBySectionId = createBlockIdsBySectionId(sectionIds);
-		Map<Long, Long> remainingSeatCountBySectionId = createRemainingSeatCountBySectionId(matchId);
-
-		Map<Long, SeatGroupAccumulator> groupMap = new LinkedHashMap<>();
-		for (Section section : sections) {
-			Long areaId = section.getArea().getId();
-			SeatGroupAccumulator group = groupMap.computeIfAbsent(areaId,
-				ignored -> new SeatGroupAccumulator(areaId, toAreaName(section.getArea().getCode())));
-
-			group.sections().add(new SeatGroupsEntryResponse.SectionInfo(
-				section.getId(),
-				section.getCode().name(),
-				buildDisplayName(section),
-				blockIdsBySectionId.getOrDefault(section.getId(), List.of()),
-				remainingSeatCountBySectionId.getOrDefault(section.getId(), 0L)
-			));
-		}
-
-		List<SeatGroupsEntryResponse.SeatGroupInfo> seatGroups = groupMap.values()
-			.stream()
-			.map(it -> new SeatGroupsEntryResponse.SeatGroupInfo(it.areaId(), it.areaName(), it.sections()))
-			.toList();
 
 		log.info("[SeatCommonService#getSeatGroupsEntry] at={}, matchId={}, total={}ms",
 			LocalDateTime.now(ZoneId.of("Asia/Seoul")), matchId, System.currentTimeMillis() - totalStart);
 
-		return SeatGroupsEntryResponse.of(match, seatSession, seatGroups);
+		return new SeatGroupsEntryResponse(
+			payload.match(),
+			SeatGroupsEntryResponse.SeatSessionInfo.from(seatSession),
+			payload.seatGroups()
+		);
 	}
 
 	@Transactional(readOnly = true)
@@ -146,70 +132,12 @@ public class SeatCommonService {
 		return new SectionBlocksResponse(blockInfos);
 	}
 
-	private Map<Long, List<Long>> createBlockIdsBySectionId(List<Long> sectionIds) {
-		if (sectionIds.isEmpty()) {
-			return Map.of();
-		}
-
-		long start = System.currentTimeMillis();
-		List<Block> blocks = sectionLookupCacheService.findBlocksBySectionIds(sectionIds);
-		log.info("[SeatCommonService#createBlockIdsBySectionId] at={}, sectionIds.size={}, blocks.size={}, blockQueryElapsed={}ms",
-			LocalDateTime.now(ZoneId.of("Asia/Seoul")), sectionIds.size(), blocks.size(), System.currentTimeMillis() - start);
-
-		Map<Long, List<Long>> blockIdsBySectionId = new LinkedHashMap<>();
-		for (Block block : blocks) {
-			blockIdsBySectionId.computeIfAbsent(block.getSection().getId(), ignored -> new ArrayList<>())
-				.add(block.getBlockNum());
-		}
-		log.info("[SeatCommonService#createBlockIdsBySectionId] at={}, total elapsed={}ms (query + mapping including getSection() calls)",
-			LocalDateTime.now(ZoneId.of("Asia/Seoul")), System.currentTimeMillis() - start);
-		return blockIdsBySectionId;
-	}
-
-	private Map<Long, Long> createRemainingSeatCountBySectionId(Long matchId) {
-		long start = System.currentTimeMillis();
-		Map<Long, Long> remainingSeatCountBySectionId = new LinkedHashMap<>();
-		matchSeatRepository.countRemainingSeatsByMatchIdAndSaleStatusGroupBySectionId(matchId,
-				MatchSeatSaleStatus.AVAILABLE)
-			.forEach(it -> remainingSeatCountBySectionId.put(it.getSectionId(), it.getRemainingSeatCount()));
-		log.info("[SeatCommonService#createRemainingSeatCountBySectionId] at={}, matchId={}, elapsed={}ms",
-			LocalDateTime.now(ZoneId.of("Asia/Seoul")), matchId, System.currentTimeMillis() - start);
-		return remainingSeatCountBySectionId;
-	}
-
-	private String buildDisplayName(Section section) {
-		return switch (section.getArea().getCode()) {
-			case HOME -> "1루 " + section.getName();
-			case AWAY -> "3루 " + section.getName();
-			default -> section.getName();
-		};
-	}
-
-	private String toAreaName(AreaCode areaCode) {
-		return switch (areaCode) {
-			case CENTER -> "프리미엄";
-			case HOME -> "1루 구역";
-			case AWAY -> "3루 구역";
-			case OUTFIELD -> "외야 구역";
-		};
-	}
-
 	private String toSeatSaleStatus(MatchSeat matchSeat, Set<Long> activeHeldMatchSeatIds) {
 		if (matchSeat.getSaleStatus() == MatchSeatSaleStatus.AVAILABLE
 			&& activeHeldMatchSeatIds.contains(matchSeat.getId())) {
 			return "HELD";
 		}
 		return matchSeat.getSaleStatus().name();
-	}
-
-	private record SeatGroupAccumulator(
-		Long areaId,
-		String areaName,
-		List<SeatGroupsEntryResponse.SectionInfo> sections
-	) {
-		private SeatGroupAccumulator(Long areaId, String areaName) {
-			this(areaId, areaName, new ArrayList<>());
-		}
 	}
 
 	private record BlockAccumulator(
